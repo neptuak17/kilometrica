@@ -257,7 +257,7 @@ function metrics(p: PlanResult) {
 }
 
 function Compare({ data, current, pinned, onUnpin }: { data: PlanData; current: PlanResult; pinned: Pinned[]; onUnpin: (i: number) => void }) {
-  const plans = useMemo(() => pinned.map((p) => makePlan(data, p.inputs, p.choices)), [data, pinned]);
+  const plans = useMemo(() => pinned.map((p) => makePlan(data, p.inputs, p.choices, { languages: [...navigator.languages] })), [data, pinned]);
   if (!pinned.length) return null;
   const cols = [...plans.map((p, i) => ({ label: pinned[i]!.label, m: metrics(p), i })), { label: "Current", m: metrics(current), i: -1 }];
   const rows: [keyof ReturnType<typeof metrics>, string][] = [
@@ -394,7 +394,11 @@ function PlanPage({ start }: { start: Start }) {
   }, [files, blockKey, pass]);
 
   const data: PlanData | null = useMemo(() => (files ? { ...files.free, full: pass && full ? full.full : null } : null), [files, full, pass]);
-  const plan = useMemo(() => (data && inputs ? makePlan(data, inputs, choices) : null), [data, inputs, choices]);
+  // The device's languages pick Wikipedia articles (they stay on the device, D30).
+  const plan = useMemo(
+    () => (data && inputs ? makePlan(data, inputs, choices, { languages: [...navigator.languages] }) : null),
+    [data, inputs, choices],
+  );
   const doc = useMemo(() => (plan ? toDocument(plan, { ...meta, name: meta.name || plan.brief.title }) : null), [plan, meta]);
 
   // Plans stay on this device (principle 5); a shared plan is kept only when the rider asks.

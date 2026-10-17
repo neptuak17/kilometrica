@@ -3,6 +3,11 @@
 Two records are the same place when they have the same service type and either lie within `near_m` (150 m for
 accommodation) with similar names, or within `blind_m` when either has no name. Duplicates inside one source
 (e.g. a station mapped both as a node and as an area) are merged the same way.
+
+Overture's positions can be hundreds of metres to a couple of kilometres off, so the same place to stay often turns
+up twice further apart than that. Such records are also merged when their names are the same after normalising
+(not merely similar, so "Athena Beach Hotel" never swallows "Athena Royal Beach Hotel"), they lie within
+`SAME_NAME_M`, and at least one of them comes from Overture.
 """
 
 import re
@@ -21,6 +26,10 @@ NEAR_LARGE_M = 150.0
 BLIND_M = 25.0
 NAME_SIMILARITY = 70
 LARGE = {"accommodation", "station", "hospital"}
+SAME_NAME_M = 1500.0
+SAME_NAME_SERVICES = {"accommodation"}
+SAME_NAME_MIN_CHARS = 8
+"""Names this short ("Hotel", "Camping") are too generic to merge on alone."""
 
 
 @dataclass
@@ -55,6 +64,23 @@ def same_place(a: RawPlace, b: RawPlace, dist_m: float, na: str | None = None, n
     return dist_m <= limit and fuzz.token_set_ratio(na, nb) >= NAME_SIMILARITY
 
 
+def _same_name_pairs(ordered: list[RawPlace], names: list[str], x: np.ndarray, y: np.ndarray) -> list[tuple[int, int]]:
+    """Records with the same normalised name within SAME_NAME_M, at least one from Overture."""
+    groups: dict[str, list[int]] = {}
+    for i, n in enumerate(names):
+        if len(n.replace(" ", "")) >= SAME_NAME_MIN_CHARS:
+            groups.setdefault(n, []).append(i)
+    out = []
+    for idx in groups.values():
+        for a, i in enumerate(idx):
+            for j in idx[a + 1 :]:
+                if "overture" not in (ordered[i].source, ordered[j].source):
+                    continue
+                if float(np.hypot(x[i] - x[j], y[i] - y[j])) <= SAME_NAME_M:
+                    out.append((i, j))
+    return out
+
+
 def _conflate_service(ordered: list[RawPlace], radius: float) -> list[Merged]:
     x, y = to_laea([p.lon for p in ordered], [p.lat for p in ordered])
     names = [norm_name(p.name) for p in ordered]
@@ -66,17 +92,22 @@ def _conflate_service(ordered: list[RawPlace], radius: float) -> list[Merged]:
             i = owner[i]
         return i
 
+    def join(i: int, j: int) -> None:
+        ri, rj = root(i), root(j)
+        if ri != rj:
+            # The earlier record (OSM before Overture) stays the primary.
+            owner[max(ri, rj)] = min(ri, rj)
+
     pairs = tree.query_pairs(radius, output_type="ndarray")
     if len(pairs):
         pairs = pairs[np.lexsort((pairs[:, 1], pairs[:, 0]))]
     for i, j in pairs:
         dist = float(np.hypot(x[i] - x[j], y[i] - y[j]))
-        if not same_place(ordered[i], ordered[j], dist, names[i], names[j]):
-            continue
-        ri, rj = root(int(i)), root(int(j))
-        if ri != rj:
-            # The earlier record (OSM before Overture) stays the primary.
-            owner[max(ri, rj)] = min(ri, rj)
+        if same_place(ordered[i], ordered[j], dist, names[i], names[j]):
+            join(int(i), int(j))
+    if ordered and ordered[0].service in SAME_NAME_SERVICES:
+        for i, j in _same_name_pairs(ordered, names, x, y):
+            join(i, j)
 
     groups: dict[int, Merged] = {}
     for i, rec in enumerate(ordered):

@@ -82,6 +82,9 @@ def test_beds_group_by_town_else_along_the_route(path):
     assert {b.kind: b.count for b in stops[1].beds} == {"guest_house": 2}
     assert stops[2].station is None
     assert len({s.id for s in stops}) == 3
+    # Each place to stay knows its own town, for map searches; beds near no town have none.
+    assert {p.detail.get("town") for p in places if p.service == "accommodation" and p.lon < 1} == {"Ville"}
+    assert all("town" not in p.detail for p in places if p.service == "accommodation" and p.lon > 1)
 
 
 # --- effort ----------------------------------------------------------------------------------------------------
@@ -149,3 +152,20 @@ def test_calendar_dates_with_their_year(tmp_path):
     assert cal.public[0].regions == ["XX-A"] and cal.public[1].nationwide
     assert cal.school_year is None and cal.school == []  # nothing published: no data, not "no holidays" (D37)
     assert missing.public_year is None and missing.public == []
+
+
+def test_wikidata_sitelinks_become_articles_by_language_and_commons():
+    from dpg_audit.plan.wiki import languages
+
+    arts, commons = languages(
+        {
+            "frwiki": {"title": "Château de Bielle"},
+            "euwiki": {"title": "Bielleko gaztelua"},
+            "zh_yuewiki": {"title": "x"},
+            "commonswiki": {"title": "Category:Château de Bielle"},
+            "frwikivoyage": {"title": "not an article"},
+            "specieswiki": {"title": "not an article"},
+        }
+    )
+    assert arts == {"eu": "Bielleko gaztelua", "fr": "Château de Bielle", "zh-yue": "x"}
+    assert commons == "Category:Château de Bielle"

@@ -64,11 +64,22 @@ def _near(positions: list[float], m: float, reach: float) -> int:
     return bisect_right(positions, m + reach) - bisect_left(positions, m - reach)
 
 
+def name_towns(places: list[Place], towns: list[Settlement]) -> None:
+    """Each place to stay's own town (`detail.town`), by the same rule as stops: the nearest named town or village
+    within TOWN_REACH_M. Plan's map searches use it ("Camping La Corniche, Hendaye"), not the stop's town, which can
+    be a neighbour's."""
+    beds = [p for p in places if p.service == "accommodation"]
+    for p, t in zip(beds, _town_of(beds, towns), strict=True):
+        if t is not None and towns[t].name:
+            p.detail["town"] = towns[t].name
+
+
 def build_stops(
     path: RoutePath, places: list[Place], settlements: list[Settlement], coverage: Coverage, season_year: int
 ) -> StopsFile:
     beds = [p for p in places if p.service == "accommodation" and p.counts]
     towns = [s for s in settlements if s.name]
+    name_towns(places, towns)
     services = {s: sorted(p.access_at_m for p in coverage.own(s)) for s in STOP_SERVICES}
     stations = sorted(coverage.bail_out_stations(), key=lambda p: p.access_at_m)
     station_m = [p.access_at_m for p in stations]

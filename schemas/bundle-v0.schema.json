@@ -1538,7 +1538,8 @@
             {
               "type": "null"
             }
-          ]
+          ],
+          "description": "Wikidata item, from OSM or found through the wikipedia tag"
         },
         "wikipedia": {
           "anyOf": [
@@ -1550,6 +1551,25 @@
             }
           ],
           "description": "OSM's wikipedia tag, e.g. 'fr:Pont du Gard'"
+        },
+        "articles": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Wikipedia article titles by language code (from Wikidata), so the rider's device can link to the article in the rider's own language",
+          "type": "object"
+        },
+        "commons": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Wikimedia Commons page (photos), e.g. 'Category:Pont du Gard'"
         },
         "unesco": {
           "description": "Tagged as a UNESCO World Heritage site (heritage=1)",
@@ -1571,6 +1591,8 @@
         "ele",
         "wikidata",
         "wikipedia",
+        "articles",
+        "commons",
         "unesco",
         "rank"
       ],

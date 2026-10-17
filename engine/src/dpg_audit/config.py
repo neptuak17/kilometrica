@@ -16,10 +16,13 @@ def work_dir(root: Path, network: str, ref: str) -> Path:
     return root / "work" / network / ref.lower()
 
 
+PROJECT_URL = "https://github.com/neptuak17/kilometrica"
+
+
 def user_agent() -> str:
-    """HTTP User-Agent. Set DPG_CONTACT (e.g. an email) for providers that require contact details."""
+    """HTTP User-Agent with a contact, as Wikimedia and other providers ask (without one, Wikidata answers 429).
+    The project's page by default; set DPG_CONTACT (e.g. an email) to use another."""
     from dpg_audit import __version__
 
-    contact = os.environ.get("DPG_CONTACT")
-    base = f"Kilometrica-prototype/{__version__}"
-    return f"{base} ({contact})" if contact else base
+    contact = os.environ.get("DPG_CONTACT") or PROJECT_URL
+    return f"Kilometrica-prototype/{__version__} (+{contact})"

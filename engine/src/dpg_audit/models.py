@@ -655,8 +655,16 @@ class Highlight(Model):
     at_m: float = Field(description="Measure of the closest route point")
     offset_m: float = Field(description="Straight-line distance from the route")
     ele: float | None = Field(description="Elevation tagged in OSM (peaks and passes)")
-    wikidata: str | None
+    wikidata: str | None = Field(description="Wikidata item, from OSM or found through the wikipedia tag")
     wikipedia: str | None = Field(description="OSM's wikipedia tag, e.g. 'fr:Pont du Gard'")
+    articles: dict[str, str] = Field(
+        default_factory=dict,
+        description="Wikipedia article titles by language code (from Wikidata), so the rider's device can link to "
+        "the article in the rider's own language",
+    )
+    commons: str | None = Field(
+        default=None, description="Wikimedia Commons page (photos), e.g. 'Category:Pont du Gard'"
+    )
     unesco: bool = Field(description="Tagged as a UNESCO World Heritage site (heritage=1)")
     rank: float = Field(description="0-1: how notable, from its kind and tags; used to pick a day's top highlights")
 

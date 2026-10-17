@@ -1,4 +1,5 @@
-"""Highlights near the route (11.6): the named OSM features behind M3's themes, with their Wikipedia links.
+"""Highlights near the route (11.6): the named OSM features behind M3's themes, with their Wikipedia links in every
+language and their Commons photo gallery, from Wikidata (wiki.py).
 
 Read from Dream's filtered theme extract (themes.osm.pbf, 2.5 km either side). A feature is kept when it is named and
 within its kind's distance of the route. Its rank (0-1) comes from its kind and tags only: UNESCO sites first, then
@@ -7,6 +8,7 @@ in each WINDOW_M of route, UNESCO sites always.
 """
 
 from collections import defaultdict
+from collections.abc import Callable
 from pathlib import Path
 
 import numpy as np
@@ -15,7 +17,8 @@ import osmium
 from dpg_audit.dream.themes import HISTORIC, _point_of
 from dpg_audit.lrs.index import RouteIndex
 from dpg_audit.lrs.path import RoutePath
-from dpg_audit.models import Highlight, HighlightsFile
+from dpg_audit.models import Highlight, HighlightsFile, SourceSnapshot
+from dpg_audit.plan.wiki import WikiLinks
 
 RADIUS_M = {"peak": 2000.0, "pass": 2000.0}
 DEFAULT_RADIUS_M = 1000.0
@@ -154,5 +157,22 @@ def select(path: RoutePath, raw: list[dict]) -> list[Highlight]:
     return out
 
 
-def build_highlights(path: RoutePath, theme_pbf: Path) -> HighlightsFile:
-    return HighlightsFile(highlights=select(path, read_highlights(theme_pbf)))
+def add_wiki_links(highlights: list[Highlight], links: WikiLinks) -> int:
+    """Fill each linked highlight's articles and Commons page; returns how many are linked."""
+    linked = [h for h in highlights if h.wikidata or h.wikipedia]
+    for h, (qid, found) in zip(linked, links.resolve([(h.wikidata, h.wikipedia) for h in linked]), strict=True):
+        h.wikidata = qid or h.wikidata
+        if found:
+            h.articles = found["articles"]
+            h.commons = found["commons"]
+    return len(linked)
+
+
+def build_highlights(
+    path: RoutePath, theme_pbf: Path, data_dir: Path, log: Callable[[str], None] = print
+) -> tuple[HighlightsFile, SourceSnapshot | None]:
+    highlights = select(path, read_highlights(theme_pbf))
+    links = WikiLinks(data_dir / "raw" / "wikidata" / "sitelinks.json", log)
+    n = add_wiki_links(highlights, links)
+    links.close()
+    return HighlightsFile(highlights=highlights), (links.snapshot(data_dir, n) if n else None)

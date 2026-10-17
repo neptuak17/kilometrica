@@ -39,27 +39,92 @@ export const RAIL: Record<string, { name: string; url: string }> = {
   AT: { name: "ÖBB", url: "https://www.oebb.at" },
 };
 
-function wikiLink(h: Highlight): Handoff | null {
-  if (h.wikipedia) {
-    const [lang, ...rest] = h.wikipedia.split(":");
-    const title = rest.join(":");
-    if (lang && title) {
-      return { kind: "wiki", label: "Wikipedia", url: `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replaceAll(" ", "_"))}` };
-    }
+/** Languages tried after the rider's own when a sight has no article in them: English, then the local ones. */
+const FALLBACK_LANGUAGES = ["en", "fr", "es", "it", "de", "pt", "ca", "nl", "el", "hr", "sl", "tr", "eu"];
+
+const wikiUrl = (lang: string, title: string) =>
+  `https://${lang}.wikipedia.org/wiki/${encodeURIComponent(title.replaceAll(" ", "_")).replaceAll("%2F", "/")}`;
+
+function languageName(code: string): string {
+  try {
+    return new Intl.DisplayNames(["en"], { type: "language" }).of(code) ?? code;
+  } catch {
+    return code;
   }
-  if (h.wikidata) return { kind: "wiki", label: "Wikidata", url: `https://www.wikidata.org/wiki/${encodeURIComponent(h.wikidata)}` };
-  return null;
 }
 
-/** Call, website and maps links for a place (D41, D48): its own site where we have one, else the maps listing. */
-export function placeLinks(p: { name: string | null; lat: number; lon: number; detail: Record<string, unknown> }): Handoff[] {
+/**
+ * A sight's Wikipedia article in the rider's language (the device's languages, best first), else English, else the
+ * local one, labelled with its language when it isn't the rider's; and its Commons photo gallery. Wikipedia keeps
+ * each language as a separate site, so the language is chosen here, from the articles the audit looked up
+ * (Wikidata). A bare Wikidata page tells a rider little, so it is never linked.
+ */
+export function wikiLinks(h: Highlight, languages: string[]): Handoff[] {
+  const out: Handoff[] = [];
+  const own = [...new Set(languages.map((l) => l.toLowerCase().split("-")[0]!).filter(Boolean))];
+  const articles: Record<string, string> = { ...(h.articles ?? {}) };
+  let local: string | null = null;
+  if (h.wikipedia?.includes(":")) {
+    const [lang, ...rest] = h.wikipedia.split(":");
+    if (lang && rest.length && !articles[lang]) articles[lang] = rest.join(":");
+    local = lang ?? null;
+  }
+  const order = [...own, ...FALLBACK_LANGUAGES.filter((l) => !own.includes(l))];
+  if (local && !order.includes(local)) order.splice(own.length + 1, 0, local);
+  const lang = order.find((l) => articles[l]) ?? Object.keys(articles)[0];
+  if (lang && articles[lang]) {
+    const label = own[0] === lang ? "Wikipedia" : `Wikipedia (in ${languageName(lang)})`;
+    out.push({ kind: "wiki", label, url: wikiUrl(lang, articles[lang]!) });
+  }
+  if (h.commons) {
+    out.push({ kind: "photos", label: "Photos", url: `https://commons.wikimedia.org/wiki/${encodeURIComponent(h.commons.replaceAll(" ", "_")).replaceAll("%3A", ":")}` });
+  }
+  return out;
+}
+
+/** The kind of place as a search word, for places whose name doesn't say it already. */
+const KIND_WORD: Record<string, string> = {
+  campsite: "Camping",
+  hotel: "Hotel",
+  guest_house: "Guest house",
+  hostel: "Hostel",
+  hut: "Mountain hut",
+};
+const KIND_IN_NAME =
+  /\b(camping|campsite|campeggio|kamp|hotel|hostal|hostel|albergue|auberge|refugio|refuge|rifugio|gite|chambres? d|pension|guest ?house|apartamentos?|apartments?|residence|residencia|b ?& ?b|hut|xenonas|otel|pansiyon)\b/;
+const fold = (s: string) => s.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+/**
+ * A Google Maps search that finds this place, not a namesake near the person looking (Google resolves a bare name
+ * near the viewer): kind, name and town, e.g. "Camping La Corniche, Hendaye". The town is the place's own (the audit
+ * names it, `detail.town`). Unnamed, or with no town to anchor it: its coordinates. Google's listing is theirs and
+ * may occasionally be the wrong place (D41, D51).
+ */
+export function mapsSearch(
+  p: { name: string | null; kind?: string; lat: number; lon: number; detail?: Record<string, unknown> },
+  fallbackTown?: string | null,
+): string {
+  const base = "https://www.google.com/maps/search/?api=1&query=";
+  const town = (p.detail?.town as string | undefined) ?? fallbackTown ?? null;
+  if (!p.name || !town) return `${base}${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
+  const name = fold(p.name);
+  const kind = p.kind && KIND_WORD[p.kind] && !KIND_IN_NAME.test(name) ? `${KIND_WORD[p.kind]} ` : "";
+  const words = (s: string) => ` ${fold(s).replace(/[^a-z0-9]+/g, " ").trim()} `;
+  const where = words(p.name).includes(words(town)) ? "" : `, ${town}`; // "Eaux Bonnes" names "Eaux-Bonnes"
+  return `${base}${encodeURIComponent(`${kind}${p.name}${where}`)}`;
+}
+
+/** Website, phone and Google Maps links for a place (D41, D48): its own site where we have one. */
+export function placeLinks(
+  p: { name: string | null; kind?: string; lat: number; lon: number; detail: Record<string, unknown> },
+  town?: string | null,
+): Handoff[] {
   const out: Handoff[] = [];
   const site = (p.detail.website ?? p.detail["contact:website"]) as string | undefined;
   const phone = (p.detail.phone ?? p.detail["contact:phone"]) as string | undefined;
   if (site) out.push({ kind: "website", label: "Website", url: site.startsWith("http") ? site : `https://${site}` });
   if (phone) out.push({ kind: "phone", label: phone, url: `tel:${phone.replace(/[^\d+]/g, "")}` });
-  const q = p.name ? encodeURIComponent(p.name) : `${p.lat},${p.lon}`;
-  out.push({ kind: "maps", label: "See it in Google Maps", url: `https://www.google.com/maps/search/?api=1&query=${q}` });
+  out.push({ kind: "maps", label: "See it in Google Maps", url: mapsSearch(p, town) });
   return out;
 }
 
@@ -288,7 +353,9 @@ export function planItems(data: PlanData, core: PlanCore): PlanItem[] {
     const handoffs: Handoff[] = [];
     if (data.full) {
       for (const p of bedPlaces(data.full, n.stop, inputs.sleep).slice(0, 3)) {
-        const links = placeLinks(p).filter((l) => l.kind !== "maps");
+        // The place's own site and phone; Google Maps only for places that have neither.
+        const all = placeLinks(p);
+        const links = all.some((l) => l.kind !== "maps") ? all.filter((l) => l.kind !== "maps") : all;
         if (links.length) handoffs.push(...links.map((l) => ({ ...l, label: `${p.name ?? "Unnamed"}: ${l.label}` })));
       }
     }
@@ -621,7 +688,7 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
     // Highlights.
     for (const h of full.highlights) {
       if (!inDay(core, d, h.at_m, h.at_m)) continue;
-      const link = wikiLink(h);
+      const links = wikiLinks(h, core.languages);
       add({
         id: `highlight:${h.id}`,
         kind: "highlight",
@@ -633,7 +700,7 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
         rank: 10 + 8 * h.rank,
         topic: "like",
         evidence: { highlights: [h.id], source: "OpenStreetMap" },
-        handoffs: link ? [link] : [],
+        handoffs: links,
       });
     }
   }

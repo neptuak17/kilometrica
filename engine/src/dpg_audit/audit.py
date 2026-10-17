@@ -158,7 +158,7 @@ def run(
     _log("plan data: stops, effort, highlights …")
     stops = build_stops(build.path, services.places, settlements, services.coverage, svc_profile.season_year)
     effort = build_effort(build, profs, events, unknown)
-    highlights = build_highlights(build.path, themes.prepare(pbf, build.lines, wd / "dream"))
+    highlights, wiki_source = build_highlights(build.path, themes.prepare(pbf, build.lines, wd / "dream"), root, _log)
     _log(f"plan: {len(stops.stops):,} stops, {len(highlights.highlights):,} highlights")
     t["plan"] = time.perf_counter() - t0 - sum(t.values())
 
@@ -191,6 +191,8 @@ def run(
         attribution="Map matching and routing by Valhalla (MIT)",
     )
     sources = [snap, *osm_sources, *services.sources, dem.snapshot(root, len(tiles)), *dream.sources, valhalla_source]
+    if wiki_source:
+        sources.append(wiki_source)
     ways = overlap_mod.ways_file(build, matches)
     waypoints = src.waypoints(snap, root)
     shared = overlap_mod.overlap(ways, build.path.length, root, exclude=build.route.id) if src.private else []

@@ -985,11 +985,24 @@ export interface Highlight {
    * Elevation tagged in OSM (peaks and passes)
    */
   ele: number | null;
+  /**
+   * Wikidata item, from OSM or found through the wikipedia tag
+   */
   wikidata: string | null;
   /**
    * OSM's wikipedia tag, e.g. 'fr:Pont du Gard'
    */
   wikipedia: string | null;
+  /**
+   * Wikipedia article titles by language code (from Wikidata), so the rider's device can link to the article in the rider's own language
+   */
+  articles: {
+    [k: string]: string;
+  };
+  /**
+   * Wikimedia Commons page (photos), e.g. 'Category:Pont du Gard'
+   */
+  commons: string | null;
   /**
    * Tagged as a UNESCO World Heritage site (heritage=1)
    */

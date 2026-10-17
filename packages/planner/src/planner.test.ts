@@ -1,9 +1,9 @@
-import type { DreamSection, EffortFile, Stop } from "@dpg/contracts";
+import type { DreamSection, EffortFile, Highlight, Stop } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
 import { TripAxis } from "./axis";
 import { choicesOf, parseDocument, toDocument } from "./document";
 import { calendarFile, dayGpx, type Geometry, tripGpx } from "./exports";
-import { dayItems } from "./items";
+import { dayItems, mapsSearch, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan } from "./plan";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
@@ -310,6 +310,54 @@ describe("plan document and share links", () => {
     expect(readFragment("#p=e30")).toEqual({ error: "not a Kilometrica plan" }); // "{}"
     expect(parseDocument({ kind: "kilometrica-plan", version: 9 })).toMatch(/version/);
     expect(fromUtf8(utf8("Étang → Aigues-Mortes 🚲"))).toBe("Étang → Aigues-Mortes 🚲");
+  });
+});
+
+describe("links", () => {
+  const h = (over: Partial<Highlight> = {}): Highlight => ({
+    id: "osm:n1",
+    kind: "castle",
+    name: "Château de Bielle",
+    lon: 0,
+    lat: 0,
+    at_m: 0,
+    offset_m: 0,
+    ele: null,
+    wikidata: "Q1",
+    wikipedia: "fr:Château de Bielle",
+    articles: { fr: "Château de Bielle", en: "Bielle Castle", eu: "Bielleko gaztelua" },
+    commons: "Category:Château de Bielle",
+    unesco: false,
+    rank: 0.5,
+    ...over,
+  });
+
+  it("links Wikipedia in the rider's language, else English, else the local article, and adds photos", () => {
+    const [wiki, photos] = wikiLinks(h(), ["de-DE", "en"]);
+    expect(wiki).toEqual({ kind: "wiki", label: "Wikipedia (in English)", url: "https://en.wikipedia.org/wiki/Bielle_Castle" });
+    expect(photos?.url).toBe("https://commons.wikimedia.org/wiki/Category:Ch%C3%A2teau_de_Bielle");
+    expect(wikiLinks(h(), ["eu"])[0]?.label).toBe("Wikipedia");
+    const french = wikiLinks(h({ articles: { fr: "Château de Bielle", eu: "Bielleko gaztelua" } }), ["en-GB"]);
+    expect(french[0]?.label).toBe("Wikipedia (in French)");
+    expect(french[0]?.url).toContain("fr.wikipedia.org");
+  });
+
+  it("never links a bare Wikidata page", () => {
+    expect(wikiLinks(h({ wikipedia: null, articles: {}, commons: null }), ["en"])).toEqual([]);
+  });
+
+  it("searches Google Maps by kind, name and town, else by coordinates", () => {
+    const q = (url: string) => decodeURIComponent(url.split("query=")[1]!);
+    expect(q(mapsSearch({ name: "La Corniche", kind: "campsite", lat: 43.37, lon: -1.73 }, "Hendaye"))).toBe("Camping La Corniche, Hendaye");
+    expect(q(mapsSearch({ name: "Hôtel Lafon", kind: "hotel", lat: 43.37, lon: -1.77 }, "Hendaye"))).toBe("Hôtel Lafon, Hendaye");
+    expect(q(mapsSearch({ name: "Camping Hendaye Plage", kind: "campsite", lat: 1, lon: 2 }, "Hendaye"))).toBe("Camping Hendaye Plage");
+    expect(q(mapsSearch({ name: "Hotel Eaux Bonnes Gourette", kind: "hotel", lat: 1, lon: 2 }, "Eaux-Bonnes"))).toBe("Hotel Eaux Bonnes Gourette");
+    expect(q(mapsSearch({ name: null, kind: "hotel", lat: 43.371181, lon: -1.781962 }, "Hendaye"))).toBe("43.371181,-1.781962");
+    expect(q(mapsSearch({ name: "La Corniche", kind: "campsite", lat: 43.37, lon: -1.73 }, null))).toBe("43.370000,-1.730000");
+    // The place's own town (named by the audit) wins over a stop's.
+    expect(q(mapsSearch({ name: "chic&basic Born", kind: "hotel", lat: 41.38, lon: 2.18, detail: { town: "Barcelona" } }))).toBe(
+      "Hotel chic&basic Born, Barcelona",
+    );
   });
 });
 

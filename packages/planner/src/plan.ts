@@ -42,8 +42,15 @@ export interface DaysOffer {
   plan: StagePlan;
 }
 
+/** Device settings that shape the plan's links, never part of the plan document. */
+export interface PlanOptions {
+  /** The rider's languages, best first (the browser's or phone's), for Wikipedia links. */
+  languages?: string[];
+}
+
 export interface PlanResult {
   route: RouteRef;
+  languages: string[];
   inputs: PlanInputs;
   choices: PlanChoices;
   mode: "free" | "full";
@@ -98,7 +105,12 @@ function pseudoStop(id: string, m: number, near: Stop | null): Stop {
   };
 }
 
-export function makePlan(data: PlanData, inputs: PlanInputs, choices: PlanChoices = NO_CHOICES): PlanResult {
+export function makePlan(
+  data: PlanData,
+  inputs: PlanInputs,
+  choices: PlanChoices = NO_CHOICES,
+  options: PlanOptions = {},
+): PlanResult {
   const levels = data.dream.levels;
   const level = levels.find((l) => l.level === inputs.level) ?? levels[2] ?? levels[0]!;
   const rider = riderFor(level.level, inputs.bike);
@@ -294,6 +306,7 @@ export function makePlan(data: PlanData, inputs: PlanInputs, choices: PlanChoice
 
   const partial = {
     route: data.route,
+    languages: options.languages?.length ? options.languages : ["en"],
     inputs,
     choices,
     mode: data.full ? ("full" as const) : ("free" as const),

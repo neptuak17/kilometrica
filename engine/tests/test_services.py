@@ -100,6 +100,25 @@ def test_unnamed_places_merge_only_when_very_close():
 # --- route index -----------------------------------------------------------------------------------------------
 
 
+def test_same_place_to_stay_far_apart_merges_only_on_the_same_name():
+    # Overture's positions can be well off: the same hotel 600 m apart merges, a different one doesn't.
+    recs = [
+        raw("osm", "1", "accommodation", "Hôtel Lafon", 0.0, 45.0),
+        raw("overture", "a", "accommodation", "Hotel Lafon", 0.0076, 45.0),  # ~600 m
+        raw("overture", "b", "accommodation", "Athena Royal Beach Hotel", 0.0, 45.005),
+        raw("overture", "c", "accommodation", "Athena Beach Hotel", 0.003, 45.005),  # ~240 m, a different hotel
+        raw("osm", "2", "accommodation", "Camping Les Pins", 0.02, 45.0),
+        raw("osm", "3", "accommodation", "Camping Les Pins", 0.03, 45.0),  # two OSM records: OSM positions are trusted
+    ]
+    merged = conflate(recs)
+    groups = sorted(sorted(r.id for r in m.members) for m in merged)
+    assert ["1", "a"] in groups
+    assert ["b"] in groups and ["c"] in groups
+    assert ["2"] in groups and ["3"] in groups
+    lafon = next(m for m in merged if m.primary.id == "1")
+    assert lafon.primary.source == "osm"
+
+
 def test_route_index_projection_matches_path_projection():
     rng = np.random.default_rng(1)
     lon = np.cumsum(rng.normal(0.002, 0.001, 200)) + 5.0
@@ -258,3 +277,39 @@ def test_gap_list_per_month_for_the_strip():
     assert (0, 10_000, 110_000) in acc  # January: the summer-only place is closed
     assert (6, 10_000, 110_000) not in acc
     assert any(g.service == "bail_out" for g in cov.gap_list())  # no stations at all
+
+
+# --- websites (checked before Plan links to them) ---------------------------------------------------------------
+
+
+def test_website_verdicts():
+    from dpg_audit.services.weblinks import judge, registrable
+
+    assert registrable("www.hotel-lafon.com") == "hotel-lafon.com"
+    assert registrable("hotel.example.co.uk") == "example.co.uk"
+    ok = judge("www.hotel.fr", 200, "https://www.hotel.fr/fr/", "<title>Hôtel</title>", None)
+    assert ok == "ok"
+    assert judge("http://hotel.fr", None, None, "", "ConnectError") == "dead"
+    assert judge("http://hotel.fr", 404, "http://hotel.fr", "", None) == "dead"
+    assert judge("http://hotel.fr", 403, "http://hotel.fr", "", None) == "blocked"  # refuses robots: kept
+    default = "<title>Apache2 Debian Default Page: It works</title>"
+    assert judge("http://hotel.fr", 200, "http://hotel.fr", default, None) == "default_page"
+    assert judge("http://labergerie.venez.fr", 200, "http://www.venez.fr/", "", None) == "directory"
+    assert judge("http://old-hotel.fr", 200, "https://someone-else.com/", "", None) == "moved"
+    assert judge("https://www.mariages.net/salle/x", 200, None, "", None) == "directory"
+    assert judge("www•haciendasoto•com", None, None, "", "InvalidURL") == "dead"  # a malformed address
+    # The word "sedo" inside a page (e.g. a font called Sedona) is no parked domain.
+    assert judge("http://camping.fr", 200, "http://camping.fr", "font-family: Sedona", None) == "ok"
+
+
+def test_shared_front_pages_are_not_a_places_own_site():
+    from dpg_audit.services.weblinks import shared_homepages
+
+    sites = [
+        ("http://www.gcu.asso.fr", "GCU Hendaye"),
+        ("https://www.gcu.asso.fr/", "GCU Biarritz"),
+        ("http://gcu.asso.fr", "GCU Ax"),
+        ("https://www.gcu.asso.fr/centres/ax", "GCU Ax"),  # a page of its own: kept
+        ("https://www.hotel-lafon.com/", "Hôtel Lafon"),
+    ]
+    assert shared_homepages(sites) == {"http://www.gcu.asso.fr", "https://www.gcu.asso.fr/", "http://gcu.asso.fr"}

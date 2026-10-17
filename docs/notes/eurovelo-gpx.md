@@ -177,6 +177,17 @@ Places come from OSM and Overture release 2026-09-23.1. Overture contributes Met
 - **The owner's Pyrenees route** (private), planned whole over 14 days at Challenging: Irun → Portbou, 725 km, 1,000–1,200 m of climbing on most days, with one harder day (Eaux-Bonnes → Marsous). Its heads-ups are mostly busy roads (French départementales rated LTS 4 by the heuristic, D13) and long stretches without a station that carries bikes.
 - **Exports:** starter GPX for every day of both plans (one track per day; gaps would split it), with waypoints for the night, heads-ups and highlights named for a bike computer's screen; calendar files with one event per day, lines folded at 75 bytes. A whole plan's share link is about 1 kB, small enough for a QR code.
 
+## Links after the owner's review (D51, bundle 2026-10-17)
+
+- **Duplicates:** places to stay with the same name within 1.5 km, at least one from Overture, now merge: 303 on EV8 (24,773 → 24,470 that count) and 19 on the Pyrenees route.
+- **Websites:** OpenStreetMap supplies 4,206 of EV8's place-to-stay websites, which are kept. Overture gives 10,977 more near the route (some for places that don't count): 577 are booking or directory sites and aren't fetched; the rest were fetched once. Places that lost their website:
+  - 3,166 to a dead site: no server at all (192 of 200 rechecked with a longer timeout), or "not found", "gone" or a server error;
+  - 605 to a redirect to another site, 627 to a booking or directory site, 52 to a server's default page, and 608 to a front page shared by several differently named places (e.g. one association's homepage for nine campsites).
+  - About 450 sites refuse automated requests and are kept; 26 slow sites recovered on a second, more patient try.
+  - Among the places to stay that count, 5,576 keep a checked Overture website and 4,359 lose theirs. Each kept one records its check date; results are cached for 30 days.
+- **Wikipedia:** of EV8's 1,238 linked highlights, 1,030 have an article in some language, 285 in English, and 771 a Commons photo gallery (Pyrenees: 79, 25 and 52 of 93). Wikidata rate-limits clients that give no contact, so the engine's User-Agent now names the project's GitHub page.
+- **Google Maps:** each place to stay now carries its own town (the nearest named town or village within 3 km), so searches read "Camping La Corniche, Hendaye" rather than the stop's town; places with no town are searched by coordinates.
+
 ## Consequences for the engine
 
 - Treat the GPX as the reference itinerary, but never as precise geometry. M1 map-matches it to OSM, and replaces straight-line segments with the matched or routed line (flagged as such).

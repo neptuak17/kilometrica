@@ -20,6 +20,7 @@ from dpg_audit.services.osm_places import RawPlace, read_osm_places
 from dpg_audit.services.policy import BikePolicy, CountryLookup
 from dpg_audit.services.profile import ServicesProfile
 from dpg_audit.services.seasons import UNKNOWN, day_codes, month_codes, season_known
+from dpg_audit.services.weblinks import KEEP, check_websites, shared_homepages
 from dpg_audit.sources import dem, osm, overture
 
 BLOCK_M = 50_000.0
@@ -60,6 +61,8 @@ def _place_elevation(lon: np.ndarray, lat: np.ndarray, root: Path) -> np.ndarray
 def _detail(primary: RawPlace, members: list[RawPlace]) -> dict:
     tags = primary.tags
     out: dict = {k.removeprefix("contact:"): tags[k] for k in DETAIL_TAGS if tags.get(k)}
+    if out.get("website"):
+        out["website_source"] = primary.source  # Overture's are checked before Plan links to them (weblinks)
     datasets = sorted({d for m in members for d in m.datasets})
     if datasets:
         out["datasets"] = datasets
@@ -218,6 +221,7 @@ def build_places(
             )
         )
     places.sort(key=lambda p: (p.access_at_m, p.service, p.id))
+    vet_websites(places, root / "raw" / "weblinks" / "checks.json", log)
     counts: dict[str, int] = {}
     for p in places:
         counts[p.service] = counts.get(p.service, 0) + 1
@@ -229,6 +233,35 @@ def build_places(
         sources=sources,
         counts=counts,
     )
+
+
+def vet_websites(places: list[Place], cache: Path, log: Callable[[str], None] = print) -> None:
+    """Keep a place to stay's website only when it is its own: Overture's are fetched and judged (weblinks), and a
+    front page shared by several differently named places is dropped whatever its source. A dropped link leaves
+    its reason in `website_rejected`; a checked one, its date in `website_checked`."""
+    beds = [p for p in places if p.service == "accommodation" and p.detail.get("website")]
+    shared = shared_homepages([(p.detail["website"], p.name) for p in beds])
+    overture = [p for p in beds if p.detail.get("website_source") == "overture" and p.detail["website"] not in shared]
+    checks = check_websites([p.detail["website"] for p in overture], cache, log=log) if overture else {}
+    dropped: dict[str, int] = {}
+    for p in beds:
+        url = p.detail["website"]
+        reason = None
+        if url in shared:
+            reason = "shared_homepage"
+        elif p.detail.get("website_source") == "overture":
+            c = checks.get(url)
+            if c is not None and c.verdict != "unreachable":
+                if c.verdict in KEEP:
+                    p.detail["website_checked"] = c.checked[:10]
+                else:
+                    reason = c.verdict
+        if reason:
+            p.detail["website_rejected"] = reason
+            del p.detail["website"]
+            dropped[reason] = dropped.get(reason, 0) + 1
+    if dropped:
+        log("websites dropped: " + ", ".join(f"{k} {v:,}" for k, v in sorted(dropped.items())))
 
 
 def services_file(result: ServicesResult, build: RouteBuild, profile: ServicesProfile) -> ServicesFile:
