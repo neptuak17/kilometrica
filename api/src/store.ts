@@ -40,11 +40,16 @@ export interface BundleStore {
 }
 
 async function readOrNull(path: string): Promise<string | null> {
-  try {
-    return await readFile(path, "utf-8");
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "ENOENT") return null;
-    throw err;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await readFile(path, "utf-8");
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") return null;
+      // The laptop reads bundles over the WSL share, which drops a connection now and then.
+      if (code === "ECONNRESET" && attempt < 2) continue;
+      throw err;
+    }
   }
 }
 
@@ -63,6 +68,8 @@ export const PRIVATE_DIR = "private";
 
 export class FsBundleStore implements BundleStore {
   private readonly root: string;
+  /** A route's privacy is its folder, which never changes. */
+  private readonly privacy = new Map<string, boolean>();
 
   constructor(dataDir: string) {
     this.root = join(dataDir, "bundles");
@@ -93,7 +100,12 @@ export class FsBundleStore implements BundleStore {
   }
 
   async isPrivate(network: string, ref: string) {
-    return (await this.locate(network, ref))?.isPrivate ?? false;
+    const key = `${network}/${ref}`;
+    const known = this.privacy.get(key);
+    if (known !== undefined) return known;
+    const route = await this.locate(network, ref);
+    if (route) this.privacy.set(key, route.isPrivate);
+    return route?.isPrivate ?? false;
   }
 
   async currentRun(network: string, ref: string) {

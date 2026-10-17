@@ -6,7 +6,7 @@
 import type { PlanCore } from "./plan";
 import { monthOf } from "./sun";
 import { hours, km, MONTHS_LONG, oneIn, plural, range } from "./text";
-import type { Brief, BriefLine, DayPlan, PlanData, PlanItem } from "./types";
+import { type Brief, type BriefLine, type DayPlan, type PlanData, type PlanItem, placesMissing } from "./types";
 
 const THEME_PHRASE: Record<string, string> = {
   coast: "along the coast",
@@ -200,7 +200,8 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
     const lo = Math.min(inputs.fromM, inputs.toM);
     const hi = Math.max(inputs.fromM, inputs.toM);
     const food = data.full.places.filter((p) => p.service === "food" && p.counts && p.access_at_m >= lo && p.access_at_m <= hi);
-    if (food.length) {
+    // A share of the food places only when they all loaded.
+    if (food.length && !placesMissing(data.full, lo, hi).length) {
       const withHours = food.filter((p) => typeof p.detail.days === "string").length;
       confidence.push(`opening hours for ${Math.round((100 * withHours) / food.length)}% of the food places`);
     }

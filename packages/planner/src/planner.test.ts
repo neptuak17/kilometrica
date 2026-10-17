@@ -1,4 +1,4 @@
-import type { DreamSection, EffortFile, Highlight, Stop } from "@dpg/contracts";
+import type { DreamSection, EffortFile, Highlight, Place, ServiceType, Stop } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
 import { TripAxis } from "./axis";
 import { choicesOf, parseDocument, toDocument } from "./document";
@@ -270,6 +270,25 @@ describe("makePlan", () => {
     expect(p.days[0]!.fromM).toBe(300_000);
     expect(p.days[p.days.length - 1]!.toM).toBe(0);
     expect(p.nights.map((n) => n.stop.at_m)).toEqual([...p.nights.map((n) => n.stop.at_m)].sort((a, b) => b - a));
+  });
+
+  it("says nothing about water or food where places didn't load (D37)", () => {
+    const service = (id: string): ServiceType => ({ id, title: id, count_m: 5000, count_min: null, show_m: 5000, costing: "bicycle", gap_m: 20_000, gap_also: [] });
+    // One café at km 5, with known hours; no water anywhere else.
+    const cafe = { id: "cafe", service: "food", kind: "cafe", name: "Café", access_at_m: 5000, counts: true, months: "????????????", opening_hours: null, detail: { days: "o".repeat(366) } } as unknown as Place;
+    const withFull = (placesMissing: { fromM: number; toM: number }[]): PlanData => ({
+      ...data(),
+      full: { findings: [], places: [cafe], placesMissing, highlights: [], climbs: [], serviceTypes: [service("water"), service("food")] },
+    });
+    const all = makePlan(withFull([]), inputs());
+    const part = makePlan(withFull([{ fromM: 150_000, toM: 300_000 }]), inputs());
+    const gapDays = (p: typeof all) => p.items.filter((i) => i.id.startsWith("water:gap:")).map((i) => i.day);
+    expect(gapDays(all)).toEqual(all.days.map((d) => d.number));
+    // Days touching the part that didn't load make no claim; the others still do.
+    expect(gapDays(part)).toEqual(part.days.filter((d) => Math.max(d.fromM, d.toM) <= 150_000).map((d) => d.number));
+    expect(gapDays(part).length).toBeGreaterThan(0);
+    expect(all.brief.confidence.some((c) => c.startsWith("opening hours"))).toBe(true);
+    expect(part.brief.confidence.some((c) => c.startsWith("opening hours"))).toBe(false);
   });
 
   it("keeps a day's heads-ups and highlights within the attention budget", () => {

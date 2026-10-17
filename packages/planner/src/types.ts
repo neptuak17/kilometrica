@@ -58,14 +58,32 @@ export interface FreeData {
   daily: DailySection[];
 }
 
+/** Route metres from fromM to toM. */
+export interface MRange {
+  fromM: number;
+  toM: number;
+}
+
 /** What the Trip Pass adds: the places, findings, highlights and climbs on the stretch. */
 export interface FullData {
   findings: Finding[];
   /** Places on the stretch (any service), from the filtered places endpoint. */
   places: Place[];
+  /**
+   * Parts of the stretch whose places didn't load. Nothing there is "none": the plan says nothing about water, food
+   * or beds there (D37). Empty when everything loaded.
+   */
+  placesMissing: MRange[];
   highlights: Highlight[];
   climbs: Climb[];
   serviceTypes: ServiceType[];
+}
+
+/** The parts of [lo, hi] whose places didn't load, clipped to it. */
+export function placesMissing(full: FullData, lo: number, hi: number): MRange[] {
+  return full.placesMissing
+    .filter((r) => r.toM > lo && r.fromM < hi)
+    .map((r) => ({ fromM: Math.max(r.fromM, lo), toM: Math.min(r.toM, hi) }));
 }
 
 export interface PlanData extends FreeData {

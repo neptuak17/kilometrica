@@ -11,7 +11,7 @@ import type { PlanCore } from "./plan";
 import { bedsFor } from "./stages";
 import { clock, dayIndex, monthOf, weekday } from "./sun";
 import { country, day as dayText, hours, km, MONTHS_LONG, plural, stopName, WEEKDAYS_LONG } from "./text";
-import type { DayPlan, Handoff, PlanData, PlanItem } from "./types";
+import { type DayPlan, type Handoff, type PlanData, type PlanItem, placesMissing } from "./types";
 
 export const CAPS = { headsup: 3, highlight: 3, brief: 5 };
 
@@ -595,9 +595,11 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
         handoffs: [],
       });
     }
-    // Water and food: where they are, and the longest stretch without (riders judge what to carry, D48).
+    // Water and food: where they are, and the longest stretch without (riders judge what to carry, D48). Where the
+    // day's places didn't load, nothing is said: not loaded isn't none (D37).
     const lo = Math.min(d.fromM, d.toM);
     const hi = Math.max(d.fromM, d.toM);
+    const loaded = !placesMissing(full, lo, hi).length;
     const on = (svc: string[]) =>
       full.places
         .filter((p) => svc.includes(p.service) && p.counts && p.access_at_m >= lo && p.access_at_m <= hi)
@@ -607,7 +609,7 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
       [["water", "food"], water, "water"],
       [["food"], food, "food"],
     ] as const) {
-      if (!cfg?.gap_m) continue;
+      if (!cfg?.gap_m || !loaded) continue;
       const pts = [0, ...on([...svc]), d.km];
       let worst = 0;
       let at = 0;
@@ -641,7 +643,7 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
     const known = full.places.filter(
       (p) => p.service === "food" && p.counts && p.access_at_m >= lo && p.access_at_m <= hi && typeof p.detail.days === "string",
     );
-    if (known.length >= 3) {
+    if (loaded && known.length >= 3) {
       const open = known.filter((p) => {
         if (hol && /\bPH\b/.test(p.opening_hours ?? "")) return false;
         return (p.detail.days as string)[di] === "o";

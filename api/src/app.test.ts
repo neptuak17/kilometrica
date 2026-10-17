@@ -65,6 +65,7 @@ beforeAll(() => {
   const ownManifest = { ...manifest, visibility: "private", route: { ...manifest.route, id: "user:u0123456789", network: "user", ref: "u0123456789", name: "Pyrenees" } };
   writeFileSync(join(own, RUN, "manifest.json"), JSON.stringify(ownManifest));
   writeFileSync(join(own, RUN, "user_places.json"), JSON.stringify({ places: [] }));
+  writeFileSync(join(own, RUN, "places.json"), JSON.stringify(places));
 });
 
 afterAll(() => rmSync(dataDir, { recursive: true, force: true }));
@@ -92,6 +93,13 @@ describe("api v1", () => {
     );
     expect((await app().request("/v1/routes/eurovelo/ev8")).headers.get("cache-control")).toBe("public, no-cache");
     expect((await app().request("/v1/routes/private/user")).status).toBe(400);
+    // Its places too: the places say where the rider goes.
+    expect((await app().request(`/v1/routes/user/u0123456789/places?run=${RUN}`)).headers.get("cache-control")).toBe(
+      "private, max-age=31536000, immutable",
+    );
+    expect((await app().request(`/v1/routes/eurovelo/ev8/places?run=${RUN}`)).headers.get("cache-control")).toBe(
+      "public, max-age=31536000, immutable",
+    );
   });
 
   it("serves bundle files with content type and etag", async () => {
@@ -138,6 +146,14 @@ describe("api v1", () => {
     const limited = await get("limit=2");
     expect(limited.total).toBe(4);
     expect(limited.truncated).toBe(true);
+  });
+
+  it("compresses responses for clients that accept it", async () => {
+    const res = await app().request("/v1/routes/eurovelo/ev8/places", { headers: { "accept-encoding": "gzip" } });
+    expect(res.headers.get("content-encoding")).toBe("gzip");
+    const body = (await new Response(res.body!.pipeThrough(new DecompressionStream("gzip"))).json()) as { places: unknown[] };
+    expect(body.places).toHaveLength(4);
+    expect((await app().request("/v1/routes/eurovelo/ev8/places")).headers.get("content-encoding")).toBeNull();
   });
 
   it("rejects invalid place queries", async () => {

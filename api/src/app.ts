@@ -1,6 +1,7 @@
 /** HTTP API (v1). Runtime-neutral: the same app runs on Node now and on Cloudflare Workers later. */
 import { Hono } from "hono";
 import type { Context } from "hono";
+import { compress } from "hono/compress";
 import { PlacesCache, filterPlaces, parsePlaceQuery } from "./places";
 import { type BundleFile, type BundleStore, PRIVATE_DIR, readManifest } from "./store";
 
@@ -28,6 +29,8 @@ const CONTENT_TYPES: Record<BundleFile, string> = {
 
 export function createApp(store: BundleStore) {
   const app = new Hono();
+  // JSON compresses about sevenfold, and Plan's places for a long stretch run to tens of megabytes.
+  app.use(compress());
 
   app.get("/v1/health", (c) => c.json({ ok: true }));
 
@@ -109,8 +112,9 @@ export function createApp(store: BundleStore) {
       store.readFile(network, ref, runId, "places"),
     );
     if (file === null) return c.json({ error: "places not found" }, 404);
+    const scope = (await store.isPrivate(network, ref)) ? "private" : "public";
     return c.json(filterPlaces(file, query), 200, {
-      "cache-control": c.req.query("run") ? "public, max-age=31536000, immutable" : "no-cache",
+      "cache-control": c.req.query("run") ? `${scope}, max-age=31536000, immutable` : `${scope}, no-cache`,
     });
   });
 

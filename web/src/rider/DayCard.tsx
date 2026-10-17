@@ -20,6 +20,7 @@ import {
   type PlanData,
   type PlanItem,
   type PlanResult,
+  placesMissing,
   stopName,
 } from "@dpg/planner";
 import { useState } from "react";
@@ -103,6 +104,11 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   const ride = d.kind === "ride";
   const isLastRide = d.ride === plan.inputs.days;
 
+  // Parts of the day whose places didn't load, in the day's km: nothing is "none" there (D37).
+  const unloaded = (data.full ? placesMissing(data.full, Math.min(d.fromM, d.toM), Math.max(d.fromM, d.toM)) : []).map((r) =>
+    [kmOf(r.fromM), kmOf(r.toM)].sort((a, b) => a - b).map((x) => Math.round(Math.min(x, d.km))),
+  );
+  const unloadedText = unloaded.map(([a, b]) => `km ${a}–${b}`).join(", ");
   const waterFood = free ? [] : dayPlaces(data, d, ["water", "food"]).map((p) => ({ p, at: kmOf(p.access_at_m) })).sort((a, b) => a.at - b.at);
   const thinned: { p: Place; at: number }[] = [];
   for (const w of waterFood) if (!thinned.length || w.at - thinned[thinned.length - 1]!.at >= 5) thinned.push(w);
@@ -131,6 +137,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
             return known(a) - known(b) || (a.access_m ?? 0) - (b.access_m ?? 0);
           })
       : [];
+  const bedsUnloaded = !!night && !!data.full && placesMissing(data.full, night.stop.at_m - 5000, night.stop.at_m + 5000).length > 0;
   const chosen = night ? choices.beds[night.index] : undefined;
   const month = night ? MONTHS_LONG[monthOf(night.date)] : "";
 
@@ -177,7 +184,12 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
           {ride && (
             <div className="water">
               <div className="label">Water and food</div>
-              {waterFood.length ? (
+              {unloaded.length ? (
+                <>
+                  {waterFood.length > 0 && <div>km {thinned.map((w) => Math.round(w.at)).join(" · ")}</div>}
+                  <div className="muted">Places for {unloadedText} of this day didn't load: any there aren't shown.</div>
+                </>
+              ) : waterFood.length ? (
                 <div>
                   km {thinned.map((w) => Math.round(w.at)).join(" · ")} · longest gap {Math.round(longest)} km
                 </div>
@@ -218,6 +230,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                   })}
                 </ul>
               )}
+              {bedsUnloaded && <p className="muted small">The names of places to stay here didn't load: the count above is from the route's stops.</p>}
               <p className="muted small">Listed by what we know (open first, then by detour), never by quality: we have no prices or reviews.</p>
               <div className="planb">
                 Plan B:{" "}

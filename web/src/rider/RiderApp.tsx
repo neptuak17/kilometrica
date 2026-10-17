@@ -26,6 +26,7 @@ import {
   type PlanInputs,
   type PlanItem,
   type PlanResult,
+  placesMissing,
   readFragment,
   shareFragment,
   type Itinerary,
@@ -359,6 +360,8 @@ function PlanPage({ start }: { start: Start }) {
   const [readOnly, setReadOnly] = useState(start.readOnly);
   const [pass, setPass] = useState(readPass);
   const [full, setFull] = useState<FullFiles | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [retrying, setRetrying] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [pinned, setPinned] = useState<Pinned[]>([]);
   const [printing, setPrinting] = useState(false);
@@ -385,13 +388,14 @@ function PlanPage({ start }: { start: Start }) {
     let live = true;
     loadFull(start.network, start.ref, files.manifest.run_id, inputs.fromM, inputs.toM)
       .then((f) => live && setFull(f))
-      .catch((e: Error) => live && setError(e.message));
+      .catch((e: Error) => live && setError(e.message))
+      .finally(() => live && setRetrying(false));
     return () => {
       live = false;
     };
-    // Re-fetched only when the stretch crosses into other 50 km blocks (D31).
+    // Re-fetched only when the stretch crosses into other 50 km blocks (D31), or the rider tries again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [files, blockKey, pass]);
+  }, [files, blockKey, pass, attempt]);
 
   const data: PlanData | null = useMemo(() => (files ? { ...files.free, full: pass && full ? full.full : null } : null), [files, full, pass]);
   // The device's languages pick Wikipedia articles (they stay on the device, D30).
@@ -438,6 +442,9 @@ function PlanPage({ start }: { start: Start }) {
   const isPrivate = files.manifest.visibility === "private";
   const stale = start.doc && start.doc.route.runId !== files.manifest.run_id;
   const lockNight = (k: number, id: string) => choose((c) => ({ ...c, locked: { ...c.locked, [k]: id } }));
+  const unloaded = data.full
+    ? plan.days.filter((d) => d.kind === "ride" && placesMissing(data.full!, Math.min(d.fromM, d.toM), Math.max(d.fromM, d.toM)).length).map((d) => d.number)
+    : [];
 
   const onExport = (k: ExportKind) => {
     const name = fileSafe(doc.name);
@@ -489,7 +496,21 @@ function PlanPage({ start }: { start: Start }) {
       )}
       {stale && <div className="banner muted">This plan was made on an earlier audit of the route; it has been re-timed on the current one.</div>}
       {pass && !full && <div className="banner muted">Loading the Trip Pass detail for this stretch…</div>}
-      {full?.truncated && <div className="banner">Too many places on this stretch to load them all: some are missing.</div>}
+      {unloaded.length > 0 && (
+        <div className="banner">
+          Some places didn't load for {dayList(unloaded)}: water, food and places to stay may be missing there.{" "}
+          <button
+            type="button"
+            disabled={retrying}
+            onClick={() => {
+              setRetrying(true);
+              setAttempt((a) => a + 1);
+            }}
+          >
+            {retrying ? "Trying…" : "Try again"}
+          </button>
+        </div>
+      )}
 
       <div className="plan-grid">
         <aside className="plan-side">
@@ -615,6 +636,19 @@ function PlanPage({ start }: { start: Start }) {
       </footer>
     </div>
   );
+}
+
+/** "day 4", "days 15–21", "days 3, 7–9 and 12". */
+function dayList(ns: number[]): string {
+  const runs: string[] = [];
+  for (let i = 0; i < ns.length; ) {
+    let j = i;
+    while (j + 1 < ns.length && ns[j + 1] === ns[j]! + 1) j++;
+    runs.push(i === j ? `${ns[i]}` : `${ns[i]}–${ns[j]}`);
+    i = j + 1;
+  }
+  const last = runs.pop()!;
+  return `${ns.length === 1 ? "day" : "days"} ${runs.length ? `${runs.join(", ")} and ${last}` : last}`;
 }
 
 export function RiderApp() {
