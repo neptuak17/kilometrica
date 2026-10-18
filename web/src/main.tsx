@@ -1,14 +1,9 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "maplibre-gl/dist/maplibre-gl.css";
-import "./maplibre-worker";
-import "./styles.css";
-import { App } from "./App";
-import { DreamApp } from "./rider/DreamPage";
-import { RiderApp } from "./rider/RiderApp";
-
-// /dream and /plan are the rider view (M4, A1): apart from the audit viewer, which is ours (D43).
+/**
+ * Picks the page by its path and loads only that page's code and styles: /ui is the new UI kit (shadcn, D53), whose
+ * Tailwind reset must not reach the current pages; everything else is the audit viewer or the rider view.
+ */
+const root = document.getElementById("root")!;
 const path = window.location.pathname;
-const page = path.startsWith("/dream") ? <DreamApp /> : path.startsWith("/plan") ? <RiderApp /> : <App />;
 
-createRoot(document.getElementById("root")!).render(<StrictMode>{page}</StrictMode>);
+if (path.startsWith("/ui")) void import("./ui/preview").then((m) => m.mount(root));
+else void import("./pages").then((m) => m.mount(root, path));
