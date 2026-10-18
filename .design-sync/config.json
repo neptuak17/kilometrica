@@ -7,6 +7,8 @@
   "entry": "packages/ui/dist/index.js",
   "srcDir": "src",
   "cssEntry": "dist/styles.css",
+  "tokensPkg": "@dpg/ui",
+  "tokensGlob": "dist/tokens.css",
   "overrides": {
     "Dialog": {
       "cardMode": "single",

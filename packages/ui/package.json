@@ -17,7 +17,7 @@
     "types": "dist/index.d.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && tailwindcss -i src/styles/kit.css -o dist/styles.css && node scripts/copy-fonts.mjs",
+    "build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && tailwindcss -i src/styles/kit.css -o dist/styles.css && node scripts/copy-fonts.mjs && node scripts/split-tokens.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

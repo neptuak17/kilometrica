@@ -27,7 +27,7 @@ Only compiled classes work; arbitrary values such as `bg-[#123456]` or `w-[37px]
 
 ## Where the truth lives
 
-`styles.css` (it imports the compiled `_ds_bundle.css`); per component, `components/<group>/<Name>/<Name>.d.ts` for props and `<Name>.prompt.md` for usage. Kilometrica's own pieces are `StretchCard`, `DayRow` and `ChangeBar` (group `km`).
+`styles.css` (it imports `tokens/tokens.css`, the fonts and the compiled `_ds_bundle.css`); `tokens/tokens.css` for every colour's value, light in `:root` and dark in `.dark`; per component, `components/<group>/<Name>/<Name>.d.ts` for props and `<Name>.prompt.md` for usage. Kilometrica's own pieces are `StretchCard`, `DayRow` and `ChangeBar` (group `km`).
 
 ## Kilometrica's design rules
 
