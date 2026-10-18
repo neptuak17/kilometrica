@@ -1099,3 +1099,113 @@
     grid-template-columns: 1fr;
   }
 }
+
+.glance {
+  margin: 8px 0 16px;
+}
+
+.glance h2 {
+  margin-bottom: 2px;
+}
+
+.glance-table {
+  overflow-x: auto;
+}
+
+.glance-table table {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 12.5px;
+  width: 100%;
+}
+
+.glance-table th {
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+  padding-right: 6px;
+}
+
+.glance-table thead th {
+  text-align: center;
+  padding: 0;
+}
+
+.rider .glance-table thead button {
+  border: none;
+  background: none;
+  padding: 0 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.rider .glance-table thead button.on {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.glance-table td {
+  height: 16px;
+  min-width: 14px;
+  border-radius: 3px;
+}
+
+.glance-table td.none {
+  background: #e9ecef;
+}
+
+.glance-table td.col {
+  outline: 2px solid var(--accent);
+}
+
+.rider .chip.unset {
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dream-page .results .prompt {
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--selected);
+}
+
+.dream-page .more-row {
+  display: flex;
+  gap: 16px;
+}
+
+.dream-page .own {
+  margin-top: 22px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.own-pick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.own-pick label {
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.own-pick select {
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font: inherit;
+  color: var(--text);
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .own-pick {
+    grid-template-columns: 1fr;
+  }
+}

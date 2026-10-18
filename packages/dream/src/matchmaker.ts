@@ -174,29 +174,41 @@ function monthOf(sections: DreamSection[], month: number | null): number | null 
   return best;
 }
 
-function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery): StretchResult | null {
+/**
+ * A run against the query. A search (`strict`) drops runs outside the rider's level or needs; a stretch the rider
+ * picked is never dropped, and says instead where it goes beyond them.
+ */
+function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = true): StretchResult | null {
   const level = dream.levels.find((l) => l.level === q.level) ?? dream.levels[2];
   if (!level) return null;
+  const beyond: string[] = [];
   const secs = way === "forward" ? run.sections : [...run.sections].reverse();
   const totalM = secs.reduce((a, s) => a + s.length_m, 0) + run.gapM;
   const kmPerDay = totalM / 1000 / q.days;
-  if (kmPerDay > level.km_max * (1 + TOLERANCE) || kmPerDay < level.km_min * (1 - 3 * TOLERANCE)) return null;
+  if (kmPerDay > level.km_max * (1 + TOLERANCE)) {
+    if (strict) return null;
+    beyond.push(`${Math.round(kmPerDay)} km a day: more than ${level.name}'s ${level.km_max} km`);
+  }
+  if (strict && kmPerDay < level.km_min * (1 - 3 * TOLERANCE)) return null;
   const climb = climbOf(secs, way);
   climb.unknownM += run.gapM; // nothing is known of the terrain across an unfilled gap (D37)
   const partly = climb.unknownM > 0;
   // Known climbing per day: complete, or a minimum when part is unknown. A minimum already over the limit rules the
   // run out as surely as a complete figure.
   const climbKnown = climb.metres === null ? null : climb.metres / q.days;
-  if (climbKnown !== null && climbKnown > level.climb_max_m * (1 + 3 * TOLERANCE)) return null;
+  if (climbKnown !== null && climbKnown > level.climb_max_m * (1 + 3 * TOLERANCE)) {
+    if (strict) return null;
+    beyond.push(`${partly ? "at least " : ""}${Math.round(climbKnown)} m of climbing a day: more than ${level.name}'s ${level.climb_max_m} m`);
+  }
   const climbPerDay = partly ? null : climbKnown;
 
   const first = secs[0]!;
   const last = secs[secs.length - 1]!;
   const stationStart = way === "forward" ? first.station_start : first.station_end;
   const stationEnd = way === "forward" ? last.station_end : last.station_start;
-  if (q.trainBothEnds && (!stationStart || !stationEnd)) return null;
+  if (strict && q.trainBothEnds && (!stationStart || !stationEnd)) return null;
   const busyShare = weighted(secs, (s) => s.busy_share) ?? 0;
-  if (q.avoidBusy && busyShare > 0.15) return null;
+  if (strict && q.avoidBusy && busyShare > 0.15) return null;
 
   const surfaces = {
     road: weighted(secs, (s) => s.surfaces.road) ?? 0,
@@ -205,7 +217,7 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery): StretchR
     unknown: weighted(secs, (s) => s.surfaces.unknown) ?? 0,
   };
   const why: string[] = [];
-  const watch: string[] = [];
+  const watch: string[] = [...beyond];
   const check = new Set<string>();
   const parts: [number, number][] = [];
 
@@ -358,6 +370,36 @@ function overlap(a: StretchResult, b: StretchResult): number {
   const hi = Math.min(a.last, b.last);
   if (hi < lo) return 0;
   return (hi - lo + 1) / Math.min(a.last - a.first + 1, b.last - b.first + 1);
+}
+
+/**
+ * One stretch the rider picked (11.7): daily sections `from` to `to`, ridden from the first towards the second (the
+ * other way when `from` is the later one). Described like a search result but never ruled out: what goes beyond the
+ * rider's level or needs is listed to watch. Without `days`, the days are those of a middling day at the level.
+ */
+export function describeStretch(dream: DreamFile, from: number, to: number, q: Omit<DreamQuery, "days"> & { days: number | null }): StretchResult | null {
+  const lo = Math.min(from, to);
+  const hi = Math.max(from, to);
+  const ordered = [...dream.sections].sort((a, b) => a.from_m - b.from_m);
+  const sections = ordered.filter((s) => s.number >= lo && s.number <= hi);
+  if (!sections.length) return null;
+  const breaks = new Map(dream.breaks.filter((b) => b.type !== "discontinuity").map((b) => [b.after_section, b]));
+  let gapM = 0;
+  const crossings: string[] = [];
+  for (const s of sections.slice(0, -1)) {
+    const b = breaks.get(s.number);
+    if (!b) continue;
+    if (b.type === "missing") {
+      gapM += b.straight_distance_m;
+      crossings.push(`${km(b.straight_distance_m)} km gap in the route after section ${s.number}, counted as ridden`);
+    } else {
+      crossings.push(`${b.type.replaceAll("_", " ")} after section ${s.number} (${km(b.straight_distance_m)} km)`);
+    }
+  }
+  const level = dream.levels.find((l) => l.level === q.level) ?? dream.levels[2];
+  const totalKm = (sections.reduce((a, s) => a + s.length_m, 0) + gapM) / 1000;
+  const days = q.days ?? Math.max(1, Math.ceil(totalKm / (level ? (level.km_min + level.km_max) / 2 : 65)));
+  return evaluate(dream, { sections, crossings, gapM }, from <= to ? "forward" : "reverse", { ...q, days }, false);
 }
 
 /** Ranked, non-overlapping stretches for the query (at most `limit`, default 10). */

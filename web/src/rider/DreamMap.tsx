@@ -1,6 +1,7 @@
 /**
- * Dream's map (11.7): the whole route in grey, the stretches that fit on top, the chosen one in orange. Clicking a
- * stretch chooses it. MapLibre with the OpenFreeMap basemap, as in Plan.
+ * Dream's map (11.7): the whole route, the stretches that fit on it with their numbers, the chosen one in orange.
+ * It shows the whole route until a stretch is chosen, then frames that stretch. Clicking a stretch chooses it.
+ * MapLibre with the OpenFreeMap basemap, as in Plan.
  */
 import { type Geometry, slice } from "@dpg/planner";
 import {
@@ -16,6 +17,7 @@ import { useEffect, useMemo, useRef } from "react";
 
 const BASEMAP = "https://tiles.openfreemap.org/styles/positron";
 type FC = { type: "FeatureCollection"; features: { properties: { key: string }; geometry: { coordinates: [number, number][] } }[] };
+type Points = { type: "FeatureCollection"; features: unknown[] };
 
 export interface MapStretch {
   key: string;
@@ -23,12 +25,14 @@ export interface MapStretch {
   toM: number;
   /** Chosen, or one of the two compared. */
   on: boolean;
+  /** Its number in the list, shown on the map; empty for none. */
+  label: string;
 }
 
 interface Props {
   geometry: Geometry;
   stretches: MapStretch[];
-  /** The stretch to frame; null frames them all. */
+  /** The stretch to frame; null shows the whole route. */
   focus: string | null;
   onPick: (key: string) => void;
   attribution: string[];
@@ -40,6 +44,19 @@ function features(geo: Geometry, stretches: MapStretch[]): FC {
     for (const seg of slice(geo, s.fromM, s.toM)) {
       out.push({ type: "Feature", properties: { key: s.key, on: s.on ? 1 : 0 }, geometry: { type: "LineString", coordinates: seg } } as FC["features"][number]);
     }
+  }
+  return { type: "FeatureCollection", features: out };
+}
+
+/** A stretch's number, at the middle of its longest piece. */
+function labels(lines: FC, stretches: MapStretch[]): Points {
+  const out: unknown[] = [];
+  for (const s of stretches) {
+    if (!s.label) continue;
+    const pieces = lines.features.filter((f) => f.properties.key === s.key).map((f) => f.geometry.coordinates);
+    const longest = pieces.sort((a, b) => b.length - a.length)[0];
+    const at = longest?.[Math.floor(longest.length / 2)];
+    if (at) out.push({ type: "Feature", properties: { label: s.label, on: s.on ? 1 : 0 }, geometry: { type: "Point", coordinates: at } });
   }
   return { type: "FeatureCollection", features: out };
 }
@@ -60,12 +77,16 @@ export function DreamMap({ geometry, stretches, focus, onPick, attribution }: Pr
   const map = useRef<MapLibreMap | null>(null);
   const ready = useRef(false);
   const data = useMemo(() => features(geometry, stretches), [geometry, stretches]);
+  const points = useMemo(() => labels(data, stretches), [data, stretches]);
+  const whole = useMemo(() => boundsOf(geometry.lines.map((l) => l.coords)), [geometry]);
+  // Framed only when the focus changes, so the rider's own panning survives a new list.
   const frame = useMemo(() => {
-    const picked = data.features.filter((f) => focus === null || f.properties.key === focus).map((f) => f.geometry.coordinates);
-    return boundsOf(picked) ?? boundsOf(geometry.lines.map((l) => l.coords));
-  }, [data, focus, geometry]);
-  const latest = useRef({ data, frame, onPick });
-  latest.current = { data, frame, onPick };
+    if (focus === null) return whole;
+    return boundsOf(data.features.filter((f) => f.properties.key === focus).map((f) => f.geometry.coordinates)) ?? whole;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, whole, focus === null ? null : data]);
+  const latest = useRef({ data, points, frame, onPick });
+  latest.current = { data, points, frame, onPick };
 
   useEffect(() => {
     if (!container.current) return;
@@ -90,7 +111,8 @@ export function DreamMap({ geometry, stretches, focus, onPick, attribution }: Pr
         data: { type: "FeatureCollection", features: geometry.lines.map((l) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: l.coords } })) } as GeoJSONSourceSpecification["data"],
       });
       m.addSource("stretches", { type: "geojson", data: latest.current.data as unknown as GeoJSONSourceSpecification["data"] });
-      m.addLayer({ id: "route", type: "line", source: "route", paint: { "line-color": "#adb5bd", "line-width": 2 } });
+      m.addSource("labels", { type: "geojson", data: latest.current.points as GeoJSONSourceSpecification["data"] });
+      m.addLayer({ id: "route", type: "line", source: "route", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#495057", "line-width": 2.5, "line-opacity": 0.75 } });
       m.addLayer({ id: "stretch-casing", type: "line", source: "stretches", layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": "#ffffff", "line-width": ["match", ["get", "on"], 1, 9, 7] } });
       m.addLayer({
         id: "stretches",
@@ -98,6 +120,19 @@ export function DreamMap({ geometry, stretches, focus, onPick, attribution }: Pr
         source: "stretches",
         layout: { "line-cap": "round", "line-join": "round" },
         paint: { "line-color": ["match", ["get", "on"], 1, "#f08c00", "#1c7ed6"], "line-width": ["match", ["get", "on"], 1, 6, 4] },
+      });
+      m.addLayer({
+        id: "label-dots",
+        type: "circle",
+        source: "labels",
+        paint: { "circle-radius": 10, "circle-color": ["match", ["get", "on"], 1, "#f08c00", "#1c7ed6"], "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 },
+      });
+      m.addLayer({
+        id: "label-text",
+        type: "symbol",
+        source: "labels",
+        layout: { "text-field": ["get", "label"], "text-size": 12, "text-font": ["Noto Sans Bold"], "text-allow-overlap": true, "icon-allow-overlap": true },
+        paint: { "text-color": "#ffffff" },
       });
       m.on("click", "stretches", (e) => {
         const key = e.features?.[0]?.properties?.key;
@@ -121,11 +156,19 @@ export function DreamMap({ geometry, stretches, focus, onPick, attribution }: Pr
     if (!m) return;
     const update = () => {
       (m.getSource("stretches") as GeoJSONSource | undefined)?.setData(data as unknown as GeoJSONSourceSpecification["data"] & object);
-      if (frame) m.fitBounds(frame, { padding: 40, maxZoom: 11, duration: 400 });
+      (m.getSource("labels") as GeoJSONSource | undefined)?.setData(points as GeoJSONSourceSpecification["data"] & object);
     };
     if (ready.current) update();
     else m.once("style.load", update);
-  }, [data, frame]);
+  }, [data, points]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !frame) return;
+    const fit = () => m.fitBounds(frame, { padding: 40, maxZoom: 11, duration: 400 });
+    if (ready.current) fit();
+    else m.once("style.load", fit);
+  }, [frame]);
 
   return <div className="dream-map" ref={container} />;
 }

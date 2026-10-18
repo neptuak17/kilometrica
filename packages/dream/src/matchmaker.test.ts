@@ -1,6 +1,6 @@
 import type { DreamFile, DreamSection } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
-import { type DreamQuery, findStretches, gradeFor } from "./matchmaker";
+import { describeStretch, type DreamQuery, findStretches, gradeFor } from "./matchmaker";
 
 const LEVELS = [
   { level: 1, name: "Leisurely", km_min: 20, km_max: 40, climb_max_m: 300 },
@@ -186,6 +186,31 @@ describe("findStretches", () => {
     const hilly = ten.map((s) => section(s.number, { ascent_fwd_m: 1500, ascent_rev_m: 200 }));
     expect(findStretches(dream(hilly), { ...base, days: 4, direction: "forward" })).toHaveLength(0);
     expect(findStretches(dream(hilly), { ...base, days: 4, direction: "reverse" }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("describeStretch", () => {
+  const ten = Array.from({ length: 10 }, (_, i) => section(i + 1));
+
+  it("describes a stretch the rider picked, with the days of a middling day at the level", () => {
+    const r = describeStretch(dream(ten), 2, 5, { ...base, days: null });
+    expect(r).toMatchObject({ first: 2, last: 5, way: "forward", km: 200, days: 4 }); // 200 km at Moderate's 65 km
+    expect(describeStretch(dream(ten), 5, 2, { ...base, days: null })?.way).toBe("reverse");
+  });
+
+  it("never rules it out, but says where it goes beyond the level or needs", () => {
+    const noStation = ten.map((s) => section(s.number, { station_start: null, station_end: null }));
+    const r = describeStretch(dream(noStation), 1, 10, { ...base, days: 2, trainBothEnds: true });
+    expect(r).not.toBeNull();
+    expect(r!.watch.some((w) => w.startsWith("250 km a day: more than Moderate's 80 km"))).toBe(true);
+    expect(r!.watch).toContain("no bike-carrying station found at one end");
+  });
+
+  it("counts an unfilled gap it crosses as ridden (D50)", () => {
+    const d = dream(ten, [{ after_section: 5, type: "missing", straight_distance_m: 30_000, hard: true }]);
+    const r = describeStretch(d, 4, 7, { ...base, days: null });
+    expect(r!.km).toBe(230);
+    expect(r!.watch.some((w) => w.includes("30 km gap in the route"))).toBe(true);
   });
 });
 
