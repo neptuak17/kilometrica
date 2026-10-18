@@ -24,7 +24,7 @@ Route audits and Dream–Plan–Go trip support for long-distance cycle routes, 
 - Assistant foundations (A1, no model yet):
   - Dream for riders at `http://localhost:5173/dream`: example trips, the question as chips, the three stretches that fit best with their why, two compared side by side, and "Plan this";
   - in Plan, every change can be undone (Ctrl+Z) and says what it changed; a call's option shows on the plan first, with Apply or Discard.
-- The new UI kit (D53), at `http://localhost:5173/ui`: shadcn/ui on React Aria with the chosen preset, Kilometrica's own colours, and a stretch card, day row and change bar in the new style. The current pages don't use it yet.
+- The new UI kit (D53), the `@dpg/ui` package, previewed at `http://localhost:5173/ui`: shadcn/ui on React Aria with the chosen preset, Kilometrica's own colours, icons, and a stretch card, day row and change bar in the new style. It is synced to Claude Design (settings in `.design-sync/`); the current pages don't use it yet.
 
 ## Layout
 
@@ -37,6 +37,7 @@ Route audits and Dream–Plan–Go trip support for long-distance cycle routes, 
 | `web/` | Prototype viewer (Vite + React + MapLibre) |
 | `packages/contracts/` | TypeScript types generated from `schemas/` |
 | `packages/dream/` | The Dream matchmaker (TypeScript), shared by the viewer and later the app |
+| `packages/ui/` | The UI kit `@dpg/ui` (D53): shadcn/ui on React Aria with Kilometrica's preset and tokens; `npm run build -w @dpg/ui` builds what Claude Design syncs |
 | `packages/planner/` | Plan (TypeScript, pure): pace model, stage planner, plan items, plan actions and what changed, plan document, share links, exports |
 | `schemas/` | JSON Schema of the bundle format (generated from the engine's models) |
 | `docs/` | Design, data-licence register, setup guides, notes |

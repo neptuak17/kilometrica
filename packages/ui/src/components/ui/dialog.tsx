@@ -13,7 +13,7 @@ import {
   type ModalOverlayProps as ModalOverlayPrimitiveProps,
 } from "react-aria-components"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@dpg/ui/components/ui/button"
 import { XIcon } from "lucide-react"
 
 function DialogTrigger({ ...props }: DialogTriggerPrimitiveProps) {

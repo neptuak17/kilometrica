@@ -6,28 +6,58 @@
 import { Bike, Info, Map, Moon, Sun } from "lucide-react"
 import { StrictMode, useState } from "react"
 import { createRoot } from "react-dom/client"
-import { TextField } from "react-aria-components"
-import "./theme.css"
+import "@dpg/ui/theme.css"
 
-import { ChangeBar } from "@/components/km/change-bar"
-import { DayRow, type Effort } from "@/components/km/day-row"
-import { StretchCard } from "@/components/km/stretch-card"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Dialog, DialogClose, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Popover, PopoverTrigger } from "@/components/ui/popover"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Tooltip, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  ChangeBar,
+  Checkbox,
+  DayRow,
+  Dialog,
+  DialogClose,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  type Effort,
+  Input,
+  Label,
+  Popover,
+  PopoverTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
+  StretchCard,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  TextField,
+  ToggleGroup,
+  ToggleGroupItem,
+  Tooltip,
+  TooltipTrigger,
+} from "@dpg/ui"
 
 const SWATCHES: [string, string][] = [
   ["Background", "bg-background"],
@@ -363,8 +393,8 @@ function Preview() {
 
           <Separator />
           <p className="text-xs text-muted-foreground">
-            Kilometrica UI kit · shadcn/ui on React Aria (D53) · components in <code>web/src/components</code>, colours in{" "}
-            <code>web/src/ui</code>.
+            Kilometrica UI kit · shadcn/ui on React Aria (D53) · the <code>@dpg/ui</code> package: components in{" "}
+            <code>packages/ui/src/components</code>, colours in <code>packages/ui/src/styles</code>.
           </p>
         </main>
       </div>

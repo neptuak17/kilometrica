@@ -4,6 +4,8 @@
 @import "@fontsource-variable/inter";
 /* Kilometrica's purpose-named tokens; keep this line if `shadcn apply` rewrites the file. */
 @import "./kilometrica.css";
+/* The kit's own sources, for Tailwind's class scan when an app imports this file. */
+@source "../";
 
 @custom-variant dark (&:is(.dark *));
 

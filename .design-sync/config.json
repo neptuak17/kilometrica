@@ -1,0 +1,41 @@
+{
+  "projectId": "268ea801-e5a3-402e-bdd9-59f0e43c786e",
+  "pkg": "@dpg/ui",
+  "globalName": "KilometricaUI",
+  "shape": "package",
+  "buildCmd": "npm run build -w @dpg/ui",
+  "entry": "packages/ui/dist/index.js",
+  "srcDir": "src",
+  "cssEntry": "dist/styles.css",
+  "overrides": {
+    "Dialog": {
+      "cardMode": "single",
+      "viewport": "640x440",
+      "primaryStory": "Open"
+    },
+    "Popover": {
+      "cardMode": "single",
+      "viewport": "520x280"
+    },
+    "Tooltip": {
+      "cardMode": "single",
+      "viewport": "360x160"
+    },
+    "Table": {
+      "cardMode": "column"
+    },
+    "ChangeBar": {
+      "cardMode": "column"
+    },
+    "DayRow": {
+      "cardMode": "column"
+    },
+    "StretchCard": {
+      "cardMode": "column"
+    }
+  },
+  "componentSrcMap": {
+    "Icons": null
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

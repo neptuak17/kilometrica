@@ -6,11 +6,11 @@ import { ArrowRight, Check, CircleHelp, TriangleAlert } from "lucide-react"
 import { cn } from "cn"
 import { useId } from "react"
 
-import { Badge } from "@/components/ui/badge"
-import { LinkButton } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
+import { Badge } from "@dpg/ui/components/ui/badge"
+import { LinkButton } from "@dpg/ui/components/ui/button"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@dpg/ui/components/ui/card"
+import { Checkbox } from "@dpg/ui/components/ui/checkbox"
+import { Label } from "@dpg/ui/components/ui/label"
 
 export interface StretchCardProps {
   rank?: number

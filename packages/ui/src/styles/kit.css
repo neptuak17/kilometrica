@@ -1,0 +1,33 @@
+/*
+ * The kit's stylesheet as synced to Claude Design (D53): the theme, plus the utility classes a design agent needs
+ * for its own layout and Kilometrica's purpose-named colours. Tailwind only generates classes it finds in source,
+ * so these are listed here; the web app imports theme.css instead and gets the classes its own pages use.
+ */
+@import "./theme.css";
+
+/* The Claude Design preview cards (.design-sync/previews) use these classes too. */
+@source "../../../../.design-sync/previews";
+
+/* Layout */
+@source inline("{,sm:,md:,lg:}{block,inline-block,inline-flex,flex,grid,hidden,contents}");
+@source inline("{flex-row,flex-col,flex-wrap,flex-1,shrink-0,grow,items-start,items-center,items-end,items-stretch,items-baseline,justify-start,justify-center,justify-end,justify-between,self-start,self-center,self-end,content-start}");
+@source inline("{,sm:,md:,lg:}grid-cols-{1,2,3,4,6,12}");
+@source inline("col-span-{1,2,3,4,full}");
+@source inline("{,sm:,md:}{gap,gap-x,gap-y}-{0,0.5,1,1.5,2,3,4,5,6,8,10,12}");
+@source inline("{,sm:,md:}{p,px,py,pt,pb,pl,pr,m,mx,my,mt,mb,ml,mr}-{0,0.5,1,1.5,2,3,4,5,6,8,10,12,16}");
+@source inline("{mx-auto,ml-auto,mr-auto,space-y-1,space-y-2,space-y-3,space-y-4,space-y-6}");
+@source inline("{w-full,w-fit,w-auto,h-full,h-fit,min-h-screen,min-w-0,size-3,size-4,size-5,size-6,size-8,size-10}");
+@source inline("{max-w-xs,max-w-sm,max-w-md,max-w-lg,max-w-xl,max-w-2xl,max-w-3xl,max-w-4xl,max-w-5xl,max-w-6xl,max-w-prose}");
+@source inline("{relative,absolute,fixed,sticky,inset-0,top-0,bottom-0,left-0,right-0,z-10,z-20,z-50,overflow-hidden,overflow-auto,overflow-x-auto,overflow-y-auto}");
+
+/* Type */
+@source inline("{,sm:,md:}text-{xs,sm,base,lg,xl,2xl,3xl,4xl}");
+@source inline("{font-normal,font-medium,font-semibold,font-bold,font-heading,font-sans,tracking-tight,leading-none,leading-tight,leading-snug,leading-normal,leading-relaxed,text-left,text-center,text-right,truncate,tabular-nums,uppercase,italic,underline,whitespace-nowrap,line-clamp-2,line-clamp-3}");
+
+/* Colour: the preset's and Kilometrica's own */
+@source inline("{bg,text,border,ring,fill,stroke}-{background,foreground,card,card-foreground,popover,popover-foreground,primary,primary-foreground,secondary,secondary-foreground,muted,muted-foreground,accent,accent-foreground,destructive,border,input,ring}");
+@source inline("{bg,text,border,ring,fill,stroke}-{headsup,headsup-foreground,highlight,highlight-foreground,unknown,unknown-foreground,effort-within,effort-harder,effort-beyond,route,route-chosen}");
+@source inline("{bg,text,border}-{primary,headsup,highlight,unknown,muted}/{10,20,30,50}");
+
+/* Surfaces */
+@source inline("{border,border-t,border-b,border-l,border-r,border-0,rounded-md,rounded-lg,rounded-xl,rounded-2xl,rounded-3xl,rounded-full,shadow-sm,shadow-md,shadow-lg,ring-1,ring-2,opacity-50,opacity-70,backdrop-blur}");

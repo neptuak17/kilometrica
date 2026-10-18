@@ -5,7 +5,7 @@
 import { Undo2, X } from "lucide-react"
 import { cn } from "cn"
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@dpg/ui/components/ui/button"
 
 export interface ChangeBarProps {
   mode: "preview" | "changed" | "undone"
