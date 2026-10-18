@@ -786,3 +786,316 @@
     display: block;
   }
 }
+
+/* --- changes: undo, previews and what changed (11.7) ------------------------------------------------------- */
+
+.rider-bar .history {
+  display: flex;
+  gap: 4px;
+  margin-right: 12px;
+}
+
+.rider-bar .history button:disabled {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+.change-bar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.change-bar.preview {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--selected);
+  border-bottom-color: var(--accent);
+}
+
+.change-bar .change-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.change-bar .all-changes summary {
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.change-bar .all-changes ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.day-list li.changed button {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.calls .call-options button.on {
+  background: var(--selected);
+  border-color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .change-bar {
+    flex-direction: column;
+  }
+}
+
+/* --- Dream for riders (11.7) ------------------------------------------------------------------------------ */
+
+.rider a.button {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  text-decoration: none;
+}
+
+.rider a.button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.dream-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 480px) minmax(0, 1fr);
+  align-items: start;
+}
+
+.dream-side {
+  padding: 14px 16px 24px;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  min-height: calc(100vh - 46px);
+}
+
+.dream-main {
+  position: sticky;
+  top: 46px;
+  height: calc(100vh - 46px);
+}
+
+.dream-map {
+  height: 100%;
+  min-height: 260px;
+}
+
+.dream-page .examples {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0 14px;
+}
+
+.dream-page .examples button {
+  display: grid;
+  text-align: left;
+  padding: 8px 10px;
+}
+
+.dream-page .examples button span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rider .chip {
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 13.5px;
+}
+
+.rider .chip.open,
+.rider .chip.toggle.on {
+  background: var(--selected);
+  border-color: var(--accent);
+}
+
+.rider .chip.toggle:not(.on) {
+  color: var(--muted);
+}
+
+.chip-editor {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  display: grid;
+  gap: 8px;
+}
+
+.chip-editor .levels {
+  display: grid;
+  gap: 6px;
+}
+
+.chip-editor .levels button {
+  display: grid;
+  text-align: left;
+}
+
+.chip-editor .levels button span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.chip-editor .months,
+.chip-editor .themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip-editor button.on {
+  background: var(--selected);
+  border-color: var(--accent);
+}
+
+.chip-editor .surface-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chip-editor .days-edit input {
+  width: 80px;
+  margin-left: 8px;
+}
+
+.chip-editor .done {
+  justify-self: end;
+}
+
+.dream-page .results {
+  margin-top: 18px;
+}
+
+.stretch-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0 0 10px;
+  background: var(--panel);
+}
+
+.stretch-card.on {
+  border-color: #f08c00;
+  box-shadow: 0 0 0 1px #f08c00;
+}
+
+.rider .stretch-card .stretch-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: none;
+  background: none;
+  padding: 0;
+  font-weight: 600;
+  font-size: 16px;
+  text-align: left;
+}
+
+.stretch-card .rank {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.stretch-card .facts,
+.stretch-card .when {
+  margin-top: 4px;
+  font-size: 13.5px;
+}
+
+.stretch-card .when {
+  color: var(--muted);
+}
+
+.stretch-card ul {
+  margin: 6px 0 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 13.5px;
+}
+
+.stretch-card ul.why li::before {
+  content: "✓ ";
+  color: #2f9e44;
+}
+
+.stretch-card ul.watch li::before {
+  content: "⚠ ";
+  color: #e8590c;
+}
+
+.stretch-card .checks {
+  margin-top: 6px;
+  font-size: 13.5px;
+}
+
+.stretch-card .checks summary {
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.stretch-card .card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.dream-compare {
+  margin-top: 18px;
+}
+
+.dream-compare td,
+.dream-compare th {
+  vertical-align: top;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .dream-grid {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .dream-side {
+    border-right: none;
+    min-height: 0;
+  }
+
+  .dream-main {
+    position: static;
+    height: 34vh;
+    width: 100%;
+  }
+
+  .dream-page .examples {
+    grid-template-columns: 1fr;
+  }
+}

@@ -96,3 +96,16 @@ export const COUNTRY_NAMES: Record<string, string> = {
 };
 
 export const country = (cc: string | null | undefined) => (cc ? (COUNTRY_NAMES[cc] ?? cc) : "this country");
+
+/** "4", "15–21", "3, 7–9 and 12" (sorted numbers). */
+export function numberList(ns: number[]): string {
+  const runs: string[] = [];
+  for (let i = 0; i < ns.length; ) {
+    let j = i;
+    while (j + 1 < ns.length && ns[j + 1] === ns[j]! + 1) j++;
+    runs.push(i === j ? `${ns[i]}` : `${ns[i]}–${ns[j]}`);
+    i = j + 1;
+  }
+  const last = runs.pop() ?? "";
+  return runs.length ? `${runs.join(", ")} and ${last}` : last;
+}

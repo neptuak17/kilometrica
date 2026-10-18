@@ -6,9 +6,8 @@
  *   /plan?plan=<id>                                                      a plan kept in this browser
  *   /plan#p=…  /plan#i=…                                                 a shared plan or itinerary (read-only)
  */
-import type { RouteListing } from "../api";
-import { listRoutes, loadManifest, listingOf } from "../api";
 import {
+  applyAction,
   calendarFile,
   choicesOf,
   dayGpx,
@@ -20,12 +19,17 @@ import {
   makePlan,
   NO_CHOICES,
   newId,
+  numberList,
+  optionOutcome,
+  type PlanAction,
+  planChanges,
   type PlanChoices,
   type PlanData,
   type PlanDocument,
   type PlanInputs,
   type PlanItem,
   type PlanResult,
+  type PlanState,
   placesMissing,
   readFragment,
   shareFragment,
@@ -37,16 +41,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { BeforeYouGo, type ExportKind } from "./BeforeYouGo";
 import { Brief, DayList, EffortChart } from "./Brief";
 import { Calls } from "./Calls";
+import { ChangeBar } from "./ChangeBar";
 import { loadFull, loadRoute, type FullFiles, type RouteFiles } from "./data";
 import { DayCard } from "./DayCard";
+import { type Step, usePlanHistory } from "./history";
 import { PlanMap } from "./PlanMap";
 import { Profile } from "./Profile";
 import { Questions } from "./Questions";
+import { useRouteList } from "./routes";
 import { deletePlan, download, fileSafe, savedPlans, savePlan } from "./storage";
 import "./rider.css";
 
 const PASS_KEY = "dpg.tripPass";
-const PRIVATE_KEY = "dpg.privateRoutes";
 
 function readPass(): boolean {
   try {
@@ -139,33 +145,20 @@ function initialInputs(files: RouteFiles, s: Start["inputs"]): { inputs: PlanInp
 // --- start page ---------------------------------------------------------------------------------------------
 
 function StartPage() {
-  const [routes, setRoutes] = useState<RouteListing[]>([]);
+  const routes = useRouteList();
   const [plans, setPlans] = useState(savedPlans);
-  useEffect(() => {
-    void (async () => {
-      const list = await listRoutes().catch((): RouteListing[] => []);
-      let remembered: string[] = [];
-      try {
-        remembered = JSON.parse(localStorage.getItem(PRIVATE_KEY) ?? "[]") as string[];
-      } catch {
-        /* none */
-      }
-      for (const key of remembered) {
-        const [n = "", r = ""] = key.split("/");
-        const m = await loadManifest(n, r).catch(() => null);
-        if (m) list.push(listingOf(m));
-      }
-      setRoutes(list);
-    })();
-  }, []);
   return (
     <div className="rider start">
       <header className="rider-bar">
         <span className="brand">Kilometrica</span> <span className="muted">Plan</span>
+        <span className="spacer" />
+        <a href="/dream">Dream ›</a>
       </header>
       <main className="start-main">
         <h1>Plan a trip</h1>
-        <p className="muted">Pick a route, then the stretch, the dates and how you ride. Or plan a stretch you found in Dream.</p>
+        <p className="muted">
+          Pick a route, then the stretch, the dates and how you ride. Not sure which stretch? <a href="/dream">Find one in Dream ›</a>
+        </p>
         <ul className="route-pick">
           {routes.map((r) => (
             <li key={r.route.id}>
@@ -349,13 +342,26 @@ function TripBook({ plan, data, onDone }: { plan: PlanResult; data: PlanData; on
 
 // --- the plan -----------------------------------------------------------------------------------------------
 
+/** A call's option shown on the plan before the rider applies it (11.7). */
+interface Preview {
+  label: string;
+  state: PlanState;
+  callId: string;
+  optionId: string;
+}
+
 function PlanPage({ start }: { start: Start }) {
   const [files, setFiles] = useState<RouteFiles | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [inputs, setInputs] = useState<PlanInputs | null>(null);
+  // Every change is a plan action (D52); the history keeps the states for undo and redo.
+  const history = usePlanHistory();
+  const { reset, apply: applyStep, commit, undo, redo } = history;
+  const [preview, setPreview] = useState<Preview | null>(null);
+  const [hidden, setHidden] = useState<Step | null>(null);
+  const inputs = history.present?.inputs ?? null;
+  const choices = history.present?.choices ?? NO_CHOICES;
   const [suggested, setSuggested] = useState<number | null>(null);
   const [datesConfirmed, setDatesConfirmed] = useState(Boolean(start.doc));
-  const [choices, setChoices] = useState<PlanChoices>(start.doc ? choicesOf(start.doc) : NO_CHOICES);
   const [meta, setMeta] = useState(() => ({ id: start.doc?.id ?? newId(), name: start.doc?.name ?? "", created: start.doc?.created, notes: start.doc?.notes ?? "" }));
   const [readOnly, setReadOnly] = useState(start.readOnly);
   const [pass, setPass] = useState(readPass);
@@ -372,7 +378,7 @@ function PlanPage({ start }: { start: Start }) {
       .then((f) => {
         setFiles(f);
         const init = initialInputs(f, start.inputs);
-        setInputs(init.inputs);
+        reset({ inputs: init.inputs, choices: start.doc ? choicesOf(start.doc) : NO_CHOICES });
         setSuggested(init.suggested);
         document.title = `${f.manifest.route.name} · Kilometrica Plan`;
         if (start.doc && start.doc.route.runId !== f.manifest.run_id) {
@@ -380,7 +386,7 @@ function PlanPage({ start }: { start: Start }) {
         }
       })
       .catch((e: Error) => setError(e.message));
-  }, [start]);
+  }, [start, reset]);
 
   const blockKey = inputs ? `${Math.floor(Math.min(inputs.fromM, inputs.toM) / 50_000)}-${Math.ceil(Math.max(inputs.fromM, inputs.toM) / 50_000)}` : "";
   useEffect(() => {
@@ -399,10 +405,28 @@ function PlanPage({ start }: { start: Start }) {
 
   const data: PlanData | null = useMemo(() => (files ? { ...files.free, full: pass && full ? full.full : null } : null), [files, full, pass]);
   // The device's languages pick Wikipedia articles (they stay on the device, D30).
-  const plan = useMemo(
-    () => (data && inputs ? makePlan(data, inputs, choices, { languages: [...navigator.languages] }) : null),
-    [data, inputs, choices],
+  const options = useMemo(() => ({ languages: [...navigator.languages] }), []);
+  // Each state is planned once: undo, previews and "what changed" reuse the plans.
+  const plans = useMemo(() => new WeakMap<PlanState, PlanResult>(), [data]);
+  const planFor = useCallback(
+    (s: PlanState) => {
+      let p = plans.get(s);
+      if (!p) {
+        p = makePlan(data!, s.inputs, s.choices, options);
+        plans.set(s, p);
+      }
+      return p;
+    },
+    [plans, data, options],
   );
+  const plan = useMemo(() => (data && history.present ? planFor(history.present) : null), [data, history.present, planFor]);
+  // What the screen shows: the preview while there is one, else the plan.
+  const shown = useMemo(() => (preview && data ? planFor(preview.state) : plan), [preview, data, planFor, plan]);
+  const changes = useMemo(() => {
+    if (!plan || !data) return null;
+    if (preview) return planChanges(plan, planFor(preview.state));
+    return history.last ? planChanges(planFor(history.last.before), planFor(history.last.after)) : null;
+  }, [plan, data, preview, history.last, planFor]);
   const doc = useMemo(() => (plan ? toDocument(plan, { ...meta, name: meta.name || plan.brief.title }) : null), [plan, meta]);
 
   // Plans stay on this device (principle 5); a shared plan is kept only when the rider asks.
@@ -412,38 +436,74 @@ function PlanPage({ start }: { start: Start }) {
     if (!new URLSearchParams(window.location.search).has("plan")) window.history.replaceState(null, "", `/plan?plan=${doc.id}`);
   }, [doc, readOnly]);
 
-  const edit = useCallback((next: PlanInputs, confirm?: boolean) => {
-    setInputs(next);
-    if (confirm) setDatesConfirmed(true);
-    // New inputs re-plan the days; nights the rider locked or booked stay.
-    setChoices((c) => ({ ...c, nights: undefined }));
-  }, []);
-  const choose = (f: (c: PlanChoices) => PlanChoices, replan = true) => setChoices((c) => ({ ...f(c), nights: replan ? undefined : c.nights }));
+  // A change from the screen applies at once (with Undo) and ends any preview.
+  const apply = useCallback(
+    (a: PlanAction) => {
+      setPreview(null);
+      applyStep(a);
+    },
+    [applyStep],
+  );
+  const edit = useCallback(
+    (next: PlanInputs, confirm?: boolean) => {
+      apply({ type: "set", inputs: next });
+      if (confirm) setDatesConfirmed(true);
+    },
+    [apply],
+  );
+  const back = useCallback(() => {
+    setPreview(null);
+    undo();
+  }, [undo]);
+  const forward = useCallback(() => {
+    setPreview(null);
+    redo();
+  }, [redo]);
 
+  // A call's option is previewed first; "Keep it" changes nothing on the plan, so it applies at once.
   const onOption = (item: PlanItem, id: string) => {
-    if (!inputs) return;
-    if (id === "keep") return choose((c) => ({ ...c, dismissed: [...c.dismissed, item.id] }), false);
-    if (id === "add-day") return edit({ ...inputs, days: inputs.days + 1 });
-    if (id.startsWith("days:")) return edit({ ...inputs, days: Number(id.slice(5)) });
-    if (id.startsWith("earlier:")) return edit({ ...inputs, startMinutes: Math.max(5 * 60, inputs.startMinutes - Number(id.slice(8))) });
-    if (id.startsWith("rest:")) return edit({ ...inputs, restAfter: [...new Set([...inputs.restAfter, Number(id.slice(5))])] });
-    if (id.startsWith("move:")) return setSelected(Number(id.slice(5)));
+    const out = optionOutcome(item, id);
+    if (!out || !history.present) return;
+    if ("showDay" in out) return setSelected(out.showDay);
+    if (out.action.type === "dismiss") return apply(out.action);
+    const label = item.options?.find((o) => o.id === id)?.label ?? "a change";
+    setPreview({ label, state: applyAction(history.present, out.action), callId: item.id, optionId: id });
   };
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.isContentEditable || ["INPUT", "SELECT", "TEXTAREA"].includes(el.tagName))) return;
+      if (e.key === "Escape") return setPreview(null);
+      if (readOnly || !(e.ctrlKey || e.metaKey)) return;
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) {
+        e.preventDefault();
+        back();
+      } else if (k === "y" || (k === "z" && e.shiftKey)) {
+        e.preventDefault();
+        forward();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [back, forward, readOnly]);
+
   if (error) return <div className="rider center error">{error}</div>;
-  if (!files || !inputs || !plan || !data || !doc) return <div className="rider center muted">Loading the route…</div>;
+  if (!files || !inputs || !plan || !shown || !data || !doc) return <div className="rider center muted">Loading the route…</div>;
   if (printing) return <TripBook plan={plan} data={data} onDone={() => setPrinting(false)} />;
 
   const free = !data.full;
   const calls = plan.items.filter((i) => i.kind === "call" && !choices.dismissed.includes(i.id));
-  const day = plan.days.find((d) => d.number === selected) ?? null;
+  const day = shown.days.find((d) => d.number === selected) ?? null;
   const origin = window.location.origin;
   const links = { full: `${origin}/plan#${shareFragment(doc)}`, itinerary: `${origin}/plan#${shareFragment(itineraryOf(plan, doc.name))}` };
   const isPrivate = files.manifest.visibility === "private";
   const stale = start.doc && start.doc.route.runId !== files.manifest.run_id;
-  const lockNight = (k: number, id: string) => choose((c) => ({ ...c, locked: { ...c.locked, [k]: id } }));
+  const lockNight = (k: number, id: string) => apply({ type: "lock-night", night: k, stop: id });
+  const toggleDone = (id: string) => apply({ type: "done", item: id, on: !choices.done.includes(id) });
   const unloaded = data.full
-    ? plan.days.filter((d) => d.kind === "ride" && placesMissing(data.full!, Math.min(d.fromM, d.toM), Math.max(d.fromM, d.toM)).length).map((d) => d.number)
+    ? shown.days.filter((d) => d.kind === "ride" && placesMissing(data.full!, Math.min(d.fromM, d.toM), Math.max(d.fromM, d.toM)).length).map((d) => d.number)
     : [];
 
   const onExport = (k: ExportKind) => {
@@ -463,6 +523,16 @@ function PlanPage({ start }: { start: Start }) {
         </a>
         <span className="muted"> Plan · {files.manifest.route.name}</span>
         <span className="spacer" />
+        {!readOnly && (
+          <span className="history">
+            <button type="button" className="link" disabled={!history.canUndo} onClick={back} title="Undo (Ctrl+Z)">
+              ↶ Undo
+            </button>
+            <button type="button" className="link" disabled={!history.canRedo} onClick={forward} title="Redo (Ctrl+Y)">
+              ↷ Redo
+            </button>
+          </span>
+        )}
         <label className="pass" title="Prototype switch: the teaser shows the outline only (D45)">
           <input
             type="checkbox"
@@ -512,6 +582,22 @@ function PlanPage({ start }: { start: Start }) {
         </div>
       )}
 
+      {!readOnly && (
+        <ChangeBar
+          preview={preview ? { label: preview.label, changes } : null}
+          last={!preview && history.last && history.last !== hidden && changes?.summary ? { undone: history.last.undone, changes } : null}
+          canUndo={history.canUndo}
+          onApply={() => {
+            if (!preview) return;
+            commit(preview.state);
+            setPreview(null);
+          }}
+          onDiscard={() => setPreview(null)}
+          onUndo={back}
+          onHide={() => setHidden(history.last)}
+        />
+      )}
+
       <div className="plan-grid">
         <aside className="plan-side">
           {editing && !readOnly ? (
@@ -541,12 +627,19 @@ function PlanPage({ start }: { start: Start }) {
               )}
             </div>
           )}
-          <Brief plan={plan} free={free} onLine={() => setSelected(null)} />
-          <EffortChart plan={plan} selected={selected} onPick={setSelected} />
-          <Calls calls={calls} free={free} readOnly={readOnly} onOption={onOption} />
+          <Brief plan={shown} free={free} onLine={() => setSelected(null)} />
+          <EffortChart plan={shown} selected={selected} onPick={setSelected} />
+          <Calls
+            calls={calls}
+            free={free}
+            readOnly={readOnly}
+            previewing={preview ? `${preview.callId}/${preview.optionId}` : null}
+            onOption={onOption}
+            onShowDay={setSelected}
+          />
           <section className="days">
             <h2>The days</h2>
-            <DayList plan={plan} selected={selected} onPick={setSelected} free={free} />
+            <DayList plan={shown} selected={selected} onPick={setSelected} free={free} changed={preview ? changes?.days : undefined} />
           </section>
           <BeforeYouGo
             plan={plan}
@@ -554,7 +647,7 @@ function PlanPage({ start }: { start: Start }) {
             readOnly={readOnly}
             isPrivate={isPrivate}
             done={choices.done}
-            onDone={(id) => choose((c) => ({ ...c, done: c.done.includes(id) ? c.done.filter((x) => x !== id) : [...c.done, id] }), false)}
+            onDone={toggleDone}
             onExport={onExport}
             links={links}
           />
@@ -581,9 +674,9 @@ function PlanPage({ start }: { start: Start }) {
           <Compare data={data} current={plan} pinned={pinned} onUnpin={(i) => setPinned((p) => p.filter((_, j) => j !== i))} />
         </aside>
         <section className="plan-main">
-          <PlanMap geometry={files.geometry} plan={plan} selectedDay={selected} onSelectDay={setSelected} attribution={files.manifest.attribution} />
+          <PlanMap geometry={files.geometry} plan={shown} selectedDay={selected} onSelectDay={setSelected} attribution={files.manifest.attribution} />
           <Profile
-            plan={plan}
+            plan={shown}
             effort={files.free.effort}
             range={day && day.kind === "ride" ? { t0: day.fromT, t1: day.toT } : null}
             onMoveStop={readOnly || free || day ? undefined : lockNight}
@@ -592,34 +685,20 @@ function PlanPage({ start }: { start: Start }) {
           {day ? (
             <div className="day-panel">
               <DayCard
-                plan={plan}
+                plan={shown}
                 data={data}
                 day={day}
                 free={free}
                 readOnly={readOnly}
-                choices={choices}
+                choices={shown.choices}
                 onLockNight={lockNight}
-                onToggleBooked={(k) =>
-                  choose((c) => {
-                    const booked = c.booked.includes(k) ? c.booked.filter((x) => x !== k) : [...c.booked, k];
-                    const stop = plan.nights[k]?.stop.id;
-                    const locked = { ...c.locked };
-                    if (booked.includes(k) && stop) locked[k] = stop;
-                    return { ...c, booked, locked };
-                  })
-                }
-                onChooseBed={(k, id) =>
-                  choose((c) => {
-                    const beds = { ...c.beds };
-                    if (id) beds[k] = id;
-                    else delete beds[k];
-                    return { ...c, beds };
-                  }, false)
-                }
-                onToggleRest={(r) =>
-                  edit({ ...inputs, restAfter: inputs.restAfter.includes(r) ? inputs.restAfter.filter((x) => x !== r) : [...inputs.restAfter, r] })
-                }
-                onDone={(id) => choose((c) => ({ ...c, done: c.done.includes(id) ? c.done.filter((x) => x !== id) : [...c.done, id] }), false)}
+                onToggleBooked={(k) => {
+                  const stop = plan.nights[k]?.stop.id;
+                  if (stop) apply({ type: "booked", night: k, stop, on: !choices.booked.includes(k) });
+                }}
+                onChooseBed={(k, id) => apply({ type: "bed", night: k, place: id })}
+                onToggleRest={(r) => apply({ type: "rest", afterRide: r, on: !inputs.restAfter.includes(r) })}
+                onDone={toggleDone}
                 onGpx={onGpx}
                 onClose={() => setSelected(null)}
               />
@@ -632,24 +711,14 @@ function PlanPage({ start }: { start: Start }) {
         </section>
       </div>
       <footer className="rider-foot muted small">
-        Ends {dayText(plan.endDate)}. Kilometrica doesn't navigate or book: it hands you to the apps and sites that do.
+        Ends {dayText(shown.endDate)}. Kilometrica doesn't navigate or book: it hands you to the apps and sites that do.
       </footer>
     </div>
   );
 }
 
 /** "day 4", "days 15–21", "days 3, 7–9 and 12". */
-function dayList(ns: number[]): string {
-  const runs: string[] = [];
-  for (let i = 0; i < ns.length; ) {
-    let j = i;
-    while (j + 1 < ns.length && ns[j + 1] === ns[j]! + 1) j++;
-    runs.push(i === j ? `${ns[i]}` : `${ns[i]}–${ns[j]}`);
-    i = j + 1;
-  }
-  const last = runs.pop()!;
-  return `${ns.length === 1 ? "day" : "days"} ${runs.length ? `${runs.join(", ")} and ${last}` : last}`;
-}
+const dayList = (ns: number[]) => `${ns.length === 1 ? "day" : "days"} ${numberList(ns)}`;
 
 export function RiderApp() {
   const [{ start, itinerary, error }] = useState(readStart);

@@ -63,14 +63,27 @@ export function Brief({ plan, onLine, free = false }: { plan: PlanResult; onLine
   );
 }
 
-export function DayList({ plan, selected, onPick, free }: { plan: PlanResult; selected: number | null; onPick: (n: number) => void; free: boolean }) {
+export function DayList({
+  plan,
+  selected,
+  onPick,
+  free,
+  changed,
+}: {
+  plan: PlanResult;
+  selected: number | null;
+  onPick: (n: number) => void;
+  free: boolean;
+  /** Days a previewed change alters (11.7). */
+  changed?: number[];
+}) {
   return (
     <ol className="day-list">
       {plan.days.map((d) => {
         const mine = dayItems(plan.items, d.number);
         const count = mine.calls.length + mine.todos.length + mine.headsups.shown.length + mine.headsups.more;
         return (
-          <li key={d.number} className={`${selected === d.number ? "selected" : ""} ${d.kind}`}>
+          <li key={d.number} className={`${selected === d.number ? "selected" : ""} ${d.kind}${changed?.includes(d.number) ? " changed" : ""}`}>
             <button type="button" onClick={() => onPick(d.number)}>
               <span className="d-num">Day {d.number}</span>
               <span className="d-date">{d.date.slice(5).replace("-", "/")}</span>

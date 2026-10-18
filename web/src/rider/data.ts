@@ -5,6 +5,7 @@
 import type {
   BundleManifest,
   CalendarFile,
+  DailySection,
   DreamFile,
   EffortFile,
   FindingsFile,
@@ -79,6 +80,22 @@ export async function loadRoute(network: string, ref: string): Promise<RouteFile
       daily: sections.daily,
     },
   };
+}
+
+export interface DreamFiles {
+  manifest: BundleManifest;
+  dream: DreamFile;
+  daily: DailySection[];
+  geometry: Geometry;
+}
+
+/** What Dream needs: all free files (D35). */
+export async function loadDreamFiles(network: string, ref: string): Promise<DreamFiles> {
+  const base = `/v1/routes/${network}/${ref.toLowerCase()}`;
+  const manifest = await get<BundleManifest>(base);
+  if (!("dream" in manifest.files)) throw new Error("This route's audit has no Dream data yet: re-run its audit.");
+  const [dream, sections, path] = await Promise.all([get<DreamFile>(`${base}/dream`), get<SectionsFile>(`${base}/sections`), get<PathCollection>(`${base}/path`)]);
+  return { manifest, dream, daily: sections.daily, geometry: geometryOf(path) };
 }
 
 export interface FullFiles {

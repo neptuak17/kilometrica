@@ -1,6 +1,7 @@
 /**
- * Step 3 (11.6): the decisions only the rider can make, one at a time, each with its options worked out and what
- * each option changes. In the teaser they are counted, not shown (D45).
+ * The walk-through of the plan's calls (11.6, 11.7): the decisions only the rider can make, one at a time, each with
+ * its options worked out. An option is shown on the plan first; Apply settles the call and the next one follows.
+ * "Keep it" settles it as it is. In the teaser the calls are counted, not shown (D45).
  */
 import type { PlanItem } from "@dpg/planner";
 import { useState } from "react";
@@ -9,10 +10,13 @@ interface Props {
   calls: PlanItem[];
   free: boolean;
   readOnly: boolean;
+  /** The call and option being previewed, as "callId/optionId". */
+  previewing: string | null;
   onOption: (item: PlanItem, optionId: string) => void;
+  onShowDay: (day: number) => void;
 }
 
-export function Calls({ calls, free, readOnly, onOption }: Props) {
+export function Calls({ calls, free, readOnly, previewing, onOption, onShowDay }: Props) {
   const [index, setIndex] = useState(0);
   if (!calls.length) return null;
   if (free) {
@@ -33,15 +37,29 @@ export function Calls({ calls, free, readOnly, onOption }: Props) {
       <div className="call">
         <div className="call-title">{call.title}</div>
         <div className="call-why">{call.why}</div>
+        {call.day !== null && (
+          <button type="button" className="link" onClick={() => onShowDay(call.day!)}>
+            See day {call.day} ›
+          </button>
+        )}
         {!readOnly && (
-          <div className="call-options">
-            {(call.options ?? []).map((o) => (
-              <button key={o.id} type="button" onClick={() => onOption(call, o.id)} title={o.effect}>
-                <b>{o.label}</b>
-                <span>{o.effect}</span>
-              </button>
-            ))}
-          </div>
+          <>
+            <div className="call-options">
+              {(call.options ?? []).map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  className={previewing === `${call.id}/${o.id}` ? "on" : ""}
+                  onClick={() => onOption(call, o.id)}
+                  title={o.effect}
+                >
+                  <b>{o.label}</b>
+                  <span>{o.effect}</span>
+                </button>
+              ))}
+            </div>
+            <p className="muted small">An option shows on the plan first; nothing changes until you apply it.</p>
+          </>
         )}
       </div>
       {calls.length > 1 && (

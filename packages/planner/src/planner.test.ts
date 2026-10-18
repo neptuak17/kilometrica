@@ -1,6 +1,8 @@
 import type { DreamSection, EffortFile, Highlight, Place, ServiceType, Stop } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
+import { applyAction, optionOutcome, type PlanState } from "./actions";
 import { TripAxis } from "./axis";
+import { planChanges } from "./changes";
 import { choicesOf, parseDocument, toDocument } from "./document";
 import { calendarFile, dayGpx, type Geometry, tripGpx } from "./exports";
 import { dayItems, mapsSearch, wikiLinks } from "./items";
@@ -298,6 +300,68 @@ describe("makePlan", () => {
       expect(mine.headsups.shown.length).toBeLessThanOrEqual(3);
       expect(mine.highlights.shown.length).toBeLessThanOrEqual(3);
     }
+  });
+});
+
+describe("plan actions and what changed (11.7)", () => {
+  const state = (over: Partial<PlanInputs> = {}): PlanState => ({ inputs: inputs(over), choices: { ...NO_CHOICES, nights: ["s60", "s120", "s180", "s240"] } });
+
+  it("re-plans on new answers and nights, and keeps the nights for a bed or a tick", () => {
+    const s = state();
+    const more = applyAction(s, { type: "add-day" });
+    expect(more.inputs.days).toBe(6);
+    expect(more.choices.nights).toBeUndefined();
+    const bed = applyAction(s, { type: "bed", night: 1, place: "p1" });
+    expect(bed.choices.beds).toEqual({ 1: "p1" });
+    expect(bed.choices.nights).toEqual(s.choices.nights);
+    expect(applyAction(bed, { type: "bed", night: 1, place: null }).choices.beds).toEqual({});
+    expect(applyAction(s, { type: "set", inputs: { days: 0 } }).inputs.days).toBe(1);
+    expect(applyAction(state({ startMinutes: 5 * 60 + 10 }), { type: "start-earlier", minutes: 30 }).inputs.startMinutes).toBe(5 * 60);
+  });
+
+  it("sets rather than toggles, so an action twice changes nothing more", () => {
+    const once = applyAction(state({ restAfter: [3] }), { type: "rest", afterRide: 1, on: true });
+    expect(once.inputs.restAfter).toEqual([1, 3]);
+    expect(applyAction(once, { type: "rest", afterRide: 1, on: true }).inputs.restAfter).toEqual([1, 3]);
+    expect(applyAction(once, { type: "rest", afterRide: 1, on: false }).inputs.restAfter).toEqual([3]);
+    const booked = applyAction(state(), { type: "booked", night: 2, stop: "s170", on: true });
+    expect(booked.choices.booked).toEqual([2]);
+    expect(booked.choices.locked).toEqual({ 2: "s170" });
+    const released = applyAction(booked, { type: "release-night", night: 2 });
+    expect(released.choices.locked).toEqual({});
+    expect(released.choices.booked).toEqual([]);
+    const done = applyAction(state(), { type: "done", item: "x", on: true });
+    expect(applyAction(done, { type: "done", item: "x", on: true }).choices.done).toEqual(["x"]);
+  });
+
+  it("turns a call's options into actions", () => {
+    const call = { id: "effort:beyond:2" } as never;
+    expect(optionOutcome(call, "keep")).toEqual({ action: { type: "dismiss", item: "effort:beyond:2" } });
+    expect(optionOutcome(call, "add-day")).toEqual({ action: { type: "add-day" } });
+    expect(optionOutcome(call, "days:6")).toEqual({ action: { type: "set", inputs: { days: 6 } } });
+    expect(optionOutcome(call, "earlier:30")).toEqual({ action: { type: "start-earlier", minutes: 30 } });
+    expect(optionOutcome(call, "rest:2")).toEqual({ action: { type: "rest", afterRide: 2, on: true } });
+    expect(optionOutcome(call, "move:3")).toEqual({ showDay: 3 });
+    expect(optionOutcome(call, "fly:1")).toBeNull();
+  });
+
+  it("says what changed, most important first", () => {
+    const plan = (s: PlanState) => makePlan(data(), s.inputs, s.choices);
+    const s = { inputs: inputs({ days: 3 }), choices: NO_CHOICES };
+    const before = plan(s);
+    expect(planChanges(before, before)).toMatchObject({ lines: [], summary: "", days: [] });
+    const after = plan(applyAction(s, { type: "add-day" }));
+    const c = planChanges(before, after);
+    expect(c.lines[0]).toBe("One riding day more (4)");
+    expect(c.days).toContain(4);
+    expect(c.settled.length).toBeGreaterThan(0);
+    expect(c.summary).toMatch(/^One riding day more \(4\); /);
+    // A night kept at another stop moves that day's end, and the next day's start.
+    const base = plan({ inputs: inputs(), choices: NO_CHOICES });
+    const moved = plan({ inputs: inputs(), choices: { ...NO_CHOICES, locked: { 0: "s40" } } });
+    const m = planChanges(base, moved);
+    expect(m.lines.some((l) => l.startsWith("Day 1 now ends at Town 40, 40 km"))).toBe(true);
+    expect(m.days).toContain(1);
   });
 });
 

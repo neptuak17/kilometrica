@@ -1,5 +1,7 @@
+export * from "./actions";
 export * from "./axis";
 export * from "./brief";
+export * from "./changes";
 export * from "./document";
 export * from "./exports";
 export * from "./items";
