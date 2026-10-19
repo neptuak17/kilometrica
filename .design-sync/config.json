@@ -33,6 +33,12 @@
     },
     "StretchCard": {
       "cardMode": "column"
+    },
+    "EffortChart": {
+      "cardMode": "column"
+    },
+    "ElevationProfile": {
+      "cardMode": "column"
     }
   },
   "componentSrcMap": {

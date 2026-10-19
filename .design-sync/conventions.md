@@ -9,7 +9,7 @@ Kilometrica plans long-distance cycle trips: Dream finds a stretch of a route th
 - Props follow React Aria: `onPress` (not `onClick`) on `Button`; `isDisabled`; `isSelected` / `defaultSelected` on `Checkbox`, `Switch`, `Toggle`; `defaultOpen` on `DialogTrigger`, `PopoverTrigger`, `TooltipTrigger`; `defaultSelectedKey` on `Select` and `Tabs`; `id` on `SelectItem`, `TabsTrigger`, `TabsContent`, `ToggleGroupItem`; `selectionMode` and `defaultSelectedKeys` on `ToggleGroup`.
 - `Checkbox` and `Switch` are bare controls: give each an `id` and put a `<Label htmlFor>` beside it. A labelled input is `<TextField><Label>…</Label><Input /></TextField>`. `Table` needs an `aria-label` and one `TableHead isRowHeader`.
 - Overlays: `DialogTrigger` wraps a `Button` and a `Dialog`; `PopoverTrigger` wraps a `Button` and a `Popover`; `TooltipTrigger` wraps a trigger and a `Tooltip`.
-- Icons: `KilometricaUI.Icons.<Name>` (Lucide), e.g. `Bed`, `Bike`, `Calendar`, `Check`, `CircleHelp`, `Clock`, `CloudRain`, `Droplet`, `ExternalLink`, `Info`, `Map`, `MapPin`, `Mountain`, `Route`, `Ship`, `Sun`, `Tent`, `Train`, `TriangleAlert`, `Utensils`, `Wind`. Inside a `Button`, mark an icon `data-icon="inline-start"` or `"inline-end"`.
+- Icons: `KilometricaUI.Icons.<Name>` (Lucide), e.g. `Bed`, `Bike`, `Calendar`, `Check`, `CircleHelp`, `Clock`, `CloudRain`, `Droplet`, `ExternalLink`, `Info`, `Lock`, `Map`, `MapPin`, `Mountain`, `Route`, `Ship`, `Sun`, `Tent`, `Train`, `TriangleAlert`, `Utensils`, `Wind`. Inside a `Button`, mark an icon `data-icon="inline-start"` or `"inline-end"`.
 
 ## Styling: Tailwind classes compiled into styles.css
 
@@ -27,7 +27,7 @@ Only compiled classes work; arbitrary values such as `bg-[#123456]` or `w-[37px]
 
 ## Where the truth lives
 
-`styles.css` (it imports `tokens.css`, the fonts and the compiled `components/bundle.css`); `tokens.json` for every colour's value and usage note, light and dark (`tokens.css` is generated from it: light in `:root`, dark in `[data-theme="dark"]`); per component, `components/<Name>/<Name>.d.ts` for props and `components/<Name>/README.md` for usage. Kilometrica's own pieces are `StretchCard`, `DayRow` and `ChangeBar` (group `km`).
+`styles.css` (it imports `tokens.css`, the fonts and the compiled `components/bundle.css`); `tokens.json` for every colour's value and usage note, light and dark (`tokens.css` is generated from it: light in `:root`, dark in `[data-theme="dark"]`); per component, `components/<Name>/<Name>.d.ts` for props and `components/<Name>/README.md` for usage. Kilometrica's own pieces are `StretchCard`, `DayRow`, `ChangeBar`, `EffortChart` and `ElevationProfile` (group `km`).
 
 ## Kilometrica's design rules
 

@@ -3,60 +3,20 @@
  * one per question, the effort per day against the rider's usual day, and the day list.
  */
 import { dayItems, hours, km, type PlanResult } from "@dpg/planner";
-import { Card, CardContent, CardHeader, CardTitle, cn, DayRow, Icons } from "@dpg/ui";
+import { Card, CardContent, CardHeader, CardTitle, cn, DayRow, EffortChart as KitEffortChart, Icons } from "@dpg/ui";
 import type { ReactNode } from "react";
 
-const EFFORT_LABEL = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
-
-/** Riding hours per day as bars against the rider's usual day; a bar opens its day. */
+/** Riding hours per day against the rider's usual day: the kit's chart (D53), fed from the plan. A bar opens its day. */
 export function EffortChart({ plan, selected, onPick, changed }: { plan: PlanResult; selected: number | null; onPick: (n: number) => void; changed?: number[] }) {
-  const max = Math.max(plan.usual.hours * 1.5, ...plan.brief.effort.map((e) => e.hours));
-  const usual = (plan.usual.hours / max) * 100;
   return (
-    <div className="grid gap-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="text-lg font-semibold">Effort, day by day</h2>
-        <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="w-6 border-t-2 border-dashed border-muted-foreground" />
-          Your usual day, about {hours(plan.usual.hours)}
-        </span>
-      </div>
-      <div role="group" aria-label="Riding hours per day against your usual day" className="relative flex h-40 items-end gap-1.5 border-b pt-5">
-        <span className="pointer-events-none absolute inset-x-0 border-t-2 border-dashed border-muted-foreground/70" style={{ bottom: `${usual}%` }} />
-        {plan.brief.effort.map((e) => {
-          const on = selected === e.day;
-          return (
-            <button
-              key={e.day}
-              type="button"
-              aria-pressed={on}
-              title={`Day ${e.day}: ${hours(e.hours)} riding, ${EFFORT_LABEL[e.effort]}`}
-              onClick={() => onPick(e.day)}
-              className="group relative flex h-full min-w-0 flex-1 cursor-pointer flex-col justify-end"
-            >
-              <span
-                className={cn(
-                  "w-full rounded-t-md transition-opacity group-hover:opacity-80",
-                  e.effort === "within" ? "bg-effort-within" : e.effort === "harder" ? "bg-effort-harder" : "bg-effort-beyond",
-                  on && "ring-2 ring-route-chosen ring-offset-2 ring-offset-card",
-                  changed?.includes(e.day) && "outline-2 outline-route",
-                )}
-                style={{ height: `${Math.max(3, (e.hours / max) * 100)}%` }}
-              />
-            </button>
-          );
-        })}
-      </div>
-      {plan.brief.effort.length <= 21 && (
-        <div className="flex gap-1.5 text-center text-[11px] text-muted-foreground tabular-nums">
-          {plan.brief.effort.map((e) => (
-            <span key={e.day} className={cn("min-w-0 flex-1 truncate", selected === e.day && "font-semibold text-foreground")}>
-              {e.day}
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
+    <KitEffortChart
+      days={plan.brief.effort.map((e) => ({ day: e.day, hours: e.hours, label: hours(e.hours), effort: e.effort }))}
+      usual={plan.usual.hours}
+      usualLabel={`Your usual day at ${plan.level.name}, about ${hours(plan.usual.hours)}`}
+      selected={selected}
+      onPick={onPick}
+      changed={changed}
+    />
   );
 }
 

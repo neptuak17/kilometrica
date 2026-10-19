@@ -1,6 +1,6 @@
 /**
  * The UI kit at a glance (D53), at /ui: the shadcn preset (b7DMvgbTc: Rhea style, Mist neutrals, Teal, Inter, React
- * Aria), Kilometrica's purpose-named tokens, the standard components, and three of our own pieces with sample data.
+ * Aria), Kilometrica's purpose-named tokens, the standard components, and our own pieces with sample data.
  * It is the page to check the look on, and what Claude Design reads from the code. The rider pages don't use it yet.
  */
 import { Bike, Info, Map, Moon, Sun } from "lucide-react"
@@ -30,6 +30,8 @@ import {
   DialogTitle,
   DialogTrigger,
   type Effort,
+  EffortChart,
+  ElevationProfile,
   Input,
   Label,
   Popover,
@@ -88,6 +90,21 @@ const DAYS: { number: number; date: string; to: string; km?: string; hours?: str
   { number: 4, date: "18/05", to: "Altea", km: "58", hours: "5 h 10", effort: "harder", items: 4 },
   { number: 5, date: "19/05", to: "Alacant / Alicante", km: "96", hours: "7 h 25", effort: "beyond", items: 5 },
 ]
+
+// Made-up figures, for the look only: hours per day, and a rolling coast with one climb and an unknown stretch.
+const EFFORT_DAYS: { day: number; hours: number; label: string; effort: Effort }[] = [
+  { day: 1, hours: 4.08, label: "4 h 05", effort: "within" },
+  { day: 2, hours: 4.67, label: "4 h 40", effort: "within" },
+  { day: 3, hours: 5.17, label: "5 h 10", effort: "harder" },
+  { day: 4, hours: 3.3, label: "3 h 20", effort: "within" },
+  { day: 5, hours: 7.42, label: "7 h 25", effort: "beyond" },
+]
+const PROFILE = Array.from({ length: 301 }, (_, i) => {
+  const km = i
+  const m = 20 + 30 * Math.sin(km / 9) ** 2 + (km > 150 && km < 190 ? 380 * Math.sin(((km - 150) / 40) * Math.PI) : 0)
+  return { km, m: km > 210 && km < 222 ? null : Math.round(m) }
+})
+const PROFILE_DAYS = [0, 62, 133, 191, 249, 300]
 
 function Section({ title, children, note }: { title: string; note?: string; children: React.ReactNode }) {
   return (
@@ -292,6 +309,27 @@ function Preview() {
                 Show the "Changed" line
               </Button>
             </div>
+          </Section>
+
+          <Section title="Plan: effort and elevation" note="Our EffortChart and ElevationProfile, with made-up figures. The line breaks where the terrain is unknown; night 2 is a kept night (orange). In Plan the nights can be dragged.">
+            <Card>
+              <CardContent>
+                <EffortChart days={EFFORT_DAYS} usual={4.5} usualLabel="Your usual day at Moderate, about 4 h 30" selected={selectedDay} onPick={setSelectedDay} />
+              </CardContent>
+            </Card>
+            <Card className="py-3">
+              <ElevationProfile
+                label="Elevation along the trip"
+                points={PROFILE}
+                spans={PROFILE_DAYS.slice(1).map((to, i) => ({ from: PROFILE_DAYS[i]!, to, label: `Day ${i + 1}` }))}
+                markers={PROFILE_DAYS.slice(1, -1).map((km, i) => ({ km, label: String(i + 1), title: `Night ${i + 1}`, kept: i === 1 }))}
+                onSpanPick={(i) => setSelectedDay(i + 1)}
+                className="px-4"
+              />
+            </Card>
+            <Card className="py-3">
+              <ElevationProfile label="Elevation for day 3" tone="chosen" points={PROFILE.slice(133, 192).map((p) => ({ ...p, km: p.km - 133 }))} className="px-4" />
+            </Card>
           </Section>
 
           <Section title="Cards, alerts and tables">

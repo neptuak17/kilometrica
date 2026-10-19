@@ -1,16 +1,12 @@
 /**
- * Elevation along the trip or one day, in the direction of travel, with the night stops. On a larger screen the
- * stops can be dragged along the profile: on release the stop snaps to the nearest candidate and that night is
- * locked (11.6, "Make it yours"). In the kit's colours (D53): the days in the route teal, a kept night in orange.
+ * Plan's elevation profile (11.6): the kit's ElevationProfile (D53), fed from the plan, in the direction of travel.
+ * Along the whole trip the night stops can be dragged: on release the stop snaps to the nearest candidate between
+ * its neighbours and that night is kept ("Make it yours"). One day is drawn in the chosen orange.
  */
 import type { EffortFile } from "@dpg/contracts";
 import type { PlanResult } from "@dpg/planner";
-import { cn } from "@dpg/ui";
-import { useMemo, useRef, useState } from "react";
-
-const W = 1000;
-const H = 140;
-const PAD = { l: 38, r: 8, t: 10, b: 20 };
+import { ElevationProfile } from "@dpg/ui";
+import { useMemo } from "react";
 
 /** Elevation at a route measure, from effort.json (null where the terrain is unknown). */
 export function eleAt(effort: EffortFile, m: number): number | null {
@@ -37,117 +33,41 @@ interface Props {
 export function Profile({ plan, effort, range, onMoveStop, onPickDay }: Props) {
   const t0 = range?.t0 ?? 0;
   const t1 = range?.t1 ?? plan.axis.length;
-  const svg = useRef<SVGSVGElement>(null);
-  const [drag, setDrag] = useState<{ night: number; x: number } | null>(null);
-  const samples = useMemo(() => {
+  const points = useMemo(() => {
     const n = 400;
-    const out: { t: number; e: number | null }[] = [];
-    for (let i = 0; i <= n; i++) {
+    return Array.from({ length: n + 1 }, (_, i) => {
       const t = t0 + ((t1 - t0) * i) / n;
-      out.push({ t, e: eleAt(effort, plan.axis.mOf(t)) });
-    }
-    return out;
+      return { km: (t - t0) / 1000, m: eleAt(effort, plan.axis.mOf(t)) };
+    });
   }, [plan, effort, t0, t1]);
-  const known = samples.filter((s) => s.e !== null).map((s) => s.e!);
-  const lo = known.length ? Math.min(...known) : 0;
-  const hi = known.length ? Math.max(...known, lo + 50) : 100;
-  const x = (t: number) => PAD.l + ((t - t0) / Math.max(1, t1 - t0)) * (W - PAD.l - PAD.r);
-  const y = (e: number) => H - PAD.b - ((e - lo) / Math.max(1, hi - lo)) * (H - PAD.t - PAD.b);
-  const tOfX = (px: number) => t0 + ((px - PAD.l) / (W - PAD.l - PAD.r)) * (t1 - t0);
-
-  // The line breaks where the terrain is unknown.
-  const paths: string[] = [];
-  let cur = "";
-  for (const s of samples) {
-    if (s.e === null) {
-      if (cur) paths.push(cur);
-      cur = "";
-      continue;
-    }
-    cur += `${cur ? "L" : "M"}${x(s.t).toFixed(1)},${y(s.e).toFixed(1)}`;
-  }
-  if (cur) paths.push(cur);
-
+  const rides = plan.days.filter((d) => d.kind === "ride");
   const nights = plan.nights.map((n) => ({ n, t: plan.candidates.find((c) => c.stop.id === n.stop.id)?.t ?? 0 }));
-  const toSvgX = (clientX: number) => {
-    const r = svg.current?.getBoundingClientRect();
-    return r ? ((clientX - r.left) / r.width) * W : 0;
-  };
-  const release = () => {
-    if (!drag || !onMoveStop) return setDrag(null);
-    const t = tOfX(drag.x);
-    const prev = drag.night === 0 ? 0 : (nights[drag.night - 1]?.t ?? 0);
-    const next = nights[drag.night + 1]?.t ?? plan.axis.length;
-    const best = plan.candidates
-      .filter((c) => c.t > prev && c.t < next)
-      .sort((a, b) => Math.abs(a.t - t) - Math.abs(b.t - t))[0];
-    if (best) onMoveStop(drag.night, best.stop.id);
-    setDrag(null);
-  };
-  const km = (t: number) => Math.round((t - t0) / 1000);
-  const ticks = Array.from({ length: 6 }, (_, i) => t0 + ((t1 - t0) * i) / 5);
-
+  const shown = nights.filter(({ t }) => t >= t0 && t <= t1);
+  const move = onMoveStop
+    ? (i: number, km: number) => {
+        const k = shown[i]!.n.index;
+        const t = t0 + km * 1000;
+        const prev = k === 0 ? 0 : (nights[k - 1]?.t ?? 0);
+        const next = nights[k + 1]?.t ?? plan.axis.length;
+        const best = plan.candidates.filter((c) => c.t > prev && c.t < next).sort((a, b) => Math.abs(a.t - t) - Math.abs(b.t - t))[0];
+        if (best) onMoveStop(k, best.stop.id);
+      }
+    : undefined;
   return (
-    <svg
-      ref={svg}
-      className="block h-[110px] w-full touch-none bg-card select-none sm:h-[140px]"
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      onPointerMove={(e) => drag && setDrag({ ...drag, x: Math.max(PAD.l, Math.min(W - PAD.r, toSvgX(e.clientX))) })}
-      onPointerUp={release}
-      onPointerLeave={() => drag && release()}
-      role="img"
-      aria-label="Elevation profile"
-    >
-      <text x={4} y={PAD.t + 8} className="fill-muted-foreground text-[10px]">{Math.round(hi)} m</text>
-      <text x={4} y={H - PAD.b} className="fill-muted-foreground text-[10px]">{Math.round(lo)} m</text>
-      {ticks.map((t) => (
-        <text key={t} x={x(t)} y={H - 4} className="fill-muted-foreground text-[10px]" textAnchor="middle">
-          {km(t)} km
-        </text>
-      ))}
-      {paths.map((d, i) => (
-        <path key={i} d={d} className="fill-none stroke-foreground/75 stroke-[1.6] [vector-effect:non-scaling-stroke]" />
-      ))}
-      {!range &&
-        plan.days
-          .filter((d) => d.kind === "ride")
-          .map((d) => (
-            <rect
-              key={d.number}
-              x={x(d.fromT)}
-              y={PAD.t}
-              width={Math.max(0, x(d.toT) - x(d.fromT))}
-              height={H - PAD.t - PAD.b}
-              className={cn("cursor-pointer fill-route hover:opacity-20", d.number % 2 ? "opacity-12" : "opacity-5")}
-              onClick={() => onPickDay?.(d.number)}
-            />
-          ))}
-      {nights.map(({ n, t }) => {
-        if (t < t0 || t > t1) return null;
-        const px = drag?.night === n.index ? drag.x : x(t);
-        return (
-          <g key={n.index}>
-            <line x1={px} x2={px} y1={PAD.t} y2={H - PAD.b} className="stroke-foreground [stroke-dasharray:3_3] [vector-effect:non-scaling-stroke]" />
-            <circle
-              cx={px}
-              cy={PAD.t + 8}
-              r={8}
-              className={cn(onMoveStop ? "cursor-grab" : "", n.locked ? "fill-route-chosen" : "fill-foreground")}
-              onPointerDown={(e) => {
-                if (!onMoveStop) return;
-                (e.target as Element).setPointerCapture?.(e.pointerId);
-                setDrag({ night: n.index, x: px });
-              }}
-            >
-              <title>{`Night ${n.afterRide}: ${n.stop.name ?? "stop"}${onMoveStop ? " (drag to move)" : ""}`}</title>
-            </circle>
-            <text x={px} y={PAD.t + 11} textAnchor="middle" className="pointer-events-none fill-background text-[10px] font-bold">
-              {n.afterRide}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
+    <ElevationProfile
+      points={points}
+      tone={range ? "chosen" : "route"}
+      spans={range ? [] : rides.map((d) => ({ from: (d.fromT - t0) / 1000, to: (d.toT - t0) / 1000, label: `Day ${d.number}` }))}
+      markers={shown.map(({ n, t }) => ({
+        km: (t - t0) / 1000,
+        label: String(n.afterRide),
+        title: `Night ${n.afterRide}: ${n.stop.name ?? "stop"}${onMoveStop ? " (drag to move)" : ""}`,
+        kept: n.locked,
+      }))}
+      onSpanPick={onPickDay ? (i) => onPickDay(rides[i]!.number) : undefined}
+      onMarkerMove={move}
+      label={range ? "Elevation for the day" : "Elevation along the trip"}
+      className="px-4 pt-3 pb-2"
+    />
   );
 }

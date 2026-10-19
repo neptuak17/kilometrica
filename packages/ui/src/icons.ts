@@ -22,6 +22,7 @@ export {
   Globe,
   Info,
   Landmark,
+  Lock,
   Map,
   MapPin,
   Minus,

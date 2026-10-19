@@ -26,7 +26,6 @@ import {
 } from "@dpg/planner";
 import { Badge, Button, Card, CardContent, Checkbox, cn, Icons, Label, LinkButton } from "@dpg/ui";
 import { type ReactNode, useId, useState } from "react";
-import { LockIcon } from "./Locked";
 import { looksUp, openPhoto } from "./photos";
 
 const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
@@ -266,7 +265,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
 
         {free ? (
           <div className="flex items-start gap-2 rounded-2xl border border-dashed px-4 py-3 text-muted-foreground">
-            <LockIcon className="mt-0.5 size-4 shrink-0" />
+            <Icons.Lock className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             Water and food, heads-ups, highlights, where to sleep and the plan B for this day, with a Trip Pass.
           </div>
         ) : (
