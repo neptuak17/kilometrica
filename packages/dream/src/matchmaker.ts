@@ -67,7 +67,6 @@ const SURFACE_LABEL: Record<SurfaceKind, string> = { road: "road", cycle_path: "
 export const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const km = (m: number) => Math.round(m / 1000);
-const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 /** The lowest level whose daily range covers this much riding (D36). */
 export function gradeFor(levels: RiderLevel[], kmPerDay: number, climbPerDay: number | null): number {
@@ -238,15 +237,17 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
     );
   }
 
-  // Surfaces (D36).
+  // Surfaces (D36), told in km or words, never a percentage (D57).
+  const secM = totalM - run.gapM;
   let surf = surfaces.unknown * 0.5;
   for (const k of ["road", "cycle_path", "gravel"] as SurfaceKind[]) {
     surf += surfaces[k] * PREF_WEIGHT[q.surfaces[k]];
     if (q.surfaces[k] === "avoid" && surfaces[k] > 0.15) {
       surf *= 0.5;
-      watch.push(`${pct(surfaces[k])} ${SURFACE_LABEL[k]}, which you'd rather avoid`);
+      watch.push(`${km(surfaces[k] * secM)} km of ${SURFACE_LABEL[k]}, which you'd rather avoid`);
     }
-    if (q.surfaces[k] === "prefer" && surfaces[k] >= 0.4) why.push(`${pct(surfaces[k])} ${SURFACE_LABEL[k]}`);
+    if (q.surfaces[k] === "prefer" && surfaces[k] >= 0.4)
+      why.push(surfaces[k] >= 0.6 ? `mostly ${SURFACE_LABEL[k]}` : `${km(surfaces[k] * secM)} km of ${SURFACE_LABEL[k]}`);
   }
   parts.push([WEIGHTS.surfaces, Math.min(1, surf)]);
 
@@ -296,9 +297,10 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
   // Where to stay.
   if (q.stay !== "any") {
     const key = q.stay === "camping" ? ["campsite"] : ["hostel", "hotel"];
-    const covered = secs.filter((s) => key.some((k) => (s.accommodation[k] ?? 0) > 0)).length / secs.length;
-    parts.push([WEIGHTS.stay, covered]);
-    if (covered < 1) watch.push(`${q.stay === "camping" ? "campsites" : "rooms"} on only ${pct(covered)} of its sections`);
+    const covered = secs.filter((s) => key.some((k) => (s.accommodation[k] ?? 0) > 0)).length;
+    parts.push([WEIGHTS.stay, covered / secs.length]);
+    const without = secs.length - covered;
+    if (without) watch.push(`no ${q.stay === "camping" ? "campsites" : "rooms"} found on ${without === 1 ? "one" : without} of its sections`);
   }
 
   // Watch-outs from the audit, and the gaps the rider has to check (D37).

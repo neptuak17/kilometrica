@@ -10,7 +10,7 @@ import type { Finding, Highlight, Place, Stop } from "@dpg/contracts";
 import type { PlanCore } from "./plan";
 import { bedsFor } from "./stages";
 import { clock, dayIndex, monthOf, weekday } from "./sun";
-import { country, day as dayText, hours, km, MONTHS_LONG, plural, stopName, WEEKDAYS_LONG } from "./text";
+import { country, day as dayText, hours, KNOWN_ENOUGH, km, MONTHS_LONG, plural, stopName, WEEKDAYS_LONG } from "./text";
 import { type DayPlan, type Handoff, type PlanData, type PlanItem, placesMissing } from "./types";
 
 export const CAPS = { headsup: 3, highlight: 3, brief: 5 };
@@ -142,6 +142,23 @@ function holidayOn(data: PlanData, cc: string | null, iso: string) {
   const cal = data.calendar?.countries.find((c) => c.country === cc);
   if (!cal || cal.public_year !== Number(iso.slice(0, 4))) return null;
   return cal.public.find((h) => h.date === iso && h.nationwide) ?? null;
+}
+
+/**
+ * A riding day's food places, and how many are open that day among those whose hours we know (D37: the known part
+ * only). Null where the day's places didn't load: not loaded isn't none.
+ */
+export function foodOnDay(data: PlanData, d: DayPlan): { all: number; known: number; open: number; holiday: string | null; ids: string[] } | null {
+  const full = data.full;
+  const lo = Math.min(d.fromM, d.toM);
+  const hi = Math.max(d.fromM, d.toM);
+  if (!full || placesMissing(full, lo, hi).length) return null;
+  const food = full.places.filter((p) => p.service === "food" && p.counts && p.access_at_m >= lo && p.access_at_m <= hi);
+  const known = food.filter((p) => typeof p.detail.days === "string");
+  const di = dayIndex(d.date);
+  const hol = holidayOn(data, d.stop?.country ?? null, d.date);
+  const open = known.filter((p) => !(hol && /\bPH\b/.test(p.opening_hours ?? "")) && (p.detail.days as string)[di] === "o").length;
+  return { all: food.length, known: known.length, open, holiday: hol?.name ?? null, ids: known.map((p) => p.id) };
 }
 
 function schoolOn(data: PlanData, cc: string | null, iso: string) {
@@ -636,32 +653,24 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
         });
       }
     }
-    // Food places open on the date, where their hours are known (D37: the known part only).
-    const iso = d.date;
-    const di = dayIndex(iso);
-    const hol = holidayOn(data, d.stop?.country ?? null, iso);
-    const known = full.places.filter(
-      (p) => p.service === "food" && p.counts && p.access_at_m >= lo && p.access_at_m <= hi && typeof p.detail.days === "string",
-    );
-    if (loaded && known.length >= 3) {
-      const open = known.filter((p) => {
-        if (hol && /\bPH\b/.test(p.opening_hours ?? "")) return false;
-        return (p.detail.days as string)[di] === "o";
-      }).length;
-      if (open / known.length <= 0.5) {
-        const what = hol ? `a public holiday (${hol.name})` : `a ${WEEKDAYS_LONG[weekday(iso)]}`;
+    // Few food places open on the date: said only when we know the hours of nearly all of them (D57), since a
+    // conclusion drawn from the few that publish hours would be a guess.
+    const eat = foodOnDay(data, d);
+    if (eat && eat.all >= 3 && eat.known / eat.all >= KNOWN_ENOUGH) {
+      if (eat.open / eat.known <= 0.5) {
+        const what = eat.holiday ? `a public holiday (${eat.holiday})` : `a ${WEEKDAYS_LONG[weekday(d.date)]}`;
         add({
           id: `open:${d.number}`,
           kind: "headsup",
           day: d.number,
           fromM: d.fromM,
           toM: d.toM,
-          title: `Day ${d.number} is ${what}: ${open} of the ${known.length} food places with known hours are open`,
+          title: `Day ${d.number} is ${what}: ${eat.open} of the ${eat.known} food places${eat.known < eat.all ? " with known hours" : ""} are open`,
           short: "Food: few open",
-          why: "Most places publish no hours; check the ones you count on.",
+          why: "From their published hours; check the ones you count on.",
           rank: 44,
           topic: "risk",
-          evidence: { places: known.map((p) => p.id), source: "OSM opening_hours" },
+          evidence: { places: eat.ids, source: "OSM opening_hours" },
           handoffs: [],
         });
       }

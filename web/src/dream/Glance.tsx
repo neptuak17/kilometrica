@@ -94,7 +94,7 @@ export function Glance({ sections, month, onMonth }: { sections: DreamSection[];
                           : { background: "var(--unknown)", color: "var(--unknown-foreground)" }
                       }
                       title={`${country(r.cc)}, ${MONTHS_LONG[m]}: ${
-                        b ? `best-time ${Math.round(b.v)} of 100${b.share < 0.99 ? ` (no data for ${Math.round((1 - b.share) * 100)}% of it)` : ""}` : "no data: check yourself"
+                        b ? `best-time ${Math.round(b.v)} of 100${b.share < 0.99 ? ` (no data for ${whole(((1 - b.share) * r.length) / 1000)} km of it: check yourself)` : ""}` : "no data: check yourself"
                       }`}
                     >
                       {b ? Math.round(b.v) : "?"}

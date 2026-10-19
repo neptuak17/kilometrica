@@ -5,8 +5,9 @@
  */
 import type { PlanCore } from "./plan";
 import { monthOf } from "./sun";
-import { hours, km, MONTHS_LONG, oneIn, plural, range } from "./text";
-import { type Brief, type BriefLine, type DayPlan, type PlanData, type PlanItem, placesMissing } from "./types";
+import { foodOnDay } from "./items";
+import { dayList, hours, KNOWN_ENOUGH, km, MONTHS_LONG, oneIn, plural, range, shareOf } from "./text";
+import type { Brief, BriefLine, DayPlan, PlanData, PlanItem } from "./types";
 
 const THEME_PHRASE: Record<string, string> = {
   coast: "along the coast",
@@ -188,22 +189,36 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
     ? `${plural(calls, "thing")} ${calls === 1 ? "needs" : "need"} your call`
     : `Ready to go${noBed ? "" : ": a bed every night"}${beyond.length ? "" : `${noBed ? ": " : ", "}every day within your level`}, ${plural(checks, "check")} before you leave`;
 
-  // How well we know these days, in plain words.
-  const unknownSurface = rides.reduce((a, d) => a + d.surfaces.u * d.km, 0);
-  const bedTotal = nights.reduce((a, n) => a + n.beds.count, 0);
-  const bedKnown = nights.reduce((a, n) => a + n.beds.open + n.beds.partly, 0);
-  const confidence = [
-    `surfaces known for ${Math.round(100 * (1 - unknownSurface / Math.max(total, 1e-9)))}% of the way`,
-    bedTotal ? `opening dates for ${Math.round((100 * bedKnown) / bedTotal)}% of the beds at your stops` : null,
-  ].filter((x): x is string => !!x);
-  if (data.full) {
-    const lo = Math.min(inputs.fromM, inputs.toM);
-    const hi = Math.max(inputs.fromM, inputs.toM);
-    const food = data.full.places.filter((p) => p.service === "food" && p.counts && p.access_at_m >= lo && p.access_at_m <= hi);
-    // A share of the food places only when they all loaded.
-    if (food.length && !placesMissing(data.full, lo, hi).length) {
-      const withHours = food.filter((p) => typeof p.detail.days === "string").length;
-      confidence.push(`opening hours for ${Math.round((100 * withHours) / food.length)}% of the food places`);
+  // How well we know these days: what it means for the rider, in words, never a percentage (D57).
+  const confidence: string[] = [];
+  const unknownDays = rides.filter((d) => d.surfaces.u * d.km >= 1);
+  const unknownSurface = unknownDays.reduce((a, d) => a + d.surfaces.u * d.km, 0);
+  confidence.push(
+    unknownDays.length
+      ? `The surface is unknown for ${km(unknownSurface)} km, on ${dayList(unknownDays.map((d) => d.number))}`
+      : "We know the surface all the way",
+  );
+  const beds = nights.reduce(
+    (a, n) => ({ all: a.all + n.beds.count + n.beds.closed, known: a.known + n.beds.count + n.beds.closed - n.beds.unknown, open: a.open + n.beds.open + n.beds.partly }),
+    { all: 0, known: 0, open: 0 },
+  );
+  if (beds.all) {
+    confidence.push(
+      beds.known / beds.all >= KNOWN_ENOUGH
+        ? `${shareOf(beds.open / beds.known, "places to stay at your stops")} are open on your dates`
+        : "We're not sure which places to stay will be open on your dates: check before you book",
+    );
+  }
+  // Food only when every riding day's places loaded: not loaded isn't none (D37).
+  const food = rides.map((d) => foodOnDay(data, d));
+  if (food.length && food.every((f) => f !== null)) {
+    const sum = food.reduce((a, f) => ({ all: a.all + f!.all, known: a.known + f!.known, open: a.open + f!.open }), { all: 0, known: 0, open: 0 });
+    if (sum.all) {
+      confidence.push(
+        sum.known / sum.all >= KNOWN_ENOUGH
+          ? `${shareOf(sum.open / sum.known, "food places along the way")} are open on your days`
+          : "We're not sure when food places are open: check ahead",
+      );
     }
   }
 

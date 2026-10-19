@@ -33,6 +33,7 @@ import { useRouteList } from "../rider/routes";
 import { Header } from "../shared/Header";
 import {
   addressOf,
+  and,
   type Ask,
   climbText,
   EMPTY,
@@ -127,7 +128,25 @@ function Comparison({ pair, names, a, levels, titles, route }: {
   titles: Record<string, string>;
   route: string;
 }) {
-  const pct = (x: number) => `${Math.round(x * 100)}%`;
+  // Shares of the stretch in words and km, never percentages (D57).
+  const surfacesOf = (r: StretchResult) => {
+    const kinds = (
+      [
+        ["cycle paths", r.surfaces.cycle_path],
+        ["roads", r.surfaces.road],
+        ["gravel", r.surfaces.gravel],
+      ] as const
+    )
+      .slice()
+      .sort((x, y) => y[1] - x[1]);
+    const main = kinds.filter(([, v]) => v >= 0.25);
+    const mainShare = main.reduce((a, [, v]) => a + v, 0);
+    const lead = main.length ? `${main.length < 3 && mainShare >= 0.7 ? "mostly " : ""}${and(main.map(([n]) => n))}` : "";
+    const rest = kinds.filter(([, v]) => v < 0.25 && v * r.km >= 1).map(([n, v]) => `${whole(v * r.km)} km of ${n}`);
+    const unknown = r.surfaces.unknown * r.km >= 1 ? [`${whole(r.surfaces.unknown * r.km)} km unknown`] : [];
+    const text = [lead, ...rest, ...unknown].filter(Boolean).join(" · ");
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  };
   const rows: { label: string; f: (r: StretchResult) => string; tone?: "watch" | "unknown" }[] = [
     { label: "Days", f: (r) => `${r.days} · ${km(r.km)} km · ${r.kmPerDay} km a day` },
     { label: "Climbing", f: climbText },
@@ -135,10 +154,9 @@ function Comparison({ pair, names, a, levels, titles, route }: {
     { label: "When", f: (r) => whenText(r, a) ?? "–" },
     {
       label: "Surfaces",
-      f: (r) =>
-        `cycle paths ${pct(r.surfaces.cycle_path)} · roads ${pct(r.surfaces.road)} · gravel ${pct(r.surfaces.gravel)}${r.surfaces.unknown > 0.02 ? ` · unknown ${pct(r.surfaces.unknown)}` : ""}`,
+      f: surfacesOf,
     },
-    { label: "Busy roads", f: (r) => pct(r.busyShare) },
+    { label: "Busy roads", f: (r) => (r.busyShare * r.km >= 1 ? `${whole(r.busyShare * r.km)} km` : "None found") },
     { label: "Scenery", f: (r) => r.topThemes.map((t) => titles[t.id] ?? t.id).join(", ") || "–" },
     { label: "Trains", f: (r) => `start: ${r.stationStart ?? "none found"} · end: ${r.stationEnd ?? "none found"}` },
     { label: "To watch", f: (r) => (r.watch.length ? r.watch.join("; ") : "Nothing stands out"), tone: "watch" },

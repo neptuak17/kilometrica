@@ -53,6 +53,30 @@ export function range(a: string, b: string): string {
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+/**
+ * Riders see what a share means, never a percentage (D57). A conclusion is stated only when we know for at least
+ * 9 in 10; the cut-off itself is never shown.
+ */
+export const KNOWN_ENOUGH = 0.9;
+
+/** A share of some places in words, to start a sentence: "Most places to stay", "None of the places to stay". */
+export function shareOf(x: number, things: string): string {
+  if (x >= 0.999) return `All the ${things}`;
+  if (x >= 0.9) return `Nearly all the ${things}`;
+  if (x >= 0.6) return `Most ${things}`;
+  if (x >= 0.4) return `About half the ${things}`;
+  if (x >= 0.15) return `Some ${things}`;
+  if (x > 0) return `Few ${things}`;
+  return `None of the ${things}`;
+}
+
+/** "day 3", "days 2 and 5", "days 2, 3 and 5", or "6 days" when there are more. */
+export function dayList(days: number[]): string {
+  if (days.length === 1) return `day ${days[0]}`;
+  if (days.length > 3) return `${days.length} days`;
+  return `days ${days.slice(0, -1).join(", ")} and ${days[days.length - 1]}`;
+}
+
 /** "1 in 5" for a share of days. */
 export function oneIn(share: number): string {
   if (share <= 0.03) return "rarely";

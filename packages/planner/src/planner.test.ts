@@ -289,8 +289,8 @@ describe("makePlan", () => {
     // Days touching the part that didn't load make no claim; the others still do.
     expect(gapDays(part)).toEqual(part.days.filter((d) => Math.max(d.fromM, d.toM) <= 150_000).map((d) => d.number));
     expect(gapDays(part).length).toBeGreaterThan(0);
-    expect(all.brief.confidence.some((c) => c.startsWith("opening hours"))).toBe(true);
-    expect(part.brief.confidence.some((c) => c.startsWith("opening hours"))).toBe(false);
+    expect(all.brief.confidence).toContain("All the food places along the way are open on your days");
+    expect(part.brief.confidence.some((c) => c.includes("food places"))).toBe(false);
   });
 
   it("keeps a day's heads-ups and highlights within the attention budget", () => {
