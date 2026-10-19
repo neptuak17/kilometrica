@@ -1,7 +1,8 @@
 /**
  * Dream's map (11.7): the whole route, the stretches that fit on it with their numbers, the chosen one in orange.
  * It shows the whole route until a stretch is chosen, then frames that stretch. Clicking a stretch chooses it.
- * MapLibre with the OpenFreeMap basemap, as in Plan.
+ * MapLibre with the OpenFreeMap basemap, as in Plan. The stretches use the kit's route colours (D53): teal for those that
+ * fit, orange for the chosen one.
  */
 import { type Geometry, slice } from "@dpg/planner";
 import {
@@ -16,6 +17,9 @@ import {
 import { useEffect, useMemo, useRef } from "react";
 
 const BASEMAP = "https://tiles.openfreemap.org/styles/positron";
+// The kit's --route and --route-chosen (oklch teal and orange) as hex, since MapLibre doesn't read oklch.
+const ROUTE = "#00786f";
+const CHOSEN = "#ff6900";
 type FC = { type: "FeatureCollection"; features: { properties: { key: string }; geometry: { coordinates: [number, number][] } }[] };
 type Points = { type: "FeatureCollection"; features: unknown[] };
 
@@ -32,10 +36,11 @@ export interface MapStretch {
 interface Props {
   geometry: Geometry;
   stretches: MapStretch[];
-  /** The stretch to frame; null shows the whole route. */
-  focus: string | null;
+  /** The stretch or stretches to frame; null shows the whole route. */
+  focus: string | string[] | null;
   onPick: (key: string) => void;
   attribution: string[];
+  className?: string;
 }
 
 function features(geo: Geometry, stretches: MapStretch[]): FC {
@@ -72,7 +77,7 @@ function boundsOf(lines: [number, number][][]): LngLatBounds | null {
   return any ? b : null;
 }
 
-export function DreamMap({ geometry, stretches, focus, onPick, attribution }: Props) {
+export function DreamMap({ geometry, stretches, focus, onPick, attribution, className = "dream-map" }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const ready = useRef(false);
@@ -80,11 +85,13 @@ export function DreamMap({ geometry, stretches, focus, onPick, attribution }: Pr
   const points = useMemo(() => labels(data, stretches), [data, stretches]);
   const whole = useMemo(() => boundsOf(geometry.lines.map((l) => l.coords)), [geometry]);
   // Framed only when the focus changes, so the rider's own panning survives a new list.
+  const focusKey = focus === null ? null : typeof focus === "string" ? focus : focus.join("|");
   const frame = useMemo(() => {
-    if (focus === null) return whole;
-    return boundsOf(data.features.filter((f) => f.properties.key === focus).map((f) => f.geometry.coordinates)) ?? whole;
+    if (focusKey === null) return whole;
+    const keys = focusKey.split("|");
+    return boundsOf(data.features.filter((f) => keys.includes(f.properties.key)).map((f) => f.geometry.coordinates)) ?? whole;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focus, whole, focus === null ? null : data]);
+  }, [focusKey, whole, focusKey === null ? null : data]);
   const latest = useRef({ data, points, frame, onPick });
   latest.current = { data, points, frame, onPick };
 
@@ -119,13 +126,13 @@ export function DreamMap({ geometry, stretches, focus, onPick, attribution }: Pr
         type: "line",
         source: "stretches",
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": ["match", ["get", "on"], 1, "#f08c00", "#1c7ed6"], "line-width": ["match", ["get", "on"], 1, 6, 4] },
+        paint: { "line-color": ["match", ["get", "on"], 1, CHOSEN, ROUTE], "line-width": ["match", ["get", "on"], 1, 6, 4] },
       });
       m.addLayer({
         id: "label-dots",
         type: "circle",
         source: "labels",
-        paint: { "circle-radius": 10, "circle-color": ["match", ["get", "on"], 1, "#f08c00", "#1c7ed6"], "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 },
+        paint: { "circle-radius": 10, "circle-color": ["match", ["get", "on"], 1, CHOSEN, ROUTE], "circle-stroke-color": "#ffffff", "circle-stroke-width": 2 },
       });
       m.addLayer({
         id: "label-text",
@@ -170,5 +177,5 @@ export function DreamMap({ geometry, stretches, focus, onPick, attribution }: Pr
     else m.once("style.load", fit);
   }, [frame]);
 
-  return <div className="dream-map" ref={container} />;
+  return <div className={className} ref={container} />;
 }
