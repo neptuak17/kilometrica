@@ -154,7 +154,7 @@ export interface DayPlan {
 export type ItemKind = "call" | "todo" | "headsup" | "highlight";
 
 export interface Handoff {
-  kind: "website" | "phone" | "maps" | "rail" | "wiki" | "photos" | "ferry";
+  kind: "website" | "phone" | "maps" | "rail" | "wiki" | "photos" | "ferry" | "street";
   label: string;
   url: string;
 }

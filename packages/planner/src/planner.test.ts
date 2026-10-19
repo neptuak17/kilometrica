@@ -4,8 +4,9 @@ import { applyAction, optionOutcome, type PlanState } from "./actions";
 import { TripAxis } from "./axis";
 import { planChanges } from "./changes";
 import { choicesOf, parseDocument, toDocument } from "./document";
-import { calendarFile, dayGpx, type Geometry, tripGpx } from "./exports";
-import { dayItems, mapsSearch, wikiLinks } from "./items";
+import { calendarFile, dayGpx, tripGpx } from "./exports";
+import { bearing, type Geometry } from "./geometry";
+import { dayItems, mapsSearch, streetPhotos, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan } from "./plan";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
@@ -462,6 +463,30 @@ describe("exports", () => {
     expect(gpx).toContain("Gap end");
     expect((gpx.match(/<trkseg>/g) ?? []).length).toBe(2);
     expect(tripGpx(p, geo)).toContain(`<name>Day ${p.days.length}:`);
+  });
+
+  it("links street-level photos where a heads-up about the way begins, facing the way the rider rides (D58)", () => {
+    const street = (p: ReturnType<typeof makePlan>, prefix: string) =>
+      p.items.find((i) => i.id.startsWith(prefix))!.handoffs.filter((h) => h.kind === "street");
+    const fwd = makePlan(d, inputs(), NO_CHOICES, { geometry: geo });
+    // The test route runs east through France, so Panoramax is offered too.
+    expect(street(fwd, "gap:").map((h) => h.label)).toEqual(["Street View", "Mapillary", "Panoramax"]);
+    expect(street(fwd, "gap:")[0]!.url).toContain("&heading=90");
+    const rev = makePlan(d, inputs({ fromM: 300_000, toM: 0, direction: "reverse" }), NO_CHOICES, { geometry: geo });
+    expect(street(rev, "gap:")[0]!.url).toContain("&heading=270");
+    // None without the geometry, and none on items that aren't about the way.
+    const has = (p: ReturnType<typeof makePlan>, f: (id: string) => boolean) =>
+      p.items.filter((i) => f(i.id)).some((i) => i.handoffs.some((h) => h.kind === "street"));
+    expect(has(makePlan(d, inputs()), () => true)).toBe(false);
+    expect(has(fwd, (id) => id.startsWith("bed:") || id.startsWith("effort:") || id.startsWith("sunset:"))).toBe(false);
+  });
+
+  it("offers Panoramax in France only, and reads bearings clockwise from north", () => {
+    expect(streetPhotos(geo, 10_000, "forward", "ES").map((h) => h.label)).toEqual(["Street View", "Mapillary"]);
+    expect(streetPhotos(geo, 10_000, "forward", "ES")[1]!.url).toBe(`https://www.mapillary.com/app/?lat=${LAT.toFixed(6)}&lng=${(10_000 * DEG_PER_M).toFixed(6)}&z=17`);
+    expect(bearing([0, 0], [0, 1])).toBeCloseTo(0);
+    expect(bearing([0, 0], [1, 0])).toBeCloseTo(90);
+    expect(bearing([0, 0], [0, 0])).toBeNull();
   });
 
   it("writes one calendar event per day", () => {

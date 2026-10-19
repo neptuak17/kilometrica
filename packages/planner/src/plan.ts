@@ -6,6 +6,7 @@
  */
 import type { RiderLevel, Stop } from "@dpg/contracts";
 import { TripAxis } from "./axis";
+import type { Geometry } from "./geometry";
 import { makeBrief } from "./brief";
 import { planItems } from "./items";
 import { type Rider, riderFor, usualDay } from "./pace";
@@ -46,6 +47,8 @@ export interface DaysOffer {
 export interface PlanOptions {
   /** The rider's languages, best first (the browser's or phone's), for Wikipedia links. */
   languages?: string[];
+  /** The route's lines, for street-level photo links at the heads-ups (D58). Without it, items carry none. */
+  geometry?: Geometry;
 }
 
 export interface PlanResult {
@@ -320,7 +323,7 @@ export function makePlan(
     offers,
     endDate: days[days.length - 1]!.date,
   };
-  const items = planItems(data, partial);
+  const items = planItems(data, partial, options.geometry);
   const brief = makeBrief(data, partial, items);
   return { ...partial, items, brief };
 }

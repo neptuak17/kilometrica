@@ -512,8 +512,9 @@ function PlanPage({ start }: { start: Start }) {
   }, [files, blockKey, pass, attempt]);
 
   const data: PlanData | null = useMemo(() => (files ? { ...files.free, full: pass && full ? full.full : null } : null), [files, full, pass]);
-  // The device's languages pick Wikipedia articles (they stay on the device, D30).
-  const options = useMemo(() => ({ languages: [...navigator.languages] }), []);
+  // The device's languages pick Wikipedia articles (they stay on the device, D30); the route's lines place the
+  // street-level photo links (D58).
+  const options = useMemo(() => ({ languages: [...navigator.languages], geometry: files?.geometry }), [files]);
   // Each state is planned once: undo, previews and "what changed" reuse the plans.
   const plans = useMemo(() => new WeakMap<PlanState, PlanResult>(), [data]);
   const planFor = useCallback(

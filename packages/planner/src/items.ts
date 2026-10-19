@@ -7,6 +7,7 @@
  * date, climbs and highlights.
  */
 import type { Finding, Highlight, Place, Stop } from "@dpg/contracts";
+import { bearing, type Geometry, locate } from "./geometry";
 import type { PlanCore } from "./plan";
 import { bedsFor } from "./stages";
 import { clock, dayIndex, monthOf, weekday } from "./sun";
@@ -130,6 +131,36 @@ export function placeLinks(
 
 const dayKm = (core: PlanCore, d: DayPlan, m: number) => Math.max(0, (core.axis.tOf(m) - d.fromT) / 1000);
 
+/**
+ * Street-level photos at a point on the route (D58): Street View facing the way the rider rides, and Mapillary
+ * everywhere; Panoramax in France, where nearly all its photos are. Hand-offs (D41): each link carries the route
+ * point only, never the rider's position, and nothing is fetched until the rider opens it. Whether they have photos
+ * of that spot is theirs to say.
+ */
+export function streetPhotos(geo: Geometry, m: number, direction: "forward" | "reverse", country: string | null): Handoff[] {
+  const p = locate(geo, m);
+  if (!p) return [];
+  const ahead = locate(geo, m + (direction === "reverse" ? -30 : 30));
+  const heading = ahead ? bearing(p, ahead) : null;
+  const lat = p[1].toFixed(6);
+  const lon = p[0].toFixed(6);
+  const out: Handoff[] = [
+    {
+      kind: "street",
+      label: "Street View",
+      url: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}${heading === null ? "" : `&heading=${Math.round(heading)}`}`,
+    },
+    { kind: "street", label: "Mapillary", url: `https://www.mapillary.com/app/?lat=${lat}&lng=${lon}&z=17` },
+  ];
+  if (country === "FR") out.push({ kind: "street", label: "Panoramax", url: `https://explore.panoramax.fr/#focus=map&map=17/${lat}/${lon}` });
+  return out;
+}
+
+/** Heads-ups about the way itself, where seeing it helps: the audit's findings, gaps, steps, the steepest and big climbs. */
+const SEE_IT = ["finding:", "gap:", "ferry:", "transport:", "steep:", "climb:"];
+/** Findings about something other than the way (the distance to a station), where photos don't help. */
+const NOT_SEEN = ["services.bail_out"];
+
 function inDay(core: PlanCore, d: DayPlan, m0: number, m1: number): boolean {
   const lo = Math.min(d.fromM, d.toM);
   const hi = Math.max(d.fromM, d.toM);
@@ -179,7 +210,7 @@ function bedPlaces(full: NonNullable<PlanData["full"]>, stop: Stop, sleep: strin
     .sort((a, b) => Math.abs(a.access_at_m - stop.at_m) - Math.abs(b.access_at_m - stop.at_m));
 }
 
-export function planItems(data: PlanData, core: PlanCore): PlanItem[] {
+export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanItem[] {
   const items: PlanItem[] = [];
   const { inputs, level, usual, days, nights } = core;
   const rides = days.filter((d) => d.kind === "ride");
@@ -521,6 +552,19 @@ export function planItems(data: PlanData, core: PlanCore): PlanItem[] {
   }
 
   if (data.full) fullRules(data, core, add);
+
+  // Street-level photos where the heads-up begins, in the direction of travel (D58).
+  if (geo) {
+    const reverse = inputs.direction === "reverse";
+    for (const i of items) {
+      if (i.fromM === null || !SEE_IT.some((s) => i.id.startsWith(s))) continue;
+      if (i.evidence.findings?.some((id) => NOT_SEEN.some((r) => data.full?.findings.find((f) => f.id === id)?.rule_id === r))) continue;
+      const ends = [i.fromM, i.toM ?? i.fromM];
+      const m = reverse ? Math.max(...ends) : Math.min(...ends);
+      const country = data.dream.sections.find((s) => m >= s.from_m && m <= s.to_m)?.country ?? null;
+      i.handoffs.push(...streetPhotos(geo, m, inputs.direction, country));
+    }
+  }
 
   return items.sort((a, b) => b.rank - a.rank || (a.day ?? 0) - (b.day ?? 0));
 }

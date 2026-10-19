@@ -30,19 +30,29 @@ import { LockIcon } from "./Locked";
 
 const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
 
-/** Handoffs to other sites (D41): each opens in a new tab. */
+/**
+ * Handoffs to other sites (D41): each opens in a new tab. Street-level photos (D58) come last, after "See it:", and
+ * are left off paper, which can't open them.
+ */
 export function Links({ links, size = "xs" }: { links: Handoff[]; size?: "xs" | "sm" }) {
-  if (!links.length) return null;
+  const unique = links.filter((l, i) => links.findIndex((x) => x.url === l.url) === i);
+  if (!unique.length) return null;
+  const button = (l: Handoff) => (
+    <LinkButton key={l.url} href={l.url} target="_blank" rel="noreferrer noopener" variant="outline" size={size} className="h-auto min-h-6 max-w-full py-1 text-left whitespace-normal">
+      {l.label}
+      <Icons.ExternalLink data-icon="inline-end" />
+    </LinkButton>
+  );
+  const street = unique.filter((l) => l.kind === "street");
   return (
-    <span className="flex flex-wrap gap-1.5">
-      {links
-        .filter((l, i) => links.findIndex((x) => x.url === l.url) === i)
-        .map((l) => (
-          <LinkButton key={l.url} href={l.url} target="_blank" rel="noreferrer noopener" variant="outline" size={size} className="h-auto min-h-6 max-w-full py-1 text-left whitespace-normal">
-            {l.label}
-            <Icons.ExternalLink data-icon="inline-end" />
-          </LinkButton>
-        ))}
+    <span className="flex flex-wrap items-center gap-1.5">
+      {unique.filter((l) => l.kind !== "street").map(button)}
+      {street.length > 0 && (
+        <span className="flex flex-wrap items-center gap-1.5 print:hidden">
+          <span className="text-xs text-muted-foreground">See it:</span>
+          {street.map(button)}
+        </span>
+      )}
     </span>
   );
 }
