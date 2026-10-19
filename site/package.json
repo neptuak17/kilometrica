@@ -1,0 +1,20 @@
+{
+  "name": "@dpg/site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Kilometrica's marketing site at kilometrica.com (D56), for now a holding page. Published to GitHub Pages by .github/workflows/site.yml.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@dpg/ui": "*",
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

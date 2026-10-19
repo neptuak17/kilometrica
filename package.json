@@ -5,7 +5,8 @@
   "workspaces": [
     "packages/*",
     "api",
-    "web"
+    "web",
+    "site"
   ],
   "scripts": {
     "engine:test": "wsl -d Ubuntu-24.04 -- bash scripts/dpg --test -q",
@@ -26,7 +27,9 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run engine:test && npm run test -w @dpg/api && npm run test -w @dpg/dream && npm run test -w @dpg/planner",
     "design-system": "npm run build -w @dpg/ui && node .ds-sync/package-build.mjs --config .design-sync/config.json --node-modules ./node_modules --entry ./packages/ui/dist/index.js --out ./ds-bundle && node .design-sync/build-artifact.mjs",
-    "design-system:setup": "npm ci --prefix .ds-sync"
+    "design-system:setup": "npm ci --prefix .ds-sync",
+    "site:dev": "npm run dev -w @dpg/site",
+    "site:build": "npm run build -w @dpg/site"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",

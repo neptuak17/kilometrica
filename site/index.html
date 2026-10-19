@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Kilometrica</title>
+    <meta name="description" content="Find the stretch that suits you, plan it day by day, and ride it knowing where the water, food and beds are, and where the gaps are." />
+    <link rel="canonical" href="https://kilometrica.com/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://kilometrica.com/" />
+    <meta property="og:title" content="Kilometrica: know the route before you ride it" />
+    <meta property="og:description" content="Find the stretch that suits you, plan it day by day, and ride it knowing where the water, food and beds are, and where the gaps are." />
+    <!-- Follows the device's light or dark setting. Nothing is stored: no cookies, no analytics (D56). -->
+    <script>
+      (function () {
+        var dark = window.matchMedia("(prefers-color-scheme: dark)");
+        var set = function () {
+          document.documentElement.classList.toggle("dark", dark.matches);
+        };
+        set();
+        dark.addEventListener("change", set);
+      })();
+    </script>
+    <link rel="stylesheet" href="/src/site.css" />
+  </head>
+  <body class="bg-background font-sans text-foreground antialiased">
+    <!-- The holding page (D56): the name and a teaser, nothing else, until the site is designed at L1. -->
+    <main class="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center gap-6 px-4 py-16 sm:px-8">
+      <p class="text-lg font-semibold tracking-tight">Kilometrica</p>
+      <h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Know the route before you ride it.</h1>
+      <p class="text-lg text-pretty text-muted-foreground">Find the stretch that suits you, plan it day by day, and ride it knowing where the water, food and beds are, and where the gaps are.</p>
+      <!-- EuroVelo 8 from Tarascon to Cannes, 378 km, from our audit's elevation profile (Copernicus DEM). -->
+      <svg class="my-4 h-16 w-full text-route sm:h-20" viewBox="0 0 1000 120" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <path d="M0.0 114.4L4.0 114.7L8.0 114.8L12.0 114.5L16.1 113.5L20.1 114.0L24.1 114.2L28.1 113.7L32.1 113.0L36.1 111.2L40.2 107.7L44.2 105.8L48.2 104.3L52.2 103.4L56.2 105.1L60.2 104.3L64.3 104.6L68.3 105.6L72.3 105.5L76.3 105.3L80.3 104.6L84.3 103.5L88.4 102.9L92.4 102.9L96.4 102.5L100.4 105.2L104.4 101.9L108.4 101.5L112.4 100.9L116.5 99.4L120.5 97.6L124.5 97.8L128.5 97.0L132.5 95.4L136.5 94.2L140.6 92.9L144.6 91.4L148.6 89.6L152.6 88.5L156.6 86.9L160.6 85.5L164.7 84.1L168.7 81.6L172.7 77.1L176.7 76.1L180.7 75.2L184.7 74.6L188.8 72.2L192.8 73.7L196.8 70.6L200.8 68.9L204.8 66.4L208.8 65.3L212.9 62.5L216.9 60.5L220.9 54.4L224.9 52.5L228.9 53.0L232.9 52.4L236.9 51.4L241.0 50.0L245.0 45.1L249.0 34.6L253.0 44.6L257.0 42.9L261.0 32.5L265.1 32.7L269.1 28.9L273.1 21.3L277.1 8.3L281.1 10.7L285.1 23.9L289.2 28.8L293.2 26.5L297.2 24.0L301.2 23.9L305.2 28.9L309.2 36.7L313.3 40.9L317.3 40.5L321.3 41.6L325.3 37.0L329.3 33.3L333.3 29.1L337.3 17.4L341.4 11.0L345.4 20.5L349.4 20.8L353.4 14.9L357.4 15.4L361.4 19.2L365.5 25.0L369.5 32.2L373.5 44.0L377.5 48.6L381.5 48.4L385.5 43.1L389.6 48.0L393.6 49.9L397.6 54.8L401.6 55.5L405.6 56.4L409.6 76.3L413.7 59.9L417.7 54.8L421.7 48.4L425.7 40.4L429.7 34.1L433.7 24.4L437.8 38.9L441.8 40.7L445.8 45.7L449.8 36.9L453.8 39.1L457.8 46.3L461.8 41.6L465.9 29.6L469.9 38.6L473.9 43.8L477.9 63.2L481.9 76.5L485.9 76.9L490.0 74.4L494.0 72.5L498.0 72.4L502.0 71.4L506.0 69.1L510.0 66.9L514.1 64.6L518.1 62.3L522.1 61.0L526.1 57.5L530.1 54.8L534.1 52.5L538.2 49.5L542.2 47.0L546.2 45.0L550.2 42.4L554.2 41.6L558.2 42.7L562.2 36.1L566.3 38.4L570.3 38.9L574.3 42.4L578.3 46.1L582.3 49.6L586.3 52.1L590.4 54.9L594.4 57.5L598.4 60.7L602.4 63.2L606.4 57.2L610.4 60.6L614.5 52.6L618.5 51.2L622.5 46.9L626.5 44.8L630.5 39.6L634.5 37.6L638.6 34.4L642.6 37.5L646.6 39.0L650.6 41.8L654.6 45.3L658.6 50.4L662.7 53.6L666.7 58.6L670.7 60.0L674.7 67.3L678.7 72.6L682.7 76.9L686.7 74.6L690.8 71.9L694.8 68.0L698.8 68.4L702.8 66.6L706.8 66.9L710.8 68.4L714.9 69.8L718.9 67.1L722.9 67.7L726.9 74.8L730.9 73.5L734.9 71.0L739.0 69.9L743.0 66.9L747.0 52.1L751.0 47.5L755.0 66.8L759.0 80.3L763.1 87.8L767.1 79.2L771.1 73.6L775.1 64.8L779.1 54.1L783.1 60.3L787.1 67.0L791.2 66.1L795.2 60.4L799.2 52.6L803.2 45.3L807.2 39.5L811.2 28.6L815.3 26.4L819.3 25.9L823.3 33.0L827.3 46.8L831.3 43.3L835.3 38.9L839.4 36.5L843.4 37.4L847.4 46.7L851.4 47.1L855.4 47.8L859.4 48.6L863.5 51.8L867.5 53.4L871.5 58.8L875.5 65.7L879.5 69.9L883.5 71.8L887.6 77.1L891.6 76.5L895.6 78.4L899.6 85.3L903.6 71.9L907.6 68.4L911.6 78.5L915.7 89.2L919.7 89.8L923.7 76.9L927.7 69.7L931.7 72.3L935.7 72.0L939.8 66.0L943.8 72.4L947.8 82.0L951.8 94.6L955.8 109.4L959.8 109.3L963.9 111.0L967.9 113.6L971.9 114.3L975.9 114.8L979.9 115.1L983.9 115.3L988.0 115.6L992.0 115.6L996.0 115.5L1000.0 115.4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke" />
+      </svg>
+      <p class="text-sm text-muted-foreground">Starting with EuroVelo 8, the Mediterranean Route. Coming soon.</p>
+    </main>
+  </body>
+</html>
