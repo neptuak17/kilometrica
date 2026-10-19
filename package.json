@@ -24,7 +24,9 @@
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w @dpg/api\" \"npm run dev -w @dpg/web\"",
     "build": "npm run build -w @dpg/web",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run engine:test && npm run test -w @dpg/api && npm run test -w @dpg/dream && npm run test -w @dpg/planner"
+    "test": "npm run engine:test && npm run test -w @dpg/api && npm run test -w @dpg/dream && npm run test -w @dpg/planner",
+    "design-system": "npm run build -w @dpg/ui && node .ds-sync/package-build.mjs --config .design-sync/config.json --node-modules ./node_modules --entry ./packages/ui/dist/index.js --out ./ds-bundle && node .design-sync/build-artifact.mjs",
+    "design-system:setup": "npm ci --prefix .ds-sync"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",

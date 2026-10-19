@@ -30,9 +30,11 @@ Thumbs.db
 .env.*
 !.env.example
 
-# Claude Design sync (D53): staged converter, its output and machine state; .design-sync/ itself is committed
-.ds-sync/
+# Design system sync (D53): the converter's scripts in .ds-sync/ and .design-sync/ are committed; their
+# dependencies, the converter's output, the artifact files built from it and machine state are not
+.ds-sync/node_modules/
 ds-bundle/
+ds-artifact/
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/node_modules

@@ -5,7 +5,7 @@ Kilometrica plans long-distance cycle trips: Dream finds a stretch of a route th
 ## Setup
 
 - No provider or wrapper is needed: with `styles.css` loaded, components are styled. Text is Inter (`font-sans`).
-- Dark mode: put the `dark` class on an ancestor element; every colour switches.
+- Dark mode: put `data-theme="dark"` on `<html>` (or any ancestor element); every colour and the components' dark styles switch. The `dark` class alone switches only the components' dark styles, not the colours, so don't use it on its own.
 - Props follow React Aria: `onPress` (not `onClick`) on `Button`; `isDisabled`; `isSelected` / `defaultSelected` on `Checkbox`, `Switch`, `Toggle`; `defaultOpen` on `DialogTrigger`, `PopoverTrigger`, `TooltipTrigger`; `defaultSelectedKey` on `Select` and `Tabs`; `id` on `SelectItem`, `TabsTrigger`, `TabsContent`, `ToggleGroupItem`; `selectionMode` and `defaultSelectedKeys` on `ToggleGroup`.
 - `Checkbox` and `Switch` are bare controls: give each an `id` and put a `<Label htmlFor>` beside it. A labelled input is `<TextField><Label>…</Label><Input /></TextField>`. `Table` needs an `aria-label` and one `TableHead isRowHeader`.
 - Overlays: `DialogTrigger` wraps a `Button` and a `Dialog`; `PopoverTrigger` wraps a `Button` and a `Popover`; `TooltipTrigger` wraps a trigger and a `Tooltip`.
@@ -27,7 +27,7 @@ Only compiled classes work; arbitrary values such as `bg-[#123456]` or `w-[37px]
 
 ## Where the truth lives
 
-`styles.css` (it imports `tokens/tokens.css`, the fonts and the compiled `_ds_bundle.css`); `tokens/tokens.css` for every colour's value, light in `:root` and dark in `.dark`; per component, `components/<group>/<Name>/<Name>.d.ts` for props and `<Name>.prompt.md` for usage. Kilometrica's own pieces are `StretchCard`, `DayRow` and `ChangeBar` (group `km`).
+`styles.css` (it imports `tokens.css`, the fonts and the compiled `components/bundle.css`); `tokens.json` for every colour's value and usage note, light and dark (`tokens.css` is generated from it: light in `:root`, dark in `[data-theme="dark"]`); per component, `components/<Name>/<Name>.d.ts` for props and `components/<Name>/README.md` for usage. Kilometrica's own pieces are `StretchCard`, `DayRow` and `ChangeBar` (group `km`).
 
 ## Kilometrica's design rules
 
