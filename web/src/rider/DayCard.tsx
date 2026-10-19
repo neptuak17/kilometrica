@@ -27,6 +27,7 @@ import {
 import { Badge, Button, Card, CardContent, Checkbox, cn, Icons, Label, LinkButton } from "@dpg/ui";
 import { type ReactNode, useId, useState } from "react";
 import { LockIcon } from "./Locked";
+import { looksUp, openPhoto } from "./photos";
 
 const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
 
@@ -38,7 +39,17 @@ export function Links({ links, size = "xs" }: { links: Handoff[]; size?: "xs" | 
   const unique = links.filter((l, i) => links.findIndex((x) => x.url === l.url) === i);
   if (!unique.length) return null;
   const button = (l: Handoff) => (
-    <LinkButton key={l.url} href={l.url} target="_blank" rel="noreferrer noopener" variant="outline" size={size} className="h-auto min-h-6 max-w-full py-1 text-left whitespace-normal">
+    <LinkButton
+      key={l.url}
+      href={l.url}
+      target="_blank"
+      rel="noreferrer noopener"
+      variant="outline"
+      size={size}
+      className="h-auto min-h-6 max-w-full py-1 text-left whitespace-normal"
+      // Mapillary and Panoramax: their nearest photo, looked up on tap (D58).
+      onClick={looksUp(l) ? (e) => openPhoto(l) && e.preventDefault() : undefined}
+    >
       {l.label}
       <Icons.ExternalLink data-icon="inline-end" />
     </LinkButton>

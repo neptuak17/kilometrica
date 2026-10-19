@@ -157,6 +157,11 @@ export interface Handoff {
   kind: "website" | "phone" | "maps" | "rail" | "wiki" | "photos" | "ferry" | "street";
   label: string;
   url: string;
+  /**
+   * Street-level photos that open on a photo only by its id (D58): the route point to find the nearest one from, when
+   * the rider taps, and the way the rider faces there. `url` is their map at that point, for when there's none.
+   */
+  photoAt?: { service: "mapillary" | "panoramax"; lon: number; lat: number; heading: number | null };
 }
 
 export interface CallOption {

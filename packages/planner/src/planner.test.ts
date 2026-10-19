@@ -474,6 +474,10 @@ describe("exports", () => {
     expect(street(fwd, "gap:")[0]!.url).toContain("&heading=90");
     const rev = makePlan(d, inputs({ fromM: 300_000, toM: 0, direction: "reverse" }), NO_CHOICES, { geometry: geo });
     expect(street(rev, "gap:")[0]!.url).toContain("&heading=270");
+    // Mapillary and Panoramax carry the point and heading to find their nearest photo by, on tap.
+    expect(street(fwd, "gap:")[1]!.photoAt).toMatchObject({ service: "mapillary", lat: LAT });
+    expect(street(fwd, "gap:")[1]!.photoAt!.heading).toBeCloseTo(90, 0);
+    expect(street(fwd, "gap:")[2]!.photoAt?.service).toBe("panoramax");
     // None without the geometry, and none on items that aren't about the way.
     const has = (p: ReturnType<typeof makePlan>, f: (id: string) => boolean) =>
       p.items.filter((i) => f(i.id)).some((i) => i.handoffs.some((h) => h.kind === "street"));

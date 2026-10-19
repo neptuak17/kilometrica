@@ -134,8 +134,9 @@ const dayKm = (core: PlanCore, d: DayPlan, m: number) => Math.max(0, (core.axis.
 /**
  * Street-level photos at a point on the route (D58): Street View facing the way the rider rides, and Mapillary
  * everywhere; Panoramax in France, where nearly all its photos are. Hand-offs (D41): each link carries the route
- * point only, never the rider's position, and nothing is fetched until the rider opens it. Whether they have photos
- * of that spot is theirs to say.
+ * point only, never the rider's position, and nothing is fetched until the rider opens it. Google opens on its nearest
+ * photo itself; Mapillary and Panoramax need a photo's id, so their links carry the point to look one up by on tap
+ * (`photoAt`), and open their map there when there's none.
  */
 export function streetPhotos(geo: Geometry, m: number, direction: "forward" | "reverse", country: string | null): Handoff[] {
   const p = locate(geo, m);
@@ -150,9 +151,21 @@ export function streetPhotos(geo: Geometry, m: number, direction: "forward" | "r
       label: "Street View",
       url: `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}${heading === null ? "" : `&heading=${Math.round(heading)}`}`,
     },
-    { kind: "street", label: "Mapillary", url: `https://www.mapillary.com/app/?lat=${lat}&lng=${lon}&z=17` },
+    {
+      kind: "street",
+      label: "Mapillary",
+      url: `https://www.mapillary.com/app/?lat=${lat}&lng=${lon}&z=17`,
+      photoAt: { service: "mapillary", lon: p[0], lat: p[1], heading },
+    },
   ];
-  if (country === "FR") out.push({ kind: "street", label: "Panoramax", url: `https://explore.panoramax.fr/#focus=map&map=17/${lat}/${lon}` });
+  if (country === "FR") {
+    out.push({
+      kind: "street",
+      label: "Panoramax",
+      url: `https://explore.panoramax.fr/#focus=map&map=17/${lat}/${lon}`,
+      photoAt: { service: "panoramax", lon: p[0], lat: p[1], heading },
+    });
+  }
   return out;
 }
 
