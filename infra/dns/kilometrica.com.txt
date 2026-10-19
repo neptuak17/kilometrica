@@ -1,0 +1,25 @@
+;; kilometrica.com: the marketing site on GitHub Pages (D56), as a BIND file to import into Cloudflare.
+;;
+;; Cloudflare: kilometrica.com > DNS > Records > Import and Export > Import DNS records, and choose this file.
+;; Leave "Proxy imported DNS records" unticked. Every record is "DNS only" (grey cloud): GitHub must see its own
+;; addresses to issue the HTTPS certificate.
+;;
+;; Before importing, delete any existing A, AAAA or CNAME records for kilometrica.com and www.
+;; TTL 1 is Cloudflare's "Auto".
+
+;; GitHub Pages, for the bare domain.
+kilometrica.com.	1	IN	A	185.199.108.153 ; cf_tags=cf-proxied:false
+kilometrica.com.	1	IN	A	185.199.109.153 ; cf_tags=cf-proxied:false
+kilometrica.com.	1	IN	A	185.199.110.153 ; cf_tags=cf-proxied:false
+kilometrica.com.	1	IN	A	185.199.111.153 ; cf_tags=cf-proxied:false
+kilometrica.com.	1	IN	AAAA	2606:50c0:8000::153 ; cf_tags=cf-proxied:false
+kilometrica.com.	1	IN	AAAA	2606:50c0:8001::153 ; cf_tags=cf-proxied:false
+kilometrica.com.	1	IN	AAAA	2606:50c0:8002::153 ; cf_tags=cf-proxied:false
+kilometrica.com.	1	IN	AAAA	2606:50c0:8003::153 ; cf_tags=cf-proxied:false
+
+;; www: GitHub redirects it to kilometrica.com.
+www.kilometrica.com.	1	IN	CNAME	neptuak17.github.io. ; cf_tags=cf-proxied:false
+
+;; Verifies the domain for GitHub Pages, so no one else can claim it. Each account gets its own value: paste the one
+;; GitHub shows (profile Settings > Pages > Add a domain) between the quotes, and remove the leading ";".
+; _github-pages-challenge-neptuak17.kilometrica.com.	1	IN	TXT	"PASTE-THE-VALUE-FROM-GITHUB"
