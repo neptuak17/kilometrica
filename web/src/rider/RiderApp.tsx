@@ -57,7 +57,7 @@ import {
   LinkButton,
   Switch,
 } from "@dpg/ui";
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "../shared/Header";
 import { BeforeYouGo, type ExportKind } from "./BeforeYouGo";
 import { Brief, DayList, EffortChart } from "./Brief";
@@ -394,11 +394,19 @@ function TitleBlock({ plan }: { plan: PlanResult }) {
   );
 }
 
+/**
+ * The trip book (11.6), until its own layout is built (D55): the brief, then each day on a page of its own, with the
+ * "why" behind each item printed, since paper can't open it.
+ */
 function TripBook({ plan, data, onDone }: { plan: PlanResult; data: PlanData; onDone: () => void }) {
+  const book = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const after = () => onDone();
     window.addEventListener("afterprint", after);
-    const t = setTimeout(() => window.print(), 300);
+    const t = setTimeout(() => {
+      for (const d of book.current?.querySelectorAll("details") ?? []) d.open = true;
+      window.print();
+    }, 300);
     return () => {
       clearTimeout(t);
       window.removeEventListener("afterprint", after);
@@ -406,7 +414,7 @@ function TripBook({ plan, data, onDone }: { plan: PlanResult; data: PlanData; on
   }, [onDone]);
   const noop = () => {};
   return (
-    <div className="mx-auto grid max-w-3xl gap-6 bg-background px-4 py-8 font-sans text-sm text-foreground">
+    <div ref={book} className="mx-auto grid max-w-3xl gap-6 bg-background px-4 py-8 font-sans text-sm text-foreground print:max-w-none print:p-0">
       <div className="print:hidden">
         <Button variant="outline" size="sm" onPress={onDone}>
           <Icons.ArrowLeft data-icon="inline-start" />
@@ -416,21 +424,22 @@ function TripBook({ plan, data, onDone }: { plan: PlanResult; data: PlanData; on
       <TitleBlock plan={plan} />
       <Brief plan={plan} onLine={noop} />
       {plan.days.map((d) => (
-        <DayCard
-          key={d.number}
-          plan={plan}
-          data={data}
-          day={d}
-          free={false}
-          readOnly
-          choices={plan.choices}
-          onLockNight={noop}
-          onToggleBooked={noop}
-          onChooseBed={noop}
-          onToggleRest={noop}
-          onDone={noop}
-          onGpx={noop}
-        />
+        <div key={d.number} className="break-before-page">
+          <DayCard
+            plan={plan}
+            data={data}
+            day={d}
+            free={false}
+            readOnly
+            choices={plan.choices}
+            onLockNight={noop}
+            onToggleBooked={noop}
+            onChooseBed={noop}
+            onToggleRest={noop}
+            onDone={noop}
+            onGpx={noop}
+          />
+        </div>
       ))}
       <p className="text-xs text-muted-foreground">
         Kilometrica trip book · {plan.route.name} · audit {plan.route.runId}
