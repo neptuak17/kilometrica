@@ -1,6 +1,7 @@
 /**
- * The rider view (M4, DESIGN.md 11.6): Plan for riders, apart from the audit viewer, which is ours (D43, D48).
- * Built for the web first (D49); a plan opened from its link on a phone shows the phone-width view, where Go starts.
+ * The rider view (M4, DESIGN.md 11.6) in the new look (D53, D54): Plan for riders, apart from the audit viewer, which
+ * is ours (D43, D48). Built for the web first (D49); a plan opened from its link on a phone shows the phone-width
+ * view, where Go starts.
  *
  *   /plan?route=<network>/<ref>&first=&last=&way=&days=&month=&level=…   a stretch from Dream (or any range)
  *   /plan?plan=<id>                                                      a plan kept in this browser
@@ -10,6 +11,7 @@ import {
   applyAction,
   calendarFile,
   choicesOf,
+  clock,
   dayGpx,
   type DayPlan,
   day as dayText,
@@ -37,11 +39,29 @@ import {
   toDocument,
   tripGpx,
 } from "@dpg/planner";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  AlertAction,
+  AlertDescription,
+  AlertTitle,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  ChangeBar,
+  cn,
+  Icons,
+  Label,
+  LinkButton,
+  Switch,
+} from "@dpg/ui";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { Header } from "../shared/Header";
 import { BeforeYouGo, type ExportKind } from "./BeforeYouGo";
 import { Brief, DayList, EffortChart } from "./Brief";
 import { Calls } from "./Calls";
-import { ChangeBar } from "./ChangeBar";
 import { loadFull, loadRoute, type FullFiles, type RouteFiles } from "./data";
 import { DayCard } from "./DayCard";
 import { type Step, usePlanHistory } from "./history";
@@ -50,7 +70,6 @@ import { Profile } from "./Profile";
 import { Questions } from "./Questions";
 import { useRouteList } from "./routes";
 import { deletePlan, download, fileSafe, savedPlans, savePlan } from "./storage";
-import "./rider.css";
 
 const PASS_KEY = "dpg.tripPass";
 
@@ -142,86 +161,117 @@ function initialInputs(files: RouteFiles, s: Start["inputs"]): { inputs: PlanInp
   };
 }
 
+/** The page around every Plan view: the header and a centred column. */
+function Page({ header, children, wide = true }: { header?: ReactNode; children: ReactNode; wide?: boolean }) {
+  return (
+    <div className="min-h-screen bg-background font-sans text-sm text-foreground">
+      {header ?? <Header phase="plan" />}
+      <main className={cn("mx-auto flex flex-col gap-6 px-4 pt-7 pb-14 sm:px-8", wide ? "max-w-[1440px]" : "max-w-4xl")}>{children}</main>
+    </div>
+  );
+}
+
 // --- start page ---------------------------------------------------------------------------------------------
 
 function StartPage() {
   const routes = useRouteList();
   const [plans, setPlans] = useState(savedPlans);
   return (
-    <div className="rider start">
-      <header className="rider-bar">
-        <span className="brand">Kilometrica</span> <span className="muted">Plan</span>
-        <span className="spacer" />
-        <a href="/dream">Dream ›</a>
-      </header>
-      <main className="start-main">
-        <h1>Plan a trip</h1>
-        <p className="muted">
-          Pick a route, then the stretch, the dates and how you ride. Not sure which stretch? <a href="/dream">Find one in Dream ›</a>
+    <Page wide={false}>
+      <div className="grid gap-1.5">
+        <h1 className="text-3xl font-bold tracking-tight">Plan a trip</h1>
+        <p className="text-base text-muted-foreground">
+          Pick a route, then the stretch, the dates and how you ride. Not sure which stretch?{" "}
+          <a href="/dream" className="text-primary hover:underline">
+            Find one in Dream
+          </a>
+          .
         </p>
-        <ul className="route-pick">
-          {routes.map((r) => (
-            <li key={r.route.id}>
-              <a href={`/plan?route=${r.route.network}/${r.route.ref.toLowerCase()}`}>{r.route.name}</a>
-              <span className="muted"> · {km(r.summary.ride_length_m / 1000)} km{r.route.network === "user" ? " · your own route" : ""}</span>
-            </li>
-          ))}
-        </ul>
-        {plans.length > 0 && (
-          <>
-            <h2>Plans kept in this browser</h2>
-            <ul className="saved">
-              {plans.map((p) => (
-                <li key={p.id}>
-                  <a href={`/plan?plan=${p.id}`}>{p.name}</a>
-                  <span className="muted">
-                    {" "}
-                    · {dayText(p.inputs.startDate)} · {p.inputs.days} days · {p.route.name}
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        {routes.map((r) => (
+          <Card key={r.route.id} size="sm">
+            <CardHeader>
+              <CardTitle className="font-semibold">{r.route.name}</CardTitle>
+              <CardDescription>
+                {km(r.summary.ride_length_m / 1000)} km{r.route.network === "user" ? " · your own route" : ""}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LinkButton href={`/plan?route=${r.route.network}/${r.route.ref.toLowerCase()}`} size="sm">
+                Plan on this route
+                <Icons.ArrowRight data-icon="inline-end" />
+              </LinkButton>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      {plans.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Plans kept in this browser</CardTitle>
+          </CardHeader>
+          <CardContent className="grid">
+            {plans.map((p) => (
+              <div key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b py-2.5 first:pt-0 last:border-b-0 last:pb-0">
+                <div className="grid min-w-0 flex-[1_1_240px]">
+                  <a href={`/plan?plan=${p.id}`} className="font-semibold text-primary hover:underline">
+                    {p.name}
+                  </a>
+                  <span className="text-xs text-muted-foreground">
+                    {dayText(p.inputs.startDate)} · {p.inputs.days} days · {p.route.name}
                   </span>
-                  <button
-                    type="button"
-                    className="link"
-                    onClick={() => {
-                      deletePlan(p.id);
-                      setPlans(savedPlans());
-                    }}
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </main>
-    </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => {
+                    deletePlan(p.id);
+                    setPlans(savedPlans());
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+    </Page>
   );
 }
 
 function ItineraryView({ it }: { it: Itinerary }) {
   return (
-    <div className="rider itinerary">
-      <header className="rider-bar">
-        <span className="brand">Kilometrica</span> <span className="muted">Where I'll be</span>
-      </header>
-      <main className="start-main">
-        <h1>{it.name}</h1>
-        <ol className="itin">
+    <Page wide={false} header={<Header phase="plan" />}>
+      <div className="grid gap-1.5">
+        <span className="text-xs text-muted-foreground">Where I'll be</span>
+        <h1 className="text-3xl font-bold tracking-tight">{it.name}</h1>
+      </div>
+      <Card>
+        <CardContent className="grid">
           {it.days.map((d) => (
-            <li key={d.date}>
-              <b>{dayText(d.date)}</b> · {d.kind === "rest" ? `rest day at ${d.to}` : `${d.from} → ${d.to}, ${d.km} km`}
+            <div key={d.date} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b py-2.5 first:pt-0 last:border-b-0 last:pb-0">
+              <span className="w-28 font-semibold">{dayText(d.date)}</span>
+              <span className="min-w-0 flex-1">{d.kind === "rest" ? `Rest day at ${d.to}` : `${d.from} → ${d.to}, ${d.km} km`}</span>
               {d.stop && (
-                <a href={`https://www.google.com/maps/search/?api=1&query=${d.stop.lat},${d.stop.lon}`} target="_blank" rel="noreferrer noopener">
-                  {" "}
-                  map
-                </a>
+                <LinkButton
+                  href={`https://www.google.com/maps/search/?api=1&query=${d.stop.lat},${d.stop.lon}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  variant="outline"
+                  size="xs"
+                >
+                  Map
+                  <Icons.ExternalLink data-icon="inline-end" />
+                </LinkButton>
               )}
-            </li>
+            </div>
           ))}
-        </ol>
-        <p className="muted small">Shared from Kilometrica: dates and nightly stops only.</p>
-      </main>
-    </div>
+        </CardContent>
+      </Card>
+      <p className="text-xs text-muted-foreground">Shared from Kilometrica: dates and nightly stops only.</p>
+    </Page>
   );
 }
 
@@ -241,7 +291,7 @@ function metrics(p: PlanResult) {
     .reduce((a, i) => a + Math.abs((i.toM ?? 0) - (i.fromM ?? 0)) / 1000, 0);
   return {
     days: `${p.days.length} (${rides.length} riding)`,
-    hardest: `day ${hardest.number}: ${km(hardest.km)} km, ${hours(hardest.hoursSlow)}`,
+    hardest: `Day ${hardest.number}: ${km(hardest.km)} km, ${hours(hardest.hoursSlow)}`,
     hours: hours(rides.reduce((a, d) => a + d.hoursSlow, 0)),
     beyond: String(rides.filter((d) => d.effort === "beyond").length),
     nights: String(p.nights.filter((n) => n.beds.open + n.beds.partly === 0).length),
@@ -250,56 +300,99 @@ function metrics(p: PlanResult) {
   };
 }
 
-function Compare({ data, current, pinned, onUnpin }: { data: PlanData; current: PlanResult; pinned: Pinned[]; onUnpin: (i: number) => void }) {
+function Compare({ data, current, pinned, onPin, onUnpin, readOnly }: {
+  data: PlanData;
+  current: PlanResult;
+  pinned: Pinned[];
+  onPin: () => void;
+  onUnpin: (i: number) => void;
+  readOnly: boolean;
+}) {
   const plans = useMemo(() => pinned.map((p) => makePlan(data, p.inputs, p.choices, { languages: [...navigator.languages] })), [data, pinned]);
-  if (!pinned.length) return null;
-  const cols = [...plans.map((p, i) => ({ label: pinned[i]!.label, m: metrics(p), i })), { label: "Current", m: metrics(current), i: -1 }];
+  if (readOnly) return null;
+  const cols = [...plans.map((p, i) => ({ label: pinned[i]!.label, m: metrics(p), i })), { label: "Yours now", m: metrics(current), i: -1 }];
   const rows: [keyof ReturnType<typeof metrics>, string][] = [
     ["days", "Days"],
     ["hardest", "Hardest day"],
-    ["hours", "Total riding"],
+    ["hours", "Riding in all"],
     ["beyond", "Days beyond your level"],
-    ["nights", "Nights with no known-open bed"],
-    ["calls", "Calls to make"],
+    ["nights", "Nights with no known-open place"],
+    ["calls", "Your calls"],
     ["busy", "Busy roads"],
   ];
   return (
-    <section className="compare">
-      <h2>Compare plans</h2>
-      <div className="compare-table">
-        <table>
-          <thead>
-            <tr>
-              <th />
-              {cols.map((c) => (
-                <th key={c.label}>
-                  {c.label}
-                  {c.i >= 0 && (
-                    <button type="button" className="link" onClick={() => onUnpin(c.i)} aria-label="Remove">
-                      ×
-                    </button>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(([k, title]) => (
-              <tr key={k}>
-                <th>{title}</th>
-                {cols.map((c) => (
-                  <td key={c.label}>{c.m[k]}</td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">Compare plans</CardTitle>
+        <CardDescription>Keep this version, then change the days, how you sleep or the direction, and see the two side by side.</CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        <div>
+          <Button variant="outline" size="sm" onPress={onPin}>
+            <Icons.Plus data-icon="inline-start" />
+            Keep this version to compare
+          </Button>
+        </div>
+        {pinned.length > 0 && (
+          <div className="overflow-x-auto rounded-2xl border">
+            <table className="w-full min-w-[480px] border-collapse text-sm">
+              <thead>
+                <tr className="border-b">
+                  <th scope="col" />
+                  {cols.map((c) => (
+                    <th key={c.label} scope="col" className="border-l px-3 py-2.5 text-left align-top font-semibold">
+                      <span className="flex items-start justify-between gap-2">
+                        {c.label}
+                        {c.i >= 0 && (
+                          <Button variant="ghost" size="icon-xs" aria-label={`Remove ${c.label}`} onPress={() => onUnpin(c.i)}>
+                            <Icons.X />
+                          </Button>
+                        )}
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(([k, title]) => {
+                  const values = cols.map((c) => c.m[k]);
+                  const differ = new Set(values).size > 1;
+                  return (
+                    <tr key={k} className={cn("border-b last:border-b-0", differ && "bg-secondary/60")}>
+                      <th scope="row" className="px-3 py-2 text-left font-normal text-muted-foreground">
+                        {title}
+                      </th>
+                      {cols.map((c) => (
+                        <td key={c.label} className="border-l px-3 py-2 tabular-nums">
+                          {c.m[k]}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
 // --- the trip book (print) ----------------------------------------------------------------------------------
+
+function TitleBlock({ plan }: { plan: PlanResult }) {
+  const b = plan.brief;
+  return (
+    <div className="grid gap-1.5">
+      <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">{b.title}</h1>
+      <p className="text-base tabular-nums">
+        {plan.days.length} days · {b.dates} · {km(b.km)} km · {Math.round(b.climbM).toLocaleString("en-GB")} m of climbing ·{" "}
+        {b.direction === "forward" ? "as the route runs" : "the other way"}
+      </p>
+    </div>
+  );
+}
 
 function TripBook({ plan, data, onDone }: { plan: PlanResult; data: PlanData; onDone: () => void }) {
   useEffect(() => {
@@ -313,10 +406,14 @@ function TripBook({ plan, data, onDone }: { plan: PlanResult; data: PlanData; on
   }, [onDone]);
   const noop = () => {};
   return (
-    <div className="trip-book">
-      <button type="button" className="no-print" onClick={onDone}>
-        ‹ Back to the plan
-      </button>
+    <div className="mx-auto grid max-w-3xl gap-6 bg-background px-4 py-8 font-sans text-sm text-foreground">
+      <div className="print:hidden">
+        <Button variant="outline" size="sm" onPress={onDone}>
+          <Icons.ArrowLeft data-icon="inline-start" />
+          Back to the plan
+        </Button>
+      </div>
+      <TitleBlock plan={plan} />
       <Brief plan={plan} onLine={noop} />
       {plan.days.map((d) => (
         <DayCard
@@ -335,7 +432,9 @@ function TripBook({ plan, data, onDone }: { plan: PlanResult; data: PlanData; on
           onGpx={noop}
         />
       ))}
-      <p className="muted small">Kilometrica trip book · {plan.route.name} · audit {plan.route.runId}</p>
+      <p className="text-xs text-muted-foreground">
+        Kilometrica trip book · {plan.route.name} · audit {plan.route.runId}
+      </p>
     </div>
   );
 }
@@ -489,8 +588,18 @@ function PlanPage({ start }: { start: Start }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [back, forward, readOnly]);
 
-  if (error) return <div className="rider center error">{error}</div>;
-  if (!files || !inputs || !plan || !shown || !data || !doc) return <div className="rider center muted">Loading the route…</div>;
+  if (error)
+    return (
+      <Page>
+        <p className="text-destructive">{error}</p>
+      </Page>
+    );
+  if (!files || !inputs || !plan || !shown || !data || !doc)
+    return (
+      <Page>
+        <p className="text-muted-foreground">Loading the route…</p>
+      </Page>
+    );
   if (printing) return <TripBook plan={plan} data={data} onDone={() => setPrinting(false)} />;
 
   const free = !data.full;
@@ -505,6 +614,8 @@ function PlanPage({ start }: { start: Start }) {
   const unloaded = data.full
     ? shown.days.filter((d) => d.kind === "ride" && placesMissing(data.full!, Math.min(d.fromM, d.toM), Math.max(d.fromM, d.toM)).length).map((d) => d.number)
     : [];
+  const levelName = data.dream.levels.find((l) => l.level === inputs.level)?.name ?? `level ${inputs.level}`;
+  const routeName = files.manifest.route.name;
 
   const onExport = (k: ExportKind) => {
     const name = fileSafe(doc.name);
@@ -514,176 +625,244 @@ function PlanPage({ start }: { start: Start }) {
     download(`${name}.kilometrica.json`, "application/json", JSON.stringify(doc, null, 2));
   };
   const onGpx = (d: DayPlan) => download(`${fileSafe(doc.name)}-day-${d.number}.gpx`, "application/gpx+xml", dayGpx(plan, files.geometry, d));
+  const setPassOn = (on: boolean) => {
+    setPass(on);
+    try {
+      localStorage.setItem(PASS_KEY, on ? "1" : "0");
+    } catch {
+      /* not remembered */
+    }
+  };
+  const answer = (icon: ReactNode, label: string) => (
+    <Button variant="outline" size="sm" isDisabled={readOnly} onPress={() => setEditing(true)}>
+      {icon}
+      {label}
+    </Button>
+  );
+
+  const header = (
+    <Header phase="plan" dreamHref={`/dream?route=${start.network}/${start.ref}`}>
+      <span className="hidden text-muted-foreground lg:inline">{routeName}</span>
+      {!readOnly && (
+        <span className="flex gap-1">
+          <Button variant="ghost" size="sm" isDisabled={!history.canUndo} onPress={back} aria-label="Undo (Ctrl+Z)">
+            <Icons.Undo2 data-icon="inline-start" />
+            Undo
+          </Button>
+          <Button variant="ghost" size="sm" isDisabled={!history.canRedo} onPress={forward} aria-label="Redo (Ctrl+Y)">
+            <Icons.Undo2 data-icon="inline-start" className="-scale-x-100" />
+            Redo
+          </Button>
+        </span>
+      )}
+      <span className="flex items-center gap-2" title="Prototype switch: the teaser shows the outline only (D45)">
+        <Switch id="trip-pass" isSelected={pass} onChange={setPassOn} />
+        <Label htmlFor="trip-pass" className="font-normal">
+          Trip Pass <span className="text-muted-foreground">(prototype)</span>
+        </Label>
+      </span>
+    </Header>
+  );
 
   return (
-    <div className={`rider plan ${selected !== null ? "has-day" : ""}`}>
-      <header className="rider-bar">
-        <a className="brand" href="/plan">
-          Kilometrica
-        </a>
-        <span className="muted"> Plan · {files.manifest.route.name}</span>
-        <span className="spacer" />
-        {!readOnly && (
-          <span className="history">
-            <button type="button" className="link" disabled={!history.canUndo} onClick={back} title="Undo (Ctrl+Z)">
-              ↶ Undo
-            </button>
-            <button type="button" className="link" disabled={!history.canRedo} onClick={forward} title="Redo (Ctrl+Y)">
-              ↷ Redo
-            </button>
-          </span>
-        )}
-        <label className="pass" title="Prototype switch: the teaser shows the outline only (D45)">
-          <input
-            type="checkbox"
-            aria-label="Trip Pass (prototype switch)"
-            checked={pass}
-            onChange={(e) => {
-              setPass(e.target.checked);
-              try {
-                localStorage.setItem(PASS_KEY, e.target.checked ? "1" : "0");
-              } catch {
-                /* not remembered */
-              }
-            }}
-          />
-          Trip Pass <span className="muted">(prototype)</span>
-        </label>
-      </header>
-      {readOnly && (
-        <div className="banner">
-          A shared plan, read-only.{" "}
-          <button
-            type="button"
-            onClick={() => {
-              setMeta((m) => ({ ...m, id: newId() }));
-              setReadOnly(false);
-            }}
-          >
-            Keep a copy on this device
-          </button>
-        </div>
-      )}
-      {stale && <div className="banner muted">This plan was made on an earlier audit of the route; it has been re-timed on the current one.</div>}
-      {pass && !full && <div className="banner muted">Loading the Trip Pass detail for this stretch…</div>}
-      {unloaded.length > 0 && (
-        <div className="banner">
-          Some places didn't load for {dayList(unloaded)}: water, food and places to stay may be missing there.{" "}
-          <button
-            type="button"
-            disabled={retrying}
-            onClick={() => {
-              setRetrying(true);
-              setAttempt((a) => a + 1);
-            }}
-          >
-            {retrying ? "Trying…" : "Try again"}
-          </button>
-        </div>
-      )}
-
-      {!readOnly && (
-        <ChangeBar
-          preview={preview ? { label: preview.label, changes } : null}
-          last={!preview && history.last && history.last !== hidden && changes?.summary ? { undone: history.last.undone, changes } : null}
-          canUndo={history.canUndo}
-          onApply={() => {
-            if (!preview) return;
-            commit(preview.state);
-            setPreview(null);
-          }}
-          onDiscard={() => setPreview(null)}
-          onUndo={back}
-          onHide={() => setHidden(history.last)}
-        />
-      )}
-
-      <div className="plan-grid">
-        <aside className="plan-side">
-          {editing && !readOnly ? (
-            <section className="ask">
-              <h2>A few questions</h2>
-              <Questions
-                inputs={inputs}
-                levels={data.dream.levels}
-                daily={data.daily}
-                suggestedMonth={suggested}
-                datesConfirmed={datesConfirmed}
-                readOnly={readOnly}
-                onChange={edit}
-              />
-              <button type="button" className="primary" onClick={() => setEditing(false)}>
-                Show the plan
-              </button>
-            </section>
+    <div className="min-h-screen bg-background font-sans text-sm text-foreground">
+      {header}
+      {!readOnly && (preview || (history.last && history.last !== hidden && changes?.summary)) && (
+        <div className="sticky top-0 z-20">
+          {preview ? (
+            <ChangeBar
+              mode="preview"
+              label={preview.label}
+              summary={changes?.summary || "The days stay as they are."}
+              lines={changes?.lines ?? []}
+              onApply={() => {
+                commit(preview.state);
+                setPreview(null);
+              }}
+              onDiscard={() => setPreview(null)}
+            />
           ) : (
-            <div className="answers">
-              {dayText(inputs.startDate)} · {inputs.days} riding days · {data.dream.levels.find((l) => l.level === inputs.level)?.name ?? `level ${inputs.level}`} ·{" "}
-              {inputs.sleep === "mix" ? "rooms or camping" : inputs.sleep} · {inputs.bike === "ebike" ? "e-bike" : `${inputs.bike} bike`}
-              {!readOnly && (
-                <button type="button" className="link" onClick={() => setEditing(true)}>
-                  Change
-                </button>
-              )}
+            <ChangeBar
+              mode={history.last!.undone ? "undone" : "changed"}
+              summary={changes!.summary}
+              lines={changes!.lines}
+              onUndo={back}
+              onHide={() => setHidden(history.last)}
+            />
+          )}
+        </div>
+      )}
+
+      <main className="mx-auto flex max-w-[1440px] flex-col gap-6 px-4 pt-7 pb-14 sm:px-8">
+        {readOnly && (
+          <Alert>
+            <Icons.Share2 />
+            <AlertTitle>A shared plan, read-only</AlertTitle>
+            <AlertDescription>Keep a copy on this device to change it. Without a Trip Pass you see it as shared.</AlertDescription>
+            <AlertAction>
+              <Button
+                size="sm"
+                onPress={() => {
+                  setMeta((m) => ({ ...m, id: newId() }));
+                  setReadOnly(false);
+                }}
+              >
+                Keep a copy
+              </Button>
+            </AlertAction>
+          </Alert>
+        )}
+        {stale && (
+          <Alert>
+            <Icons.Info />
+            <AlertDescription>This plan was made on an earlier audit of the route; it has been re-timed on the current one.</AlertDescription>
+          </Alert>
+        )}
+        {unloaded.length > 0 && (
+          <Alert>
+            <Icons.TriangleAlert className="text-headsup-foreground" />
+            <AlertTitle>Some places didn't load for {dayList(unloaded)}</AlertTitle>
+            <AlertDescription>Water, food and places to stay may be missing there. We don't say "none" where we don't know.</AlertDescription>
+            <AlertAction>
+              <Button
+                variant="outline"
+                size="sm"
+                isDisabled={retrying}
+                onPress={() => {
+                  setRetrying(true);
+                  setAttempt((a) => a + 1);
+                }}
+              >
+                {retrying ? "Trying…" : "Try again"}
+              </Button>
+            </AlertAction>
+          </Alert>
+        )}
+
+        <div className="grid gap-3">
+          <TitleBlock plan={shown} />
+          {!editing && (
+            <div role="group" aria-label="Your answers" className="flex flex-wrap items-center gap-2">
+              {answer(<Icons.Calendar />, `Starts ${dayText(inputs.startDate)}`)}
+              {answer(null, `${inputs.days} riding ${inputs.days === 1 ? "day" : "days"}`)}
+              {answer(<Icons.Bike />, `${levelName}, ${inputs.bike === "ebike" ? "e-bike" : `${inputs.bike} bike`}`)}
+              {answer(<Icons.Bed />, inputs.sleep === "mix" ? "Rooms or camping" : inputs.sleep === "rooms" ? "Rooms" : "Camping")}
+              {answer(<Icons.Clock />, `Off at ${clock(inputs.startMinutes)}`)}
             </div>
           )}
-          <Brief plan={shown} free={free} onLine={() => setSelected(null)} />
-          <EffortChart plan={shown} selected={selected} onPick={setSelected} />
-          <Calls
-            calls={calls}
-            free={free}
-            readOnly={readOnly}
-            previewing={preview ? `${preview.callId}/${preview.optionId}` : null}
-            onOption={onOption}
-            onShowDay={setSelected}
-          />
-          <section className="days">
-            <h2>The days</h2>
-            <DayList plan={shown} selected={selected} onPick={setSelected} free={free} changed={preview ? changes?.days : undefined} />
-          </section>
-          <BeforeYouGo
-            plan={plan}
-            free={free}
-            readOnly={readOnly}
-            isPrivate={isPrivate}
-            done={choices.done}
-            onDone={toggleDone}
-            onExport={onExport}
-            links={links}
-          />
-          {!readOnly && (
-            <section className="pin">
-              <button
-                type="button"
-                onClick={() =>
-                  setPinned((p) => [
-                    ...p.slice(-1),
-                    {
-                      label: `Plan ${String.fromCharCode(65 + p.length)}: ${inputs.days} days, ${inputs.sleep === "mix" ? "rooms or camping" : inputs.sleep}`,
-                      inputs,
-                      choices,
-                    },
-                  ])
-                }
-              >
-                Pin this plan to compare
-              </button>
-              <span className="muted small"> then change the days, how you sleep or the direction.</span>
-            </section>
-          )}
-          <Compare data={data} current={plan} pinned={pinned} onUnpin={(i) => setPinned((p) => p.filter((_, j) => j !== i))} />
-        </aside>
-        <section className="plan-main">
-          <PlanMap geometry={files.geometry} plan={shown} selectedDay={selected} onSelectDay={setSelected} attribution={files.manifest.attribution} />
-          <Profile
-            plan={shown}
-            effort={files.free.effort}
-            range={day && day.kind === "ride" ? { t0: day.fromT, t1: day.toT } : null}
-            onMoveStop={readOnly || free || day ? undefined : lockNight}
-            onPickDay={setSelected}
-          />
-          {day ? (
-            <div className="day-panel">
+        </div>
+
+        <Alert className={calls.length ? "border-primary/30 bg-primary/5" : ""}>
+          <Icons.Info className="text-primary" />
+          <AlertTitle className="font-semibold">{plan.brief.readiness}</AlertTitle>
+          {pass && !full && <AlertDescription>Loading the Trip Pass detail for this stretch…</AlertDescription>}
+        </Alert>
+
+        {free && !readOnly && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-3xl bg-muted px-5 py-4">
+            <Icons.Info className="size-5 shrink-0 text-primary" />
+            <div className="grid min-w-0 flex-[1_1_360px] gap-0.5">
+              <span className="font-semibold">This is the outline of your trip</span>
+              <span className="text-muted-foreground">
+                A Trip Pass adds each day in full, the places to stay with their links, your calls, moving stops, the exports and sharing.
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-start gap-7">
+          <div className="flex max-w-[620px] min-w-0 flex-[1_1_480px] flex-col gap-5">
+            {editing && !readOnly && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold">A few questions</CardTitle>
+                  <CardDescription>We draft the whole trip from these. Each has a default; change any of them later.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-5">
+                  <Questions
+                    inputs={inputs}
+                    levels={data.dream.levels}
+                    daily={data.daily}
+                    suggestedMonth={suggested}
+                    datesConfirmed={datesConfirmed}
+                    readOnly={readOnly}
+                    onChange={edit}
+                  />
+                  <div className="flex flex-wrap items-center gap-3 border-t pt-4">
+                    <Button size="lg" onPress={() => setEditing(false)}>
+                      Show the plan
+                      <Icons.ArrowRight data-icon="inline-end" />
+                    </Button>
+                    <span className="text-xs text-muted-foreground">Your answers stay in this browser. No account needed.</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            <Brief plan={shown} free={free} onLine={() => setSelected(null)} />
+            <Calls
+              calls={calls}
+              free={free}
+              readOnly={readOnly}
+              previewing={preview ? `${preview.callId}/${preview.optionId}` : null}
+              onOption={onOption}
+              onShowDay={setSelected}
+            />
+            <DayList plan={shown} selected={selected} onPick={(n) => setSelected(selected === n ? null : n)} free={free} changed={preview ? changes?.days : undefined} />
+            <BeforeYouGo plan={plan} free={free} readOnly={readOnly} isPrivate={isPrivate} done={choices.done} onDone={toggleDone} onExport={onExport} links={links} />
+            <Compare
+              data={data}
+              current={plan}
+              pinned={pinned}
+              readOnly={readOnly}
+              onUnpin={(i) => setPinned((p) => p.filter((_, j) => j !== i))}
+              onPin={() =>
+                setPinned((p) => [
+                  ...p.slice(-1),
+                  {
+                    label: `${String.fromCharCode(65 + p.length)}: ${inputs.days} days, ${inputs.sleep === "mix" ? "rooms or camping" : inputs.sleep}`,
+                    inputs,
+                    choices,
+                  },
+                ])
+              }
+            />
+          </div>
+
+          <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-5">
+            <Card className="gap-0 overflow-hidden py-0">
+              <PlanMap
+                geometry={files.geometry}
+                plan={shown}
+                selectedDay={selected}
+                onSelectDay={setSelected}
+                attribution={files.manifest.attribution}
+                className="h-[min(52vh,520px)] min-h-64 w-full"
+              />
+              <div className="border-t">
+                <Profile
+                  plan={shown}
+                  effort={files.free.effort}
+                  range={day && day.kind === "ride" ? { t0: day.fromT, t1: day.toT } : null}
+                  onMoveStop={readOnly || free || day ? undefined : lockNight}
+                  onPickDay={setSelected}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t px-4 py-2.5 text-xs text-muted-foreground">
+                {day ? (
+                  <>
+                    <span>
+                      Day {day.number} on the map and the profile.
+                    </span>
+                    <Button variant="link" size="xs" className="px-0" onPress={() => setSelected(null)}>
+                      Show the whole trip
+                    </Button>
+                  </>
+                ) : (
+                  <span>Pick a day for its card.{!readOnly && !free ? " Drag a night's number along the profile to move it; that night is then kept." : ""}</span>
+                )}
+              </div>
+            </Card>
+            {day && (
               <DayCard
                 plan={shown}
                 data={data}
@@ -701,18 +880,21 @@ function PlanPage({ start }: { start: Start }) {
                 onDone={toggleDone}
                 onGpx={onGpx}
                 onClose={() => setSelected(null)}
+                onNext={() => setSelected(day.number + 1)}
               />
-            </div>
-          ) : (
-            <p className="hint muted">
-              Pick a day for its card.{!readOnly && !free ? " Drag a stop along the profile to move it; that night is then kept." : ""}
-            </p>
-          )}
-        </section>
-      </div>
-      <footer className="rider-foot muted small">
-        Ends {dayText(shown.endDate)}. Kilometrica doesn't navigate or book: it hands you to the apps and sites that do.
-      </footer>
+            )}
+            <Card>
+              <CardContent>
+                <EffortChart plan={shown} selected={selected} onPick={(n) => setSelected(selected === n ? null : n)} changed={preview ? changes?.days : undefined} />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Ends {dayText(shown.endDate)}. Kilometrica doesn't navigate or book: it hands you to the apps and sites that do.
+        </p>
+      </main>
     </div>
   );
 }
@@ -725,7 +907,12 @@ export function RiderApp() {
   useEffect(() => {
     if (!start) document.title = itinerary ? `${itinerary.name} · Kilometrica` : "Kilometrica Plan";
   }, [start, itinerary]);
-  if (error) return <div className="rider center error">{error}</div>;
+  if (error)
+    return (
+      <Page wide={false}>
+        <p className="text-destructive">{error}</p>
+      </Page>
+    );
   if (itinerary) return <ItineraryView it={itinerary} />;
   if (!start) return <StartPage />;
   return <PlanPage start={start} />;

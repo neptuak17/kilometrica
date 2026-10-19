@@ -23,6 +23,7 @@ import {
 } from "@dpg/ui";
 import type { ReactNode } from "react";
 import { Dialog, type Key } from "react-aria-components";
+import { SELECTED } from "../rider/Questions";
 import { and, type Ask, type Level, PREFS, STAY, SURFACES, surfacesText, WAY } from "./ask";
 
 export type ChipId = "level" | "days" | "month" | "surfaces" | "scenery" | "stay" | "direction";
@@ -76,7 +77,7 @@ export function Chips({ a, levels, themes, open, onOpen, onChange }: {
       className="flex-wrap"
     >
       {values.map((v) => (
-        <ToggleGroupItem key={v} id={v}>
+        <ToggleGroupItem key={v} id={v} className={SELECTED}>
           {text(v)}
         </ToggleGroupItem>
       ))}
@@ -147,11 +148,11 @@ export function Chips({ a, levels, themes, open, onOpen, onChange }: {
       variant="outline"
       className="grid w-full grid-cols-3 gap-1.5"
     >
-      <ToggleGroupItem id="any" className="col-span-3">
+      <ToggleGroupItem id="any" className={cn("col-span-3", SELECTED)}>
         Any month: the best for each stretch
       </ToggleGroupItem>
       {MONTHS_LONG.map((m, i) => (
-        <ToggleGroupItem key={m} id={String(i)}>
+        <ToggleGroupItem key={m} id={String(i)} className={SELECTED}>
           {m}
         </ToggleGroupItem>
       ))}
@@ -181,7 +182,7 @@ export function Chips({ a, levels, themes, open, onOpen, onChange }: {
       className="flex-wrap"
     >
       {themes.map((t) => (
-        <ToggleGroupItem key={t.id} id={t.id}>
+        <ToggleGroupItem key={t.id} id={t.id} className={SELECTED}>
           {t.title}
         </ToggleGroupItem>
       ))}
@@ -219,11 +220,11 @@ export function Chips({ a, levels, themes, open, onOpen, onChange }: {
         "Ride the route in its own direction, against it, or either.",
         single("Which way", ["either", "forward", "reverse"] as const, a.direction, (v) => WAY[v], (v) => onChange({ direction: v })),
       )}
-      <Toggle variant="outline" size="sm" isSelected={a.trainBothEnds} onChange={(on) => onChange({ trainBothEnds: on })}>
+      <Toggle variant="outline" size="sm" className={SELECTED} isSelected={a.trainBothEnds} onChange={(on) => onChange({ trainBothEnds: on })}>
         <Icons.Train />
         Train at both ends
       </Toggle>
-      <Toggle variant="outline" size="sm" isSelected={a.avoidBusy} onChange={(on) => onChange({ avoidBusy: on })}>
+      <Toggle variant="outline" size="sm" className={SELECTED} isSelected={a.avoidBusy} onChange={(on) => onChange({ avoidBusy: on })}>
         {a.avoidBusy && <Icons.Check />}
         Avoid busy roads
       </Toggle>

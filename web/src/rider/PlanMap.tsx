@@ -1,6 +1,7 @@
 /**
  * The plan on a map (11.6): the stretch day by day, the night stops, gaps, and the selected day's heads-ups and
- * highlights. MapLibre with the OpenFreeMap basemap, as in the audit viewer.
+ * highlights. MapLibre with the OpenFreeMap basemap, as in the audit viewer. The kit's colours as hex (D53), since
+ * MapLibre doesn't read oklch: the days in teal, the chosen day in orange, heads-ups in amber, highlights in green.
  */
 import { dayItems, type Geometry, type PlanResult, slice } from "@dpg/planner";
 import {
@@ -24,6 +25,7 @@ interface Props {
   selectedDay: number | null;
   onSelectDay: (n: number | null) => void;
   attribution: string[];
+  className?: string;
 }
 
 function tripFeatures(geo: Geometry, plan: PlanResult) {
@@ -74,7 +76,7 @@ function boundsOf(features: FC, day: number | null): LngLatBounds | null {
   return any ? b : null;
 }
 
-export function PlanMap({ geometry, plan, selectedDay, onSelectDay, attribution }: Props) {
+export function PlanMap({ geometry, plan, selectedDay, onSelectDay, attribution, className = "plan-map" }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap | null>(null);
   const ready = useRef(false);
@@ -131,7 +133,7 @@ export function PlanMap({ geometry, plan, selectedDay, onSelectDay, attribution 
         type: "line",
         source: "days",
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": ["match", ["get", "odd"], 1, "#1c7ed6", "#0c8599"], "line-width": 4 },
+        paint: { "line-color": ["match", ["get", "odd"], 1, "#00786f", "#009689"], "line-width": 4 },
       });
       m.addLayer({
         id: "day-selected",
@@ -139,7 +141,7 @@ export function PlanMap({ geometry, plan, selectedDay, onSelectDay, attribution 
         source: "days",
         filter: ["==", ["get", "day"], latest.current.selectedDay ?? -1],
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": "#f08c00", "line-width": 6 },
+        paint: { "line-color": "#ff6900", "line-width": 6 },
       });
       m.addLayer({
         id: "gaps",
@@ -157,7 +159,7 @@ export function PlanMap({ geometry, plan, selectedDay, onSelectDay, attribution 
         source: "items",
         paint: {
           "circle-radius": 6,
-          "circle-color": ["match", ["get", "kind"], "highlight", "#2f9e44", "#e03131"],
+          "circle-color": ["match", ["get", "kind"], "highlight", "#00a63e", "#e17100"],
           "circle-stroke-color": "#ffffff",
           "circle-stroke-width": 1.5,
         },
@@ -214,5 +216,5 @@ export function PlanMap({ geometry, plan, selectedDay, onSelectDay, attribution 
     else m.once("style.load", apply);
   }, [selectedDay, trip]);
 
-  return <div className="plan-map" ref={container} />;
+  return <div className={className} ref={container} />;
 }

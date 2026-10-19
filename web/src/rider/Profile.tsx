@@ -1,10 +1,11 @@
 /**
  * Elevation along the trip or one day, in the direction of travel, with the night stops. On a larger screen the
  * stops can be dragged along the profile: on release the stop snaps to the nearest candidate and that night is
- * locked (11.6, "Make it yours").
+ * locked (11.6, "Make it yours"). In the kit's colours (D53): the days in the route teal, a kept night in orange.
  */
 import type { EffortFile } from "@dpg/contracts";
 import type { PlanResult } from "@dpg/planner";
+import { cn } from "@dpg/ui";
 import { useMemo, useRef, useState } from "react";
 
 const W = 1000;
@@ -89,7 +90,7 @@ export function Profile({ plan, effort, range, onMoveStop, onPickDay }: Props) {
   return (
     <svg
       ref={svg}
-      className="profile"
+      className="block h-[110px] w-full touch-none bg-card select-none sm:h-[140px]"
       viewBox={`0 0 ${W} ${H}`}
       preserveAspectRatio="none"
       onPointerMove={(e) => drag && setDrag({ ...drag, x: Math.max(PAD.l, Math.min(W - PAD.r, toSvgX(e.clientX))) })}
@@ -98,15 +99,15 @@ export function Profile({ plan, effort, range, onMoveStop, onPickDay }: Props) {
       role="img"
       aria-label="Elevation profile"
     >
-      <text x={4} y={PAD.t + 8} className="axis">{Math.round(hi)} m</text>
-      <text x={4} y={H - PAD.b} className="axis">{Math.round(lo)} m</text>
+      <text x={4} y={PAD.t + 8} className="fill-muted-foreground text-[10px]">{Math.round(hi)} m</text>
+      <text x={4} y={H - PAD.b} className="fill-muted-foreground text-[10px]">{Math.round(lo)} m</text>
       {ticks.map((t) => (
-        <text key={t} x={x(t)} y={H - 4} className="axis" textAnchor="middle">
+        <text key={t} x={x(t)} y={H - 4} className="fill-muted-foreground text-[10px]" textAnchor="middle">
           {km(t)} km
         </text>
       ))}
       {paths.map((d, i) => (
-        <path key={i} d={d} className="ele" />
+        <path key={i} d={d} className="fill-none stroke-foreground/75 stroke-[1.6] [vector-effect:non-scaling-stroke]" />
       ))}
       {!range &&
         plan.days
@@ -118,7 +119,7 @@ export function Profile({ plan, effort, range, onMoveStop, onPickDay }: Props) {
               y={PAD.t}
               width={Math.max(0, x(d.toT) - x(d.fromT))}
               height={H - PAD.t - PAD.b}
-              className={`day-band ${d.number % 2 ? "odd" : ""}`}
+              className={cn("cursor-pointer fill-route hover:opacity-20", d.number % 2 ? "opacity-12" : "opacity-5")}
               onClick={() => onPickDay?.(d.number)}
             />
           ))}
@@ -126,12 +127,13 @@ export function Profile({ plan, effort, range, onMoveStop, onPickDay }: Props) {
         if (t < t0 || t > t1) return null;
         const px = drag?.night === n.index ? drag.x : x(t);
         return (
-          <g key={n.index} className={`stop-mark ${n.locked ? "locked" : ""}`}>
-            <line x1={px} x2={px} y1={PAD.t} y2={H - PAD.b} />
+          <g key={n.index}>
+            <line x1={px} x2={px} y1={PAD.t} y2={H - PAD.b} className="stroke-foreground [stroke-dasharray:3_3] [vector-effect:non-scaling-stroke]" />
             <circle
               cx={px}
               cy={PAD.t + 8}
               r={8}
+              className={cn(onMoveStop ? "cursor-grab" : "", n.locked ? "fill-route-chosen" : "fill-foreground")}
               onPointerDown={(e) => {
                 if (!onMoveStop) return;
                 (e.target as Element).setPointerCapture?.(e.pointerId);
@@ -140,7 +142,7 @@ export function Profile({ plan, effort, range, onMoveStop, onPickDay }: Props) {
             >
               <title>{`Night ${n.afterRide}: ${n.stop.name ?? "stop"}${onMoveStop ? " (drag to move)" : ""}`}</title>
             </circle>
-            <text x={px} y={PAD.t + 11} textAnchor="middle" className="stop-num">
+            <text x={px} y={PAD.t + 11} textAnchor="middle" className="pointer-events-none fill-background text-[10px] font-bold">
               {n.afterRide}
             </text>
           </g>
