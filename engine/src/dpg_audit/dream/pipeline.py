@@ -109,7 +109,8 @@ def mean_heading(line) -> tuple[float, float]:
 
 def _month_codes(places: list[Place]) -> tuple[int, list[int], list[int]]:
     published = [p for p in places if p.months != "?" * 12]
-    open_ = [sum(p.months[m] == "o" for p in published) for m in range(12)]
+    # An unmanaged site (a) has no season: it is there every month (D71).
+    open_ = [sum(p.months[m] in "oa" for p in published) for m in range(12)]
     partly = [sum(p.months[m] == "p" for p in published) for m in range(12)]
     return len(published), open_, partly
 

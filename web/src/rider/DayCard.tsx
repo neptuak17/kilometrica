@@ -20,6 +20,7 @@ import {
   monthOf,
   nightStay,
   opening,
+  placeKind,
   placeLinks,
   railLinks,
   type DayPlan,
@@ -296,7 +297,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                               {p.detail.stars ? <span className="font-normal text-muted-foreground"> {String(p.detail.stars)}★</span> : null}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                              {p.kind.replace("_", " ")} · {km((p.access_m ?? 0) / 1000)} km off the route
+                              {placeKind(p)} · {km((p.access_m ?? 0) / 1000)} km off the route
                             </span>
                           </div>
                           {/* Only what we know: an unknown month is said once, on the night's line above (D61). */}
@@ -357,7 +358,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                                   {stopName(a.stop)}
                                 </Button>
                                 <span className="text-xs text-muted-foreground tabular-nums">
-                                  this day {km(a.dayKm)} km, next day {a.nextKm === null ? "–" : `${km(a.nextKm)} km`} · {b.count - b.closed ? `${bedKinds(b.kinds)}, ${opening({ ...b, count: b.count - b.closed }, month)}` : `no known ${sleepNoun(plan.inputs.sleep)}`}
+                                  this day {km(a.dayKm)} km, next day {a.nextKm === null ? "–" : `${km(a.nextKm)} km`} · {b.count - b.closed ? [bedKinds(b.kinds), opening({ ...b, count: b.count - b.closed }, month)].filter(Boolean).join(", ") : `no known ${sleepNoun(plan.inputs.sleep)}`}
                                 </span>
                               </li>
                             );

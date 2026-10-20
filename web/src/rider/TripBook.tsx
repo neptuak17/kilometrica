@@ -26,6 +26,7 @@ import {
   locate,
   monthOf,
   oneIn,
+  placeKind,
   placeLinks,
   type PlanData,
   type PlanItem,
@@ -701,7 +702,7 @@ function BedCell({ p, month, code, chosen, right, bottom }: { p: Place; month: s
         </span>
       </span>
       <span className="text-[12.5px]">
-        {cap(p.kind.replace("_", " "))} · {p.on_route ? "on route" : `${km((p.access_m ?? 0) / 1000)} km off`}
+        {cap(placeKind(p))} · {p.on_route ? "on route" : `${km((p.access_m ?? 0) / 1000)} km off`}
         {open && (
           <>
             {" · "}

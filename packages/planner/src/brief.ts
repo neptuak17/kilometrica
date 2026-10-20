@@ -117,7 +117,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
 
   const month = MONTHS_LONG[monthOf(inputs.startDate)]!;
   const noBed = nights.filter((n) => n.beds.count === 0).length;
-  const unknown = nights.filter((n) => n.beds.count > 0 && n.beds.open + n.beds.partly === 0).length;
+  const unknown = nights.filter((n) => n.beds.count > 0 && n.beds.open + n.beds.partly + n.beds.unmanaged === 0).length;
   // What's still to sort out, as the to-do shows it (D64).
   const open = toDo(items, core.choices).open;
   const sleepItems = open.filter(isNightLine);
@@ -207,7 +207,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
       : "We know the surface all the way",
   );
   const beds = nights.reduce(
-    (a, n) => ({ all: a.all + n.beds.count + n.beds.closed, known: a.known + n.beds.count + n.beds.closed - n.beds.unknown, open: a.open + n.beds.open + n.beds.partly }),
+    (a, n) => ({ all: a.all + n.beds.count + n.beds.closed, known: a.known + n.beds.count + n.beds.closed - n.beds.unknown, open: a.open + n.beds.open + n.beds.partly + n.beds.unmanaged }),
     { all: 0, known: 0, open: 0 },
   );
   if (beds.all) {

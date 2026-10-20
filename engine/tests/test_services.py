@@ -97,6 +97,47 @@ def test_unnamed_places_merge_only_when_very_close():
     assert len(conflate([a, b, c])) == 2
 
 
+
+def test_official_record_merges_by_shared_name_within_its_reach():
+    # An official position is often an area's centre (D71): "Thalia Lake" ~1 km away is the same site.
+    name = "Thalia Lake Recreation Site"
+    off = RawPlace("official", "bc-recsites:R1", "accommodation", "campsite", name, 3.0, 43.0, {})
+    osm = raw("osm", "n1", "accommodation", "Thalia Lake", 3.012, 43.0)
+    other = raw("osm", "n2", "accommodation", "Camping Les Pins", 3.005, 43.0)
+    alone = RawPlace("official", "bc-recsites:R2", "accommodation", "campsite", "Granite Creek Rec Site", 3.2, 43.0, {})
+    merged = {m.primary.id: m for m in conflate([off, osm, other, alone])}
+    assert set(merged) == {"n1", "n2", "bc-recsites:R2"}
+    assert merged["n1"].sources == ["osm:n1", "official:bc-recsites:R1"]
+    assert confidence(merged["n1"]) == "high" and confidence(merged["bc-recsites:R2"]) == "high"
+
+
+def test_months_from_dated_ranges():
+    from datetime import date
+
+    from dpg_audit.sources.official import months_from_ranges
+
+    assert months_from_ranges([(date(2027, 6, 15), date(2027, 9, 30))], 2027) == "cccccpoooccc"
+    assert months_from_ranges([(date(2027, 5, 1), date(2027, 5, 31)), (date(2027, 7, 1), date(2027, 7, 2))], 2027) == (
+        "ccccocpccccc"
+    )
+
+
+def test_anchored_official_record_enriches_a_campsite_by_name():
+    from dpg_audit.services.pipeline import _match_anchored
+    from dpg_audit.sources.official import OfficialRecord
+
+    camp = RawPlace("osm", "n1", "accommodation", "campsite", "Kettle River Campground", 3.0, 43.0, {})
+    hotel = RawPlace("osm", "n2", "accommodation", "hotel", "Kettle River Hotel", 3.001, 43.0, {})
+    merged = conflate([camp, hotel])
+    lon = np.array([m.primary.lon for m in merged])
+    lat = np.array([m.primary.lat for m in merged])
+    park = {"park": "Kettle River Campground"}
+    near = OfficialRecord("bc-parks", "1", "Campground", anchor=(3.01, 43.0, 3000.0), detail=park)
+    far = OfficialRecord("bc-parks", "2", "Kettle River Campground", anchor=(3.2, 43.0, 3000.0))
+    found = _match_anchored([near, far], merged, lon, lat)
+    assert [merged[i].primary.id for i in found] == ["n1"] and found[next(iter(found))] is near
+
+
 # --- route index -----------------------------------------------------------------------------------------------
 
 

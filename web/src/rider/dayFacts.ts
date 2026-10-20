@@ -67,7 +67,7 @@ export function dayFacts(plan: PlanResult, data: PlanData, d: DayPlan, free: boo
               p.months[monthOf(night.date)] !== "c",
           )
           .sort((a, b) => {
-            const known = (p: Place) => (["o", "p"].includes(p.months[monthOf(night.date)] ?? "?") ? 0 : 1);
+            const known = (p: Place) => (["o", "p", "a"].includes(p.months[monthOf(night.date)] ?? "?") ? 0 : 1);
             return known(a) - known(b) || (a.access_m ?? 0) - (b.access_m ?? 0);
           })
       : [];

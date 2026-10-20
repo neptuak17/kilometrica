@@ -2,11 +2,13 @@
 
 import hashlib
 import json
+import math
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+from rapidfuzz import fuzz
 
 from dpg_audit.build import RouteBuild
 from dpg_audit.layers import elevation
@@ -21,7 +23,7 @@ from dpg_audit.services.policy import BikePolicy, CountryLookup
 from dpg_audit.services.profile import ServicesProfile
 from dpg_audit.services.seasons import UNKNOWN, day_codes, month_codes, season_known
 from dpg_audit.services.weblinks import KEEP, check_websites, shared_homepages
-from dpg_audit.sources import dem, osm, overture
+from dpg_audit.sources import dem, official, osm, overture
 
 BLOCK_M = 50_000.0
 DAY_SERVICES = {"food", "bike_shop", "pharmacy"}
@@ -76,6 +78,49 @@ def _detail(primary: RawPlace, members: list[RawPlace]) -> dict:
     return out
 
 
+def _official_raw(r: official.OfficialRecord) -> RawPlace:
+    """An official record with a position, as a place to merge with OSM and Overture (D71)."""
+    tags = {
+        "official:source": r.source,
+        "official:months": r.months or "",
+        "official:label": r.label or "",
+        "official:sites": str(r.sites or ""),
+    }
+    if r.operator:
+        tags["operator"] = r.operator
+    if r.detail.get("website"):
+        tags["website"] = r.detail["website"]
+    assert r.lon is not None and r.lat is not None
+    return RawPlace("official", f"{r.source}:{r.id}", r.service, r.kind, r.name, r.lon, r.lat, tags)
+
+
+def _match_anchored(
+    anchored: list[official.OfficialRecord], merged: list[cf.Merged], lon: np.ndarray, lat: np.ndarray
+) -> dict[int, official.OfficialRecord]:
+    """Official records without a position (a park campground by name) matched to a campsite found inside their
+    anchor under a matching name, its own or its park's (D71)."""
+    camps = [i for i, m in enumerate(merged) if m.primary.service == "accommodation" and m.primary.kind == "campsite"]
+    out: dict[int, official.OfficialRecord] = {}
+    for r in anchored:
+        assert r.anchor is not None
+        alon, alat, radius = r.anchor
+        best, score = None, 0.0
+        for i in camps:
+            dx = (lon[i] - alon) * 111_320 * math.cos(math.radians(alat))
+            dy = (lat[i] - alat) * 110_540
+            if math.hypot(dx, dy) > radius:
+                continue
+            name = cf.norm_name(merged[i].primary.name or next((p.name for p in merged[i].members if p.name), None))
+            if not name:
+                continue
+            s = max(fuzz.token_set_ratio(cf.norm_name(n), name) for n in (r.name, r.detail.get("park")) if n)
+            if s >= cf.OFFICIAL_SIMILARITY and s > score and i not in out:
+                best, score = i, s
+        if best is not None:
+            out[best] = r
+    return out
+
+
 def build_places(
     root: Path,
     wd: Path,
@@ -113,6 +158,22 @@ def build_places(
     raw += overture.to_raw(records, profile.overture_min_confidence)
     n_overture = len(raw) - n_osm
 
+    # Official places from public bodies where a region publishes them (D71), each source kept by area.
+    lons, lats = np.concatenate([ln.lon for ln in pts]), np.concatenate([ln.lat for ln in pts])
+    pad_lat = max_show / 111_000 + 0.02
+    pad_lon = pad_lat / max(0.2, math.cos(math.radians(float(lats.mean()))))
+    found, official_snaps = official.near_route(
+        root,
+        float(lons.min()) - pad_lon,
+        float(lats.min()) - pad_lat,
+        float(lons.max()) + pad_lon,
+        float(lats.max()) + pad_lat,
+        profile.season_year,
+        log,
+    )
+    raw += [_official_raw(r) for r in found if r.lon is not None]
+    anchored = [r for r in found if r.lon is None]
+
     show = np.array([profile.types[r.service].show_m for r in raw])
     near = index.within(np.array([r.lon for r in raw]), np.array([r.lat for r in raw]), show)
     raw = [r for r, keep in zip(raw, near, strict=True) if keep]
@@ -131,6 +192,7 @@ def build_places(
     lon, lat = lon[keep], lat[keep]
     countries = CountryLookup(osm.geofabrik_index(root)).lookup(lon, lat)
     policy = BikePolicy.load()
+    enrich = _match_anchored(anchored, merged, lon, lat)
 
     samples = index.samples(profile.route_sample_m)
     jobs: list[tuple[float, AccessJob]] = []
@@ -179,6 +241,22 @@ def build_places(
         osm_rec = next((r for r in m.members if r.source == "osm"), None)
         months = month_codes(osm_rec.tags, profile.season_year) if osm_rec else UNKNOWN
         detail = _detail(prim, m.members)
+        # An official season, or none at all for an unmanaged site, outranks OSM's tags (D71).
+        off = next((r for r in m.members if r.source == "official"), None)
+        extra = enrich.get(i)
+        if extra and extra.months:
+            months = extra.months
+        elif off and off.tags.get("official:months"):
+            months = off.tags["official:months"]
+        for info in (
+            {"label": off.tags.get("official:label"), "sites": off.tags.get("official:sites")} if off else {},
+            {"label": extra.label, "sites": extra.sites, "park": extra.detail.get("park")} if extra else {},
+        ):
+            for k, v in info.items():
+                if v not in (None, ""):
+                    detail["official" if k == "label" else k] = int(v) if k == "sites" else v
+        if off and off.tags.get("website") and "website" not in detail:
+            detail["website"] = off.tags["website"]
         if dist is None:
             detail["unreachable"] = True
         hours = osm_rec.tags.get("opening_hours") if osm_rec else None
@@ -225,7 +303,7 @@ def build_places(
     counts: dict[str, int] = {}
     for p in places:
         counts[p.service] = counts.get(p.service, 0) + 1
-    sources = [overture.snapshot(release, cache, root, len(records))]
+    sources = [overture.snapshot(release, cache, root, len(records)), *official_snaps]
     return ServicesResult(
         places=places,
         file=PlacesFile(season_year=profile.season_year, places=places),

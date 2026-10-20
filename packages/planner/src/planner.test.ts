@@ -12,7 +12,7 @@ import { makePlan } from "./plan";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
 import { addDays, clock, sunTimes, weekday } from "./sun";
-import { bedKinds, bedsKnown, stayDates } from "./text";
+import { bedKinds, bedsKnown, placeKind, stayDates } from "./text";
 import { NO_CHOICES, type NightPlan, type PlanData, type PlanInputs } from "./types";
 
 const LEVELS = [
@@ -267,7 +267,7 @@ describe("makePlan", () => {
     const noCamps = data({ stops: Array.from({ length: 29 }, (_, i) => stop((i + 1) * 10, { beds: [{ kind: "hotel", count: 1, seasons: [["????????????", 1]] }] })) });
     const p = makePlan(noCamps, inputs({ sleep: "camping" }));
     expect(p.items.filter(isNightLine).some((i) => i.why.startsWith("No known campsite"))).toBe(true);
-    expect(bedsFor(stop(10), "camping", 9)).toEqual({ count: 1, open: 1, partly: 0, closed: 0, unknown: 0, kinds: [{ kind: "campsite", count: 1 }] });
+    expect(bedsFor(stop(10), "camping", 9)).toEqual({ count: 1, open: 1, partly: 0, closed: 0, unknown: 0, unmanaged: 0, kinds: [{ kind: "campsite", count: 1 }] });
   });
 
   it("settles a night when a place there is chosen or it's booked, only in that town; the plan is complete when nothing's left (D64)", () => {
@@ -572,6 +572,16 @@ describe("exports", () => {
     expect(bedsKnown(b(3, 3), "May", "mix")).toBe("1 campsite and 2 hotels nearby, all open in May");
     expect(bedsKnown({ count: 1, open: 0, partly: 0, kinds: [{ kind: "guest_house", count: 1 }] }, "May", "rooms")).toBe("1 guest house nearby, check ahead if it's open");
     expect(bedsKnown({ count: 0, open: 0, partly: 0, kinds: [] }, "May", "camping")).toBe("no known campsite nearby");
+    // Recreation sites are unmanaged: no season, so nothing to check (D71).
+    const rec = { count: 2, open: 0, partly: 0, unmanaged: 2, kinds: [{ kind: "campsite", count: 2 }] };
+    expect(bedsKnown(rec, "July", "camping")).toBe("2 campsites nearby");
+    expect(bedsKnown({ ...rec, count: 3, unmanaged: 1, kinds: [{ kind: "campsite", count: 3 }] }, "July", "camping")).toBe(
+      "3 campsites nearby, 1 open in July: check ahead for the others",
+    );
+    const recStop = stop(10, { beds: [{ kind: "campsite", count: 2, seasons: [["aaaaaaaaaaaa", 2]] }] });
+    expect(bedsFor(recStop, "camping", 6)).toMatchObject({ count: 2, unknown: 0, unmanaged: 2 });
+    expect(placeKind({ kind: "campsite", detail: { official: "BC Recreation Site", sites: 12 } })).toBe("BC Recreation Site, 12 sites");
+    expect(placeKind({ kind: "guest_house", detail: {} })).toBe("guest house");
     expect(bedKinds([{ kind: "hostel", count: 1 }, { kind: "hut", count: 2 }, { kind: "hotel", count: 1 }])).toBe("1 hotel, 1 hostel and 2 huts");
     // The night's why, with and without its beds (the day card says them just above it).
     const night = makePlan(d, inputs({ sleep: "mix" })).nights[0]!;

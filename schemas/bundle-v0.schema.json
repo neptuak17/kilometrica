@@ -1804,7 +1804,7 @@
       "title": "PipelineInfo"
     },
     "Place": {
-      "description": "A service near the route (conflated from OSM and Overture), located on the route's measure axis.\n\n`months` holds one letter per month of the season year (D18): o = open, p = partly (the season starts or ends\nthat month), c = closed, ? = unknown.",
+      "description": "A service near the route (conflated from OSM and Overture), located on the route's measure axis.\n\n`months` holds one letter per month of the season year (D18): o = open, p = partly (the season starts or ends\nthat month), c = closed, ? = unknown, a = an unmanaged site with no season at all (D71).",
       "properties": {
         "id": {
           "type": "string"
@@ -1893,7 +1893,7 @@
           "type": "boolean"
         },
         "months": {
-          "description": "12 letters, January first: o open, p partly, c closed, ? unknown",
+          "description": "12 letters, January first: o open, p partly, c closed, ? unknown, a unmanaged (no season)",
           "type": "string"
         },
         "opening_hours": {

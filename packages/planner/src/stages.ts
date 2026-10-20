@@ -28,13 +28,15 @@ export interface BedCount {
   partly: number;
   closed: number;
   unknown: number;
+  /** Unmanaged sites (a BC recreation site): no season at all, so there's nothing to check (D71). */
+  unmanaged: number;
   /** The places by kind, leaving out the ones known closed that month, e.g. 1 campsite and 2 hotels (D62). */
   kinds: { kind: string; count: number }[];
 }
 
 /** Beds of the rider's kind at a stop in a month (D18). */
 export function bedsFor(stop: Stop, sleep: Sleep, month: number): BedCount {
-  const out: BedCount = { count: 0, open: 0, partly: 0, closed: 0, unknown: 0, kinds: [] };
+  const out: BedCount = { count: 0, open: 0, partly: 0, closed: 0, unknown: 0, unmanaged: 0, kinds: [] };
   for (const b of stop.beds) {
     const camping = b.kind === "campsite";
     if (sleep === "camping" ? !camping : sleep === "rooms" ? !ROOM_KINDS.has(b.kind) : false) continue;
@@ -45,6 +47,7 @@ export function bedsFor(stop: Stop, sleep: Sleep, month: number): BedCount {
       if (c === "o") out.open += n;
       else if (c === "p") out.partly += n;
       else if (c === "c") out.closed += n;
+      else if (c === "a") out.unmanaged += n;
       else out.unknown += n;
       if (c !== "c") notClosed += n;
     }
@@ -59,7 +62,7 @@ export const usable = (b: BedCount) => b.count - b.closed > 0;
 
 /** 0-1: how good a stop is for the night, from what we know (never from guesses about the unknown, D37). */
 export function quality(b: BedCount, stop: Stop): number {
-  const known = b.open + b.partly > 0 ? 0.5 : b.unknown > 0 ? 0.2 : 0;
+  const known = b.open + b.partly + b.unmanaged > 0 ? 0.5 : b.unknown > 0 ? 0.2 : 0;
   return (
     known +
     0.2 * Math.min(1, (b.count - b.closed) / 3) +

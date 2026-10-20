@@ -207,7 +207,7 @@ export interface NightPlan {
   stop: Stop;
   locked: boolean;
   /** Places to stay of the rider's kind that night (D18): `count` leaves out the ones known closed. */
-  beds: { count: number; open: number; partly: number; closed: number; unknown: number; kinds: { kind: string; count: number }[] };
+  beds: { count: number; open: number; partly: number; closed: number; unknown: number; unmanaged: number; kinds: { kind: string; count: number }[] };
   /** Other stops worth considering, best first. */
   alternatives: { stop: Stop; dayKm: number; nextKm: number | null }[];
   planB: { before: { stop: Stop; km: number } | null; after: { stop: Stop; km: number } | null };

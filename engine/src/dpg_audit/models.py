@@ -379,7 +379,7 @@ class Place(Model):
     """A service near the route (conflated from OSM and Overture), located on the route's measure axis.
 
     `months` holds one letter per month of the season year (D18): o = open, p = partly (the season starts or ends
-    that month), c = closed, ? = unknown.
+    that month), c = closed, ? = unknown, a = an unmanaged site with no season at all (D71).
     """
 
     id: str
@@ -397,7 +397,9 @@ class Place(Model):
     access_at_m: float = Field(description="Measure where the rider leaves the route for this place")
     counts: bool = Field(description="Within the service type's counting limits")
     on_route: bool
-    months: str = Field(description="12 letters, January first: o open, p partly, c closed, ? unknown")
+    months: str = Field(
+        description="12 letters, January first: o open, p partly, c closed, ? unknown, a unmanaged (no season)"
+    )
     opening_hours: str | None
     country: str | None = Field(description="ISO 3166-1 alpha-2")
     sources: list[str] = Field(description="Source record ids, e.g. osm:n123, overture:<id>")

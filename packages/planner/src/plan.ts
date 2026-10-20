@@ -271,7 +271,7 @@ export function makePlan(
         afterRide: k + 1,
         stop,
         locked: locked.get(k) === ci,
-        beds: { count: b.count - b.closed, open: b.open, partly: b.partly, closed: b.closed, unknown: b.unknown, kinds: b.kinds },
+        beds: { count: b.count - b.closed, open: b.open, partly: b.partly, closed: b.closed, unknown: b.unknown, unmanaged: b.unmanaged, kinds: b.kinds },
         alternatives: alts,
         planB: { before: shift(pb.before), after: shift(pb.after) },
         why: `${at}: ${bedText}${extras.length ? `; ${extras.join(" and ")}` : ""}; ${dayText}`,

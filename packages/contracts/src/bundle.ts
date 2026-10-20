@@ -443,7 +443,7 @@ export interface PlacesFile {
  * A service near the route (conflated from OSM and Overture), located on the route's measure axis.
  *
  * `months` holds one letter per month of the season year (D18): o = open, p = partly (the season starts or ends
- * that month), c = closed, ? = unknown.
+ * that month), c = closed, ? = unknown, a = an unmanaged site with no season at all (D71).
  */
 export interface Place {
   id: string;
@@ -486,7 +486,7 @@ export interface Place {
   counts: boolean;
   on_route: boolean;
   /**
-   * 12 letters, January first: o open, p partly, c closed, ? unknown
+   * 12 letters, January first: o open, p partly, c closed, ? unknown, a unmanaged (no season)
    */
   months: string;
   opening_hours: string | null;

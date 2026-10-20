@@ -75,12 +75,27 @@ export function bedKinds(kinds: { kind: string; count: number }[]): string {
   return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}` : (parts[0] ?? "");
 }
 
+/**
+ * What a place is, for its line: the public body's own name for it where an official source has it, with its number of
+ * pitches ("BC Recreation Site, 12 sites", D71), else its kind ("guest house").
+ */
+export function placeKind(p: { kind: string; detail: Record<string, unknown> }): string {
+  const label = typeof p.detail.official === "string" ? p.detail.official : p.kind.replace("_", " ");
+  const sites = typeof p.detail.sites === "number" && p.detail.sites > 0 ? p.detail.sites : null;
+  return sites ? `${label}, ${plural(sites, "site")}` : label;
+}
+
 /** What the rider sleeps in, for when there's none (D62): "campsite", "place with rooms", "place to stay". */
 export const sleepNoun = (sleep: Sleep) => (sleep === "camping" ? "campsite" : sleep === "rooms" ? "place with rooms" : "place to stay");
 
-/** What we know of places' opening in a month (D57, D62): "all open in May", or "check ahead if they're open". */
-export function opening(beds: { count: number; open: number; partly: number }, month: string): string {
-  const known = beds.open + beds.partly;
+/**
+ * What we know of places' opening in a month (D57, D62): "all open in May", or "check ahead if they're open". An
+ * unmanaged site has no season, so it counts as known, and when every place is one there's nothing to say (D71).
+ */
+export function opening(beds: { count: number; open: number; partly: number; unmanaged?: number }, month: string): string {
+  const unmanaged = beds.unmanaged ?? 0;
+  if (unmanaged >= beds.count) return "";
+  const known = beds.open + beds.partly + unmanaged;
   if (!known) return `check ahead if ${beds.count === 1 ? "it's" : "they're"} open`;
   if (known < beds.count) return `${known} open in ${month}: check ahead for the others`;
   return beds.count === 1 ? `open in ${month}` : `all open in ${month}`;
@@ -90,9 +105,10 @@ export function opening(beds: { count: number; open: number; partly: number }, m
  * A night's places and what we know of their opening, said once for the night rather than on each place (D61, D62):
  * "1 campsite and 2 hotels nearby, check ahead if they're open".
  */
-export function bedsKnown(beds: { count: number; open: number; partly: number; kinds: { kind: string; count: number }[] }, month: string, sleep: Sleep): string {
+export function bedsKnown(beds: { count: number; open: number; partly: number; unmanaged?: number; kinds: { kind: string; count: number }[] }, month: string, sleep: Sleep): string {
   if (!beds.count) return `no known ${sleepNoun(sleep)} nearby`;
-  return `${bedKinds(beds.kinds)} nearby, ${opening(beds, month)}`;
+  const open = opening(beds, month);
+  return `${bedKinds(beds.kinds)} nearby${open ? `, ${open}` : ""}`;
 }
 
 /** A stay from the night in to the morning out: "14–15 May", or "31 May – 2 June" across months. */

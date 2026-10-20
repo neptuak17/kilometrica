@@ -477,7 +477,7 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
       nudges.push(`No known ${sleepNoun(inputs.sleep)} within 5 km of the route: look further, or change how you sleep.`);
       rank = 48;
     } else {
-      if (n.beds.open + n.beds.partly === 0) {
+      if (n.beds.open + n.beds.partly + n.beds.unmanaged === 0) {
         nudges.push(`Check ahead if ${n.beds.count === 1 ? "it's" : "they're"} open.`);
         rank = 42;
       }

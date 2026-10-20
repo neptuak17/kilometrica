@@ -30,6 +30,12 @@ SAME_NAME_M = 1500.0
 SAME_NAME_SERVICES = {"accommodation"}
 SAME_NAME_MIN_CHARS = 8
 """Names this short ("Hotel", "Camping") are too generic to merge on alone."""
+OFFICIAL_M = 1500.0
+OFFICIAL_SIMILARITY = 85
+"""An official record (D71) is the same place as another source's within OFFICIAL_M when their names share their
+words ("Thalia Lake" and "Thalia Lake Recreation Site"): official positions are often an area's centre."""
+SOURCE_ORDER = {"osm": 0, "official": 1, "overture": 2}
+"""Which record leads a merged place: OSM, then the official one, then Overture."""
 
 
 @dataclass
@@ -108,6 +114,14 @@ def _conflate_service(ordered: list[RawPlace], radius: float) -> list[Merged]:
     if ordered and ordered[0].service in SAME_NAME_SERVICES:
         for i, j in _same_name_pairs(ordered, names, x, y):
             join(i, j)
+    for i, p in enumerate(ordered):
+        if p.source != "official" or not names[i]:
+            continue
+        for j in tree.query_ball_point([x[i], y[i]], OFFICIAL_M):
+            if ordered[j].source == "official" or not names[j]:
+                continue
+            if fuzz.token_set_ratio(names[i], names[j]) >= OFFICIAL_SIMILARITY:
+                join(i, int(j))
 
     groups: dict[int, Merged] = {}
     for i, rec in enumerate(ordered):
@@ -124,13 +138,13 @@ def conflate(places: list[RawPlace]) -> list[Merged]:
         by_service.setdefault(p.service, []).append(p)
     out: list[Merged] = []
     for service, group in sorted(by_service.items()):
-        ordered = sorted(group, key=lambda p: (p.source != "osm", p.id))
+        ordered = sorted(group, key=lambda p: (SOURCE_ORDER.get(p.source, 3), p.id))
         out.extend(_conflate_service(ordered, NEAR_LARGE_M if service in LARGE else NEAR_M))
     return out
 
 
 def confidence(m: Merged) -> str:
-    if m.has("osm") and m.has("overture"):
+    if m.has("official") or (m.has("osm") and m.has("overture")):
         return "high"
     if m.has("osm"):
         return "medium"
