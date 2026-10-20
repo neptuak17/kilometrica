@@ -206,7 +206,10 @@ export interface NightPlan {
   /** Other stops worth considering, best first. */
   alternatives: { stop: Stop; dayKm: number; nextKm: number | null }[];
   planB: { before: { stop: Stop; km: number } | null; after: { stop: Stop; km: number } | null };
+  /** Why the planner stops here: "Stopping at Apt: 1 campsite and 2 hotels nearby, …; food; makes a 73 km day." */
   why: string;
+  /** The same without the beds, for where they're said just above it (the day card, D62): "Stopping at Apt: food; …". */
+  whyOther: string;
 }
 
 export interface BriefLine {

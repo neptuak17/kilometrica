@@ -276,7 +276,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                   <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, month, plan.inputs.sleep)}
                   {night.stop.station ? ` · station: ${night.stop.station}` : ""}
                 </span>
-                <span className="text-muted-foreground">{night.why}</span>
+                <span className="text-muted-foreground">{night.whyOther}</span>
                 {beds.length > 0 && (
                   <ul className="overflow-hidden rounded-2xl border">
                     {beds.slice(0, 6).map((p) => {

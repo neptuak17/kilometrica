@@ -524,6 +524,10 @@ describe("exports", () => {
     expect(bedsKnown({ count: 1, open: 0, partly: 0, kinds: [{ kind: "guest_house", count: 1 }] }, "May", "rooms")).toBe("1 guest house nearby, check ahead if it's open");
     expect(bedsKnown({ count: 0, open: 0, partly: 0, kinds: [] }, "May", "camping")).toBe("no known campsite nearby");
     expect(bedKinds([{ kind: "hostel", count: 1 }, { kind: "hut", count: 2 }, { kind: "hotel", count: 1 }])).toBe("1 hotel, 1 hostel and 2 huts");
+    // The night's why, with and without its beds (the day card says them just above it).
+    const night = makePlan(d, inputs({ sleep: "mix" })).nights[0]!;
+    expect(night.why).toMatch(/^Stopping at Town \d+: 1 campsite and 2 hotels nearby, /);
+    expect(night.whyOther).toMatch(/^Stopping at Town \d+: (food(?: and a station)?; )?makes a \d+ km day\.$/);
     // Known-closed places drop out of the kinds.
     expect(bedsFor(stop(10, { beds: [{ kind: "hotel", count: 2, seasons: [["cccccccccccc", 1], ["????????????", 1]] }] }), "rooms", 4).kinds).toEqual([{ kind: "hotel", count: 1 }]);
   });

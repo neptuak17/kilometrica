@@ -261,6 +261,8 @@ export function makePlan(
         (stop.services.food ?? 0) > 0 ? "food" : null,
         stop.station ? "a station" : null,
       ].filter(Boolean);
+      const at = `Stopping ${stop.name ? `at ${stop.name}` : stopName(stop)}`;
+      const dayText = `makes a ${kmText(stats.km)} km day.`;
       nightsOut.push({
         index: k,
         date,
@@ -270,7 +272,8 @@ export function makePlan(
         beds: { count: b.count - b.closed, open: b.open, partly: b.partly, closed: b.closed, unknown: b.unknown, kinds: b.kinds },
         alternatives: alts,
         planB: { before: shift(pb.before), after: shift(pb.after) },
-        why: `Stopping ${stop.name ? `at ${stop.name}` : stopName(stop)}: ${bedText}${extras.length ? `; ${extras.join(" and ")}` : ""}; makes a ${kmText(stats.km)} km day.`,
+        why: `${at}: ${bedText}${extras.length ? `; ${extras.join(" and ")}` : ""}; ${dayText}`,
+        whyOther: `${at}: ${extras.length ? `${extras.join(" and ")}; ` : ""}${dayText}`,
       });
       if (rest.has(k + 1)) {
         number += 1;
