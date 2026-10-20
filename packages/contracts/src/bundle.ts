@@ -874,6 +874,10 @@ export interface Stop {
    */
   name: string | null;
   /**
+   * For a stop with no town: "near X" (a named place within 10 km), else "N km from X" (D70)
+   */
+  near: string | null;
+  /**
    * OSM place=*: city, town or village; null when grouped by km
    */
   place_kind: string | null;

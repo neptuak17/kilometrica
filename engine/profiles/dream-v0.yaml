@@ -32,7 +32,11 @@ direction:
   climb_scale_m: 300               # climbing difference that counts as a clear advantage
   either_below: 0.5
 
-themes:                            # radii in metres; scores are raw / route p90, capped at 1
+themes:                            # radii in metres; scores are raw / scale, capped at 1
+  # One scale for every route (D70): EV8's 90th percentile of each raw measure, recovered from its 2026-10-17 bundle,
+  # so a theme means the same on every route (the Rhine's lake beaches are no longer "coast") and EV8's scores stand.
+  scale: {coast: 0.9751, mountains: 16.8303, water: 0.8269, forest: 0.4922, wine: 0.6357, heritage: 0.983,
+          viewpoints: 6.3455, culture: 1.0001}
   coast: {line_m: 1000, beaches_m: 1000}
   water: {near_m: 500}
   forest: {near_m: 500}

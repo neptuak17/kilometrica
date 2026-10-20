@@ -22,7 +22,10 @@ from dpg_audit.lrs.path import RoutePath
 from dpg_audit.models import Place, Stop, StopBeds, StopsFile
 from dpg_audit.services.coverage import Coverage
 
-TOWN_REACH_M = 3_000.0
+TOWN_REACH_M = {"city": 10_000.0, "town": 5_000.0, "village": 3_000.0}
+"""A bed belongs to the nearest place within its size's reach: a city spreads further than its centre point (D70)."""
+NEAR_M = 10_000.0
+"""A stop with no town is "near X" for a named place this close; else so many km from the nearest named stop."""
 KM_GROUP_M = 2_000.0
 SERVICE_REACH_M = 2_500.0
 """Other services count towards a stop when their access point lies this close to the stop along the route."""
@@ -36,8 +39,33 @@ def _town_of(beds: list[Place], towns: list[Settlement]) -> list[int | None]:
     tx, ty = to_laea([t.lon for t in towns], [t.lat for t in towns])
     tree = cKDTree(np.stack([tx, ty], 1))
     bx, by = to_laea([b.lon for b in beds], [b.lat for b in beds])
-    dist, idx = tree.query(np.stack([bx, by], 1), k=1, distance_upper_bound=TOWN_REACH_M * LAEA_SLACK)
-    return [int(i) if np.isfinite(d) else None for d, i in zip(dist, idx, strict=True)]
+    k = min(8, len(towns))
+    dist, idx = tree.query(np.stack([bx, by], 1), k=k, distance_upper_bound=max(TOWN_REACH_M.values()) * LAEA_SLACK)
+    dist, idx = dist.reshape(len(beds), k), idx.reshape(len(beds), k)
+    out: list[int | None] = []
+    for ds, ix in zip(dist, idx, strict=True):
+        # The nearest place whose size reaches this far.
+        hit = next(
+            (int(i) for d, i in zip(ds, ix, strict=True)
+             if np.isfinite(d) and d <= TOWN_REACH_M.get(towns[int(i)].kind, TOWN_REACH_M["village"]) * LAEA_SLACK),
+            None,
+        )  # fmt: skip
+        out.append(hit)
+    return out
+
+
+def _near_label(stop: Stop, towns: list[Settlement], tree: cKDTree | None, named: list[Stop]) -> str | None:
+    """How to name a stop that belongs to no town (D70): near a named place within NEAR_M, else so many km from the
+    nearest named stop along the route ("12 km from Tulameen"), which reads right in either direction."""
+    if tree is not None:
+        x, y = to_laea([stop.lon], [stop.lat])
+        d, i = tree.query([float(x[0]), float(y[0])], k=1, distance_upper_bound=NEAR_M * LAEA_SLACK)
+        if np.isfinite(d):
+            return f"near {towns[int(i)].name}"
+    if named:
+        other = min(named, key=lambda s: abs(s.at_m - stop.at_m))
+        return f"{round(abs(other.at_m - stop.at_m) / 1000)} km from {other.name}"
+    return None
 
 
 def _groups(beds: list[Place], towns: list[Settlement]) -> list[tuple[Settlement | None, list[Place]]]:
@@ -139,4 +167,12 @@ def build_stops(
             )
         )
     stops.sort(key=lambda s: (s.at_m, s.id))
+    named = [s for s in stops if s.name]
+    tree = None
+    if towns:
+        tx, ty = to_laea([t.lon for t in towns], [t.lat for t in towns])
+        tree = cKDTree(np.stack([tx, ty], 1))
+    for s in stops:
+        if not s.name:
+            s.near = _near_label(s, towns, tree, named)
     return StopsFile(season_year=season_year, reach_m=SERVICE_REACH_M, stops=stops)

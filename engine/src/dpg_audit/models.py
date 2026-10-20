@@ -587,6 +587,10 @@ class Stop(Model):
 
     id: str
     name: str | None = Field(description="Town or village; null when the beds are grouped by km only")
+    near: str | None = Field(
+        default=None,
+        description='For a stop with no town: "near X" (a named place within 10 km), else "N km from X" (D70)',
+    )
     place_kind: str | None = Field(description="OSM place=*: city, town or village; null when grouped by km")
     at_m: float = Field(description="Where the rider leaves the route for the stop: its beds' median access point")
     lon: float = Field(description="The town's position, else the route at at_m")

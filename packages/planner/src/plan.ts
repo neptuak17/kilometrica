@@ -95,6 +95,7 @@ function pseudoStop(id: string, m: number, near: Stop | null): Stop {
   return {
     id,
     name: null,
+    near: null,
     place_kind: null,
     at_m: m,
     lon: near?.lon ?? 0,

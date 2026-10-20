@@ -56,6 +56,7 @@ function stop(km: number, over: Partial<Stop> = {}): Stop {
   return {
     id: `s${km}`,
     name: `Town ${km}`,
+    near: null,
     place_kind: "town",
     at_m: km * 1000,
     lon: km * 1000 * DEG_PER_M,

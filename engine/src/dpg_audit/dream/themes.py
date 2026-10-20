@@ -2,8 +2,9 @@
 
 A 2.5 km corridor is cut from the route's OSM extract and filtered to the features themes need. The route is
 sampled every 100 m; each theme combines "share of samples near X" and "X per 10 km" measures. A theme's score is the
-section's raw value against the route's 90th percentile (capped at 1), so "high coast" means coastal compared with
-the route's other sections. Remoteness uses villages and larger places from the full 15 km corridor.
+section's raw value against one scale for every route (capped at 1), EV8's 90th percentile, so a theme means the same
+on every route (D70); without a scale in the profile, the route's own 90th percentile. Remoteness uses villages and
+larger places from the full 15 km corridor.
 """
 
 import subprocess
@@ -364,7 +365,9 @@ def scenery(
             longest = max(longest, run)
         remote.append((float(f.mean()) if n else 0.0, longest * SAMPLE_M))
 
-    p90 = {k: _p90([x for x in v if x is not None]) for k, v in raw.items()}
+    # One scale for every route when the profile gives it (D70); else the route's own 90th percentile.
+    fixed = cfg.get("scale") or {}
+    p90 = {k: fixed.get(k) or _p90([x for x in v if x is not None]) for k, v in raw.items()}
     out = []
     for i in range(len(daily)):
         themes = {}

@@ -3,7 +3,7 @@ import type { Stop } from "@dpg/contracts";
 import type { Sleep } from "./types";
 
 /** A stop by its town, else by its km. */
-export const stopName = (s: Stop) => s.name ?? `near km ${Math.round(s.at_m / 1000)}`;
+export const stopName = (s: Stop) => s.name ?? s.near ?? `near km ${Math.round(s.at_m / 1000)}`;
 
 export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const MONTHS_LONG = [

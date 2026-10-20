@@ -2785,6 +2785,18 @@
           ],
           "description": "Town or village; null when the beds are grouped by km only"
         },
+        "near": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "For a stop with no town: \"near X\" (a named place within 10 km), else \"N km from X\" (D70)"
+        },
         "place_kind": {
           "anyOf": [
             {
@@ -2878,6 +2890,7 @@
       "required": [
         "id",
         "name",
+        "near",
         "place_kind",
         "at_m",
         "lon",
