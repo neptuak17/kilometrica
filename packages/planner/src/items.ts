@@ -25,20 +25,43 @@ export const SCHENGEN = new Set([
 const OPEN_BORDER = new Set(["MC", "SM", "VA", "AD"]);
 const inSchengen = (cc: string | null) => !!cc && (SCHENGEN.has(cc) || OPEN_BORDER.has(cc));
 
-/** National rail operators' sites, for the getting-there handoff (D41). */
-export const RAIL: Record<string, { name: string; url: string }> = {
-  ES: { name: "Renfe", url: "https://www.renfe.com" },
+/**
+ * National rail operators' sites, for getting there and back and for bail-outs (D41, D63), with the operator's own page
+ * on bikes where it covers the whole country (from engine/profiles/transport/bike-carriage.yaml, D20). France has none:
+ * each region sets its TER rules. None of these sites takes stations and a date in a link (checked 2026-10-20).
+ */
+export const RAIL: Record<string, { name: string; url: string; bikes?: { name: string; url: string } }> = {
+  ES: { name: "Renfe", url: "https://www.renfe.com", bikes: { name: "Renfe", url: "https://www.renfe.com/es/ca/viajar/informacion-util/equipajes/bicicletas-y-patines" } },
   FR: { name: "SNCF Connect", url: "https://www.sncf-connect.com" },
-  MC: { name: "SNCF Connect", url: "https://www.sncf-connect.com" },
-  IT: { name: "Trenitalia", url: "https://www.trenitalia.com" },
-  SI: { name: "Slovenske železnice", url: "https://potniski.sz.si" },
-  HR: { name: "HŽPP", url: "https://www.hzpp.hr" },
+  MC: {
+    name: "SNCF Connect",
+    url: "https://www.sncf-connect.com",
+    bikes: { name: "TER Sud", url: "https://www.ter.sncf.com/sud-provence-alpes-cote-d-azur/services-contacts/voyager-avec-velo/reservation-velo" },
+  },
+  IT: { name: "Trenitalia", url: "https://www.trenitalia.com", bikes: { name: "Trenitalia", url: "https://www.trenitalia.com/en/services/travelling-with-your-bike.html" } },
+  SI: { name: "Slovenske železnice", url: "https://potniski.sz.si", bikes: { name: "Slovenske železnice", url: "https://potniski.sz.si/take-your-bike-on-the-train/" } },
+  HR: { name: "HŽPP", url: "https://www.hzpp.hr", bikes: { name: "HŽPP", url: "https://hzpp.hr/en/international/bicycle-transport" } },
   GR: { name: "Hellenic Train", url: "https://www.hellenictrain.gr" },
   PT: { name: "CP", url: "https://www.cp.pt" },
   DE: { name: "Deutsche Bahn", url: "https://www.bahn.de" },
   CH: { name: "SBB", url: "https://www.sbb.ch" },
   AT: { name: "ÖBB", url: "https://www.oebb.at" },
 };
+
+/**
+ * Rail handoffs for stations in these countries (D41, D63): each operator's site, then its bike rules where we have
+ * them, once per operator, in the order the countries come.
+ */
+export function railLinks(countries: (string | null | undefined)[]): Handoff[] {
+  const out: Handoff[] = [];
+  for (const cc of countries) {
+    const rail = cc ? RAIL[cc] : undefined;
+    if (!rail) continue;
+    if (!out.some((h) => h.url === rail.url)) out.push({ kind: "rail", label: rail.name, url: rail.url });
+    if (rail.bikes && !out.some((h) => h.url === rail.bikes!.url)) out.push({ kind: "rail", label: `${rail.bikes.name}'s bike rules`, url: rail.bikes.url });
+  }
+  return out;
+}
 
 /** Languages tried after the rider's own when a sight has no article in them: English, then the local ones. */
 const FALLBACK_LANGUAGES = ["en", "fr", "es", "it", "de", "pt", "ca", "nl", "el", "hr", "sl", "tr", "eu"];
@@ -524,7 +547,6 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
     const near = data.stops.stops
       .filter((s) => s.station && s.station_at_m !== null && Math.abs(s.station_at_m - e.m) <= 10_000)
       .sort((a, b) => Math.abs(a.station_at_m! - e.m) - Math.abs(b.station_at_m! - e.m))[0];
-    const rail = near?.country ? RAIL[near.country] : undefined;
     add({
       id: `travel:${e.id}`,
       kind: "todo",
@@ -538,7 +560,7 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
       rank: 25,
       topic: "prepare",
       evidence: { source: "M2 stations, bike-carriage table (D20)" },
-      handoffs: rail ? [{ kind: "rail", label: rail.name, url: rail.url }] : [],
+      handoffs: railLinks([near?.country]),
     });
   }
   let prev: string | null = null;

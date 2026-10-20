@@ -81,7 +81,9 @@ function handoffText(h: Handoff): string | null {
   if (h.kind === "phone") return h.label;
   // "Hôtel Sainte-Anne: Website" keeps its name: "Hôtel Sainte-Anne: hotel-sainte-anne.fr".
   if (h.kind === "website") return h.label.endsWith("Website") ? `${h.label.slice(0, -"Website".length)}${address(h.url)}` : address(h.url);
-  if (h.kind === "rail" || h.kind === "ferry") return `${h.label} · ${address(h.url)}`;
+  // A rail operator's bike rules sit deep in its site: on paper, the site's address is the useful part (D63).
+  if (h.kind === "rail") return `${h.label} · ${address(h.url).split("/")[0]}`;
+  if (h.kind === "ferry") return `${h.label} · ${address(h.url)}`;
   if (h.kind === "wiki") {
     const title = decodeURIComponent(h.url.split("/wiki/")[1] ?? "").replaceAll("_", " ");
     return title ? `${h.label}: ${title}` : h.label;

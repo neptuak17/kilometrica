@@ -19,6 +19,7 @@ import {
   nightStay,
   opening,
   placeLinks,
+  railLinks,
   type DayPlan,
   type Handoff,
   type PlanData,
@@ -371,6 +372,8 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                     .map((s) => `${s.p.name ?? "Station"} (km ${Math.round(s.at)})`)
                     .join(" · ")}
                 </span>
+                {/* The operator and its bike rules (D63): no site takes the station and date in a link. */}
+                <Links links={railLinks(stations.slice(0, 6).map((s) => s.p.country))} />
               </Part>
             )}
           </div>

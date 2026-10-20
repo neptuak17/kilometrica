@@ -6,7 +6,7 @@ import { planChanges } from "./changes";
 import { choicesOf, parseDocument, toDocument } from "./document";
 import { calendarFile, dayGpx, tripGpx } from "./exports";
 import { bearing, type Geometry } from "./geometry";
-import { bookingSearches, dayItems, mapsSearch, nightStay, streetPhotos, wikiLinks } from "./items";
+import { bookingSearches, dayItems, mapsSearch, nightStay, railLinks, streetPhotos, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan } from "./plan";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
@@ -510,6 +510,11 @@ describe("exports", () => {
     expect(unnamed[1]!.url).toContain("sort=DISTANCE");
     expect(stayDates("2027-05-14", "2027-05-15")).toBe("14–15 May");
     expect(stayDates("2027-05-31", "2027-06-02")).toBe("31 May – 2 June");
+  });
+
+  it("links rail operators and their bike rules, once each (D63)", () => {
+    expect(railLinks(["IT", "IT", "MC", "FR", "XX", null]).map((h) => h.label)).toEqual(["Trenitalia", "Trenitalia's bike rules", "SNCF Connect", "TER Sud's bike rules"]);
+    expect(railLinks([undefined])).toEqual([]);
   });
 
   it("names a night's places by kind and says once what we know of their opening (D61, D62)", () => {
