@@ -10,9 +10,9 @@ import type { Finding, Highlight, Place, Stop } from "@dpg/contracts";
 import { bearing, type Geometry, locate } from "./geometry";
 import type { PlanCore } from "./plan";
 import { bedsFor } from "./stages";
-import { clock, dayIndex, monthOf, weekday } from "./sun";
+import { addDays, clock, dayIndex, monthOf, weekday } from "./sun";
 import { country, day as dayText, hours, KNOWN_ENOUGH, km, MONTHS_LONG, plural, stopName, WEEKDAYS_LONG } from "./text";
-import { type DayPlan, type Handoff, type PlanData, type PlanItem, placesMissing } from "./types";
+import { type DayPlan, type Handoff, type NightPlan, type PlanData, type PlanItem, placesMissing, type Sleep } from "./types";
 
 export const CAPS = { headsup: 3, highlight: 3, brief: 5 };
 
@@ -127,6 +127,33 @@ export function placeLinks(
   if (phone) out.push({ kind: "phone", label: phone, url: `tel:${phone.replace(/[^\d+]/g, "")}` });
   out.push({ kind: "maps", label: "See it in Google Maps", url: mapsSearch(p, town) });
   return out;
+}
+
+/** The nights at a stop: in that night, out the next morning, or the morning after when a rest day follows. */
+export function nightStay(night: NightPlan, restAfter: number[]): { checkIn: string; checkOut: string } {
+  return { checkIn: night.date, checkOut: addDays(night.date, restAfter.includes(night.afterRide) ? 2 : 1) };
+}
+
+/**
+ * A night's fallback, for when none of our places suit (D60): Booking.com and Expedia searched for the stop and the
+ * nights there. By town and country, or by the stop's position, nearest first, when it has no town name. Guests are
+ * left to the rider. None for riders who only camp: the two sites list few campsites.
+ */
+export function bookingSearches(night: NightPlan, inputs: { sleep: Sleep; restAfter: number[] }): Handoff[] {
+  if (inputs.sleep === "camping") return [];
+  const { checkIn, checkOut } = nightStay(night, inputs.restAfter);
+  const s = night.stop;
+  const where = s.name && (s.country ? `${s.name}, ${country(s.country)}` : s.name);
+  const lat = s.lat.toFixed(5);
+  const lon = s.lon.toFixed(5);
+  const booking = where
+    ? `ss=${encodeURIComponent(where)}`
+    : `latitude=${lat}&longitude=${lon}&dest_type=latlong&order=distance_from_search`;
+  const expedia = where ? `destination=${encodeURIComponent(where)}` : `latLong=${lat}%2C${lon}&sort=DISTANCE`;
+  return [
+    { kind: "booking", label: "Booking.com", url: `https://www.booking.com/searchresults.html?${booking}&checkin=${checkIn}&checkout=${checkOut}` },
+    { kind: "booking", label: "Expedia", url: `https://www.expedia.com/Hotel-Search?${expedia}&startDate=${checkIn}&endDate=${checkOut}` },
+  ];
 }
 
 const dayKm = (core: PlanCore, d: DayPlan, m: number) => Math.max(0, (core.axis.tOf(m) - d.fromT) / 1000);

@@ -5,6 +5,7 @@
  */
 import {
   bedsFor,
+  bookingSearches,
   CAPS,
   clock,
   day as dayText,
@@ -13,12 +14,14 @@ import {
   hours,
   km,
   monthOf,
+  nightStay,
   placeLinks,
   type DayPlan,
   type Handoff,
   type PlanData,
   type PlanItem,
   type PlanResult,
+  stayDates,
   stopName,
 } from "@dpg/planner";
 import { Badge, Button, Card, CardContent, Checkbox, cn, Icons, Label, LinkButton } from "@dpg/ui";
@@ -149,6 +152,9 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   const next = plan.days.find((x) => x.number === d.number + 1);
   const unloadedText = unloaded.map(([a, b]) => `km ${a}–${b}`).join(", ");
   const chosen = night ? choices.beds[night.index] : undefined;
+  // When none of our places suit: the big booking sites, searched for the stop and its nights (D60).
+  const search = night ? bookingSearches(night, plan.inputs) : [];
+  const stay = night ? nightStay(night, plan.inputs.restAfter) : undefined;
   const headsups = all("headsup");
   const highlights = all("highlight");
 
@@ -313,7 +319,16 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                   </ul>
                 )}
                 {bedsUnloaded && <span className="text-xs text-unknown-foreground">The names of places to stay here didn't load: the count above is from the route's stops.</span>}
-                <span className="text-xs text-muted-foreground">Listed by what we know (open first, then by detour), never by quality: we have no prices or reviews.</span>
+                {beds.length > 0 && <span className="text-xs text-muted-foreground">Listed by what we know (open first, then by detour), never by quality: we have no prices or reviews.</span>}
+                {search.length > 0 && (
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1.5 print:hidden">
+                    <span className="text-muted-foreground">
+                      {beds.length ? "None of these suit? " : night.beds.count ? "" : "No known place of your kind here. "}Search for {night.stop.name ?? "places near this stop"},{" "}
+                      {stayDates(stay!.checkIn, stay!.checkOut)}:
+                    </span>
+                    <Links links={search} />
+                  </span>
+                )}
                 <span>
                   <span className="text-muted-foreground">Plan B: </span>
                   {planB || "no other stop of your kind nearby"}

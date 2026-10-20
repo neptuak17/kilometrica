@@ -6,13 +6,14 @@ import { planChanges } from "./changes";
 import { choicesOf, parseDocument, toDocument } from "./document";
 import { calendarFile, dayGpx, tripGpx } from "./exports";
 import { bearing, type Geometry } from "./geometry";
-import { dayItems, mapsSearch, streetPhotos, wikiLinks } from "./items";
+import { bookingSearches, dayItems, mapsSearch, nightStay, streetPhotos, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan } from "./plan";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
-import { clock, sunTimes, weekday } from "./sun";
-import { NO_CHOICES, type PlanData, type PlanInputs } from "./types";
+import { addDays, clock, sunTimes, weekday } from "./sun";
+import { stayDates } from "./text";
+import { NO_CHOICES, type NightPlan, type PlanData, type PlanInputs } from "./types";
 
 const LEVELS = [
   { level: 1, name: "Leisurely", km_min: 20, km_max: 40, climb_max_m: 300 },
@@ -491,6 +492,24 @@ describe("exports", () => {
     expect(bearing([0, 0], [0, 1])).toBeCloseTo(0);
     expect(bearing([0, 0], [1, 0])).toBeCloseTo(90);
     expect(bearing([0, 0], [0, 0])).toBeNull();
+  });
+
+  it("searches the big booking sites for each night, two nights before a rest day, never for campers (D60)", () => {
+    const p = makePlan(d, inputs({ restAfter: [2], sleep: "mix" }));
+    const [n1, n2] = p.nights as [NightPlan, NightPlan];
+    const [booking, expedia] = bookingSearches(n1, p.inputs);
+    const next = addDays(n1.date, 1);
+    expect(booking!.url).toBe(`https://www.booking.com/searchresults.html?ss=${encodeURIComponent(`${n1.stop.name}, France`)}&checkin=${n1.date}&checkout=${next}`);
+    expect(expedia!.url).toBe(`https://www.expedia.com/Hotel-Search?destination=${encodeURIComponent(`${n1.stop.name}, France`)}&startDate=${n1.date}&endDate=${next}`);
+    expect(nightStay(n2, p.inputs.restAfter).checkOut).toBe(addDays(n2.date, 2));
+    expect(bookingSearches(n1, { ...p.inputs, sleep: "camping" })).toEqual([]);
+    // A stop with no town name: by its position, nearest first.
+    const unnamed = bookingSearches({ ...n1, stop: { ...n1.stop, name: null } }, p.inputs);
+    expect(unnamed[0]!.url).toContain(`latitude=${LAT.toFixed(5)}&`);
+    expect(unnamed[0]!.url).toContain("dest_type=latlong&order=distance_from_search");
+    expect(unnamed[1]!.url).toContain("sort=DISTANCE");
+    expect(stayDates("2027-05-14", "2027-05-15")).toBe("14–15 May");
+    expect(stayDates("2027-05-31", "2027-06-02")).toBe("31 May – 2 June");
   });
 
   it("writes one calendar event per day", () => {

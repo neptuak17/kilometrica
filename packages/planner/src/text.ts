@@ -51,6 +51,13 @@ export function range(a: string, b: string): string {
   return `${day(a)} ${ya} – ${day(b)} ${yb}`;
 }
 
+/** A stay from the night in to the morning out: "14–15 May", or "31 May – 2 June" across months. */
+export function stayDates(checkIn: string, checkOut: string): string {
+  const [, ma, da] = checkIn.split("-").map(Number) as [number, number, number];
+  const [, mb, db] = checkOut.split("-").map(Number) as [number, number, number];
+  return ma === mb ? `${da}–${db} ${MONTHS_LONG[ma - 1]}` : `${da} ${MONTHS_LONG[ma - 1]} – ${db} ${MONTHS_LONG[mb - 1]}`;
+}
+
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /**
