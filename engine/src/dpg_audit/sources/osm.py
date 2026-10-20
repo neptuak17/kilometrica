@@ -9,6 +9,7 @@ import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
+import httpx
 from shapely import MultiPolygon
 from shapely.geometry import shape
 
@@ -72,7 +73,13 @@ def ensure_extract(region: dict, data_dir: Path, max_age_days: int = 30) -> tupl
         snap = SourceSnapshot.model_validate_json(meta_path.read_text(encoding="utf-8"))
         if (datetime.now(UTC) - snap.retrieved_at).days < max_age_days:
             return target, snap
-    md5 = fetch_text(url + ".md5").split()[0]
+    try:
+        md5: str | None = fetch_text(url + ".md5").split()[0]
+    except httpx.HTTPStatusError as err:
+        # Geofabrik doesn't always publish one (Germany's was missing on 2026-10-20): the length is checked instead.
+        if err.response.status_code != 404:
+            raise
+        md5 = None
     print(f"downloading {url}", flush=True)
     download(url, target, expected_md5=md5)
     stamp = replication_timestamp(target) or datetime.now(UTC).isoformat()

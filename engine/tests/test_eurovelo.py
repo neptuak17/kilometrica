@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from dpg_audit.build import assemble
+from dpg_audit.build import BuildParams, assemble, split_variants
 from dpg_audit.bundle import write_bundle
 from dpg_audit.models import BundleManifest, ComponentKind, DevelopmentLevel, Signage, SourceSnapshot
 from dpg_audit.networks import eurovelo
@@ -115,6 +115,59 @@ def test_assemble_sample_route(sample_gpx):
 
     shares = build.summary().status_breakdown
     assert sum(s.share for s in shares) == pytest.approx(1.0)
+
+
+def _line_trk(name, lon0, lon1, lat):
+    steps = int(round(abs(lon1 - lon0) / 0.01))
+    return trk(name, [(lon0 + (lon1 - lon0) * i / steps, lat, 10) for i in range(steps + 1)])
+
+
+def _gpx(tmp_path, *trks):
+    path = tmp_path / "raw" / "eurovelo" / "ev15" / "2026-10-20" / "ev15-full.gpx"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        f'<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="test" '
+        f'xmlns="http://www.topografix.com/GPX/1/1">{"".join(trks)}</gpx>',
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_other_bank_is_set_aside(tmp_path):
+    # 1 and 2 run east along one bank; 3 goes back to the start and runs along the other bank, 1.1 km north, to
+    # where 2 ends; 4 carries on east from there. 3 is another way along a stretch already covered (D65).
+    path = _gpx(
+        tmp_path,
+        _line_trk("001: A – B (Developed + Signed)", 0.00, 0.10, 45.00),
+        _line_trk("002: B – C (Developed + Signed)", 0.10, 0.20, 45.00),
+        _line_trk("003: A' – C' (Developed + Signed)", 0.00, 0.20, 45.01),
+        _line_trk("004: C – D (Developed + Signed)", 0.20, 0.30, 45.00),
+    )
+    tracks = eurovelo.load_tracks(path)
+    main, variants = split_variants(tracks, BuildParams())
+    assert [t.number for t in main] == [1, 2, 4]
+    assert [[t.number for t in g] for g in variants] == [[3]]
+
+    build = assemble(eurovelo.route_for("EV15"), tracks)
+    assert [d.number for d in build.daily] == [1, 2, 4]
+    assert not any(c.kind == ComponentKind.GAP for c in build.components)
+    aside = [f for f in build.findings if f.rule_id == "source.variant_set_aside"]
+    assert len(aside) == 1 and aside[0].evidence["daily_sections"] == [3]
+    assert aside[0].from_m == pytest.approx(0, abs=50) and aside[0].to_m == pytest.approx(build.daily[1].to_m, abs=50)
+
+
+def test_a_far_jump_stays_on_the_main_line(tmp_path):
+    # A ferry-like jump to somewhere the route hasn't been is the main line after a gap, not another way; and a first
+    # section stored end-to-start still lets the second carry on from it.
+    path = _gpx(
+        tmp_path,
+        _line_trk("001: B – A (Developed + Signed)", 0.10, 0.00, 45.00),
+        _line_trk("002: B – C (Developed + Signed)", 0.10, 0.20, 45.00),
+        _line_trk("003: D – E (Developed + Signed)", 0.80, 0.90, 45.00),
+    )
+    main, variants = split_variants(eurovelo.load_tracks(path), BuildParams())
+    assert [t.number for t in main] == [1, 2, 3]
+    assert variants == []
 
 
 def test_write_bundle(sample_gpx, tmp_path):

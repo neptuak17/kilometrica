@@ -48,6 +48,11 @@ class BuildParams:
     straight_caution_m: float = 2000.0
     straight_warning_m: float = 5000.0
     sparse_median_spacing_m: float = 120.0
+    main_join_m: float = 5000.0
+    """A section continues the main line if one of its ends is this close to the main line's end (D65)."""
+    variant_near_m: float = 3000.0
+    """A section that doesn't continue the main line but comes this close to the route already placed is another way
+    along a stretch already covered, e.g. the other bank (D65); farther away, it is the main line after a gap."""
 
 
 @dataclass
@@ -110,6 +115,57 @@ def choose_orientations(ends: list[tuple[LonLat, LonLat]], reverse_penalty_m: fl
     return [bool(s) for s in reversed(states)]
 
 
+def _haversine(lon: float, lat: float, lons: np.ndarray, lats: np.ndarray) -> np.ndarray:
+    lon1, lat1, lon2, lat2 = np.radians(lon), np.radians(lat), np.radians(lons), np.radians(lats)
+    a = np.sin((lat2 - lat1) / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2) ** 2
+    return 6_371_008.8 * 2 * np.arcsin(np.sqrt(a))
+
+
+def split_variants(tracks: list[TrackInput], params: BuildParams) -> tuple[list[TrackInput], list[list[TrackInput]]]:
+    """The main line and the other ways along it (D65), from sections in published order.
+
+    Some routes publish both banks of a river as their own sections: one bank's run, then the numbering jumps back
+    up the river for the other. A section continues the main line when one end is near the main line's end and its
+    other end goes somewhere the route hasn't been. One that comes near the route already placed without doing that
+    is another way along a covered stretch, set aside; the sections that run on from it belong to it. A section far
+    from everything placed is the main line again, after a gap (EV8's ferries)."""
+    if not tracks:
+        return [], []
+    main = [tracks[0]]
+    variants: list[list[TrackInput]] = []
+    placed: list[TrackInput] = [tracks[0]]
+    # Where the main line leaves off: either end of the first section until the second shows its direction.
+    exits: list[LonLat] = list(_ends(tracks[0].line))
+
+    def nearest(e: LonLat, among: list[TrackInput]) -> float:
+        if not among:
+            return float("inf")
+        lons = np.concatenate([p.line.lon for p in among])
+        lats = np.concatenate([p.line.lat for p in among])
+        return float(_haversine(e[0], e[1], lons, lats).min())
+
+    for t in tracks[1:]:
+        ends = _ends(t.line)
+        last = main[-1]
+        to_main = [min(_dist(e, x) for x in exits) for e in ends]
+        # Somewhere new: away from the route placed so far, leaving out the section it follows on from.
+        before = [p for p in placed if p is not last]
+        new = [nearest(e, before) > params.variant_near_m for e in ends]
+        joins = [to_main[k] <= params.main_join_m and new[1 - k] for k in (0, 1)]
+        far = all(nearest(e, placed) > params.variant_near_m for e in ends)
+        if any(joins) or far:
+            main.append(t)
+            # It leaves by its other end; after a gap, by the end farther from where the main line left off.
+            entry = 0 if joins[0] else 1 if joins[1] else int(to_main[1] < to_main[0])
+            exits = [ends[1 - entry]]
+        elif variants and variants[-1][-1].number == t.number - 1:
+            variants[-1].append(t)
+        else:
+            variants.append([t])
+        placed.append(t)
+    return main, variants
+
+
 class _Findings:
     def __init__(self) -> None:
         self.items: list[Finding] = []
@@ -145,6 +201,9 @@ def assemble(route: Route, tracks: list[TrackInput], params: BuildParams | None 
             evidence={"numbers": numbers},
             confidence="high",
         )
+
+    # Other ways along a stretch already covered are set aside: one line is audited and planned (D65).
+    tracks, variants = split_variants(tracks, params)
 
     flips = choose_orientations([_ends(t.line) for t in tracks], params.reverse_penalty_m)
     lines = [t.line.reversed() if flip else t.line for t, flip in zip(tracks, flips, strict=True)]
@@ -319,6 +378,30 @@ def assemble(route: Route, tracks: list[TrackInput], params: BuildParams | None 
             "include busy or dangerous roads; EuroVelo advises using public transport to skip such stretches.",
             evidence={"status": s.status.label, "daily_sections": s.daily_sections},
             confidence="medium",
+        )
+
+    # Each way set aside is noted where it leaves and rejoins the main line (D65).
+    for group in variants:
+        ends = [_ends(t.line) for t in group]
+        points = [e for pair in ends for e in pair]
+        on_main = sorted(path.project(lon, lat).m for lon, lat in points)
+        a, b = group[0].number, group[-1].number
+        names = [n for n in (group[0].start_name, group[-1].end_name) if n]
+        length = sum(t.line.length for t in group)
+        findings.add(
+            rule_id="source.variant_set_aside",
+            category="data_quality",
+            severity=Severity.INFO,
+            from_m=on_main[0],
+            to_m=on_main[-1],
+            position=points[0],
+            title=f"Another way along here: section{'s' if a != b else ''} {a}{f'–{b}' if a != b else ''}"
+            + (f", {' – '.join(names)}" if names else "")
+            + f" ({_km(length)}), not audited",
+            detail="The route publishes a second way along this stretch, usually the other bank of a river. One line "
+            "is audited and planned; this way is set aside for now.",
+            evidence={"daily_sections": [t.number for t in group], "length_m": round(length, 1)},
+            confidence="high",
         )
 
     findings.items.sort(key=lambda f: (f.from_m, f.to_m))

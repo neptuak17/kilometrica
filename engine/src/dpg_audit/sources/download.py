@@ -17,7 +17,8 @@ def file_digest(path: Path, algorithm: str = "sha256") -> str:
 
 
 def download(url: str, target: Path, *, expected_md5: str | None = None, quiet: bool = False) -> Path:
-    """Download `url` to `target` (resuming a partial `.part` file) and optionally verify an MD5."""
+    """Download `url` to `target` (resuming a partial `.part` file) and optionally verify an MD5. Without one, the
+    file is at least checked to be as long as the server said."""
     target.parent.mkdir(parents=True, exist_ok=True)
     part = target.with_suffix(target.suffix + ".part")
     offset = part.stat().st_size if part.exists() else 0
@@ -42,6 +43,8 @@ def download(url: str, target: Path, *, expected_md5: str | None = None, quiet: 
                     if not quiet and done >= next_report:
                         print(f"  {target.name}: {done / 1e9:.2f}/{total / 1e9:.2f} GB", flush=True)
                         next_report = done + (1 << 28)
+            if total > offset and done != total:
+                raise RuntimeError(f"download of {url} stopped at {done:,} of {total:,} bytes; run again to resume")
     if expected_md5 and file_digest(part, "md5") != expected_md5.lower():
         part.unlink()
         raise RuntimeError(f"MD5 mismatch for {url}; partial file removed, please retry")

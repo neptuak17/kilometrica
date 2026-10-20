@@ -43,9 +43,15 @@ export const RAIL: Record<string, { name: string; url: string; bikes?: { name: s
   HR: { name: "HŽPP", url: "https://www.hzpp.hr", bikes: { name: "HŽPP", url: "https://hzpp.hr/en/international/bicycle-transport" } },
   GR: { name: "Hellenic Train", url: "https://www.hellenictrain.gr" },
   PT: { name: "CP", url: "https://www.cp.pt" },
-  DE: { name: "Deutsche Bahn", url: "https://www.bahn.de" },
-  CH: { name: "SBB", url: "https://www.sbb.ch" },
-  AT: { name: "ÖBB", url: "https://www.oebb.at" },
+  DE: { name: "Deutsche Bahn", url: "https://www.bahn.de", bikes: { name: "Deutsche Bahn", url: "https://www.bahn.de/angebot/zusatzticket/fahrrad" } },
+  CH: {
+    name: "SBB",
+    url: "https://www.sbb.ch",
+    bikes: { name: "SBB", url: "https://www.sbb.ch/en/travel-information/individual-needs/travelling-with-bikes/carriage-bikes-train.html" },
+  },
+  AT: { name: "ÖBB", url: "https://www.oebb.at", bikes: { name: "ÖBB", url: "https://www.oebb.at/en/reiseplanung-services/im-zug/fahrradmitnahme" } },
+  LI: { name: "ÖBB", url: "https://www.oebb.at", bikes: { name: "ÖBB", url: "https://www.oebb.at/en/reiseplanung-services/im-zug/fahrradmitnahme" } },
+  NL: { name: "NS", url: "https://www.ns.nl/en", bikes: { name: "NS", url: "https://www.ns.nl/en/travel-information/bikes-on-the-train.html" } },
 };
 
 /**

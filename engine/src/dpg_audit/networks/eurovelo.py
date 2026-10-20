@@ -29,7 +29,7 @@ ATTRIBUTION = (
 
 # EuroVelo's internal route ids used by /route/get-gpx/<id>. Unknown ones are discovered from the route page.
 KNOWN_GPX_IDS = {"ev8": 31}
-ROUTE_NAMES = {"ev8": "Mediterranean Route"}
+ROUTE_NAMES = {"ev8": "Mediterranean Route", "ev15": "Rhine Cycle Route"}
 
 _NAME_RE = re.compile(r"^\s*(?P<num>\d+)\s*:\s*(?P<title>.*?)\s*(?:\((?P<status>[^()]*)\))?\s*$")
 _GPX_LINK_RE = re.compile(r"/route/get-gpx/(\d+)")

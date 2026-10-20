@@ -10,8 +10,9 @@
 #     unknown      no reliable published policy found
 #   confidence: how far the row can be trusted (high = operator's own page; low = secondary or anecdotal source)
 #
-# Checked 2026-10-14. Rules change often: riders must confirm with the operator before travelling.
-checked: 2026-10-14
+# Checked 2026-10-14 (EV8's countries) and 2026-10-20 (EV15's: DE, CH, AT, LI, NL). Rules change often: riders must
+# confirm with the operator before travelling.
+checked: 2026-10-20
 rows:
   - country: ES
     operator: Renfe
@@ -106,6 +107,42 @@ rows:
     bikes: unknown
     note: Cyprus has no railway.
     source: null
+    confidence: high
+  - country: DE
+    bikes: yes
+    note: >-
+      Regional trains (RE, RB, S-Bahn) carry assembled bikes with a bike ticket (the nationwide bike day ticket,
+      EUR 7.50, or a regional one); spaces can't be reserved, so a full train may refuse bikes. ICE, IC and EC carry
+      bikes only with a bike ticket and a space reserved ahead, and not every ICE takes them. Folded bikes go free.
+    source: https://www.bahn.de/angebot/zusatzticket/fahrrad
+    confidence: high
+  - country: CH
+    bikes: yes
+    note: >-
+      SBB carries bikes with a bike ticket or Bike Day Pass. From 21 March to 31 October, InterCity trains also need a
+      CHF 2 bike space reservation: every day on the IC2/21 and IC5/51, Friday to Sunday and on some holidays on the
+      other IC lines (marked with a bike symbol in the timetable). Regional trains need no reservation.
+    source: https://www.sbb.ch/en/travel-information/individual-needs/travelling-with-bikes/carriage-bikes-train.html
+    confidence: high
+  - country: AT
+    bikes: yes
+    note: >-
+      ÖBB regional trains carry bikes with a bike ticket (about 10% of the standard fare, at least EUR 1.40); spaces
+      can't be reserved there. Railjet, Nightjet and ICE need a bike ticket and a reservation. Folded bikes go free.
+    source: https://www.oebb.at/en/reiseplanung-services/im-zug/fahrradmitnahme
+    confidence: high
+  - country: LI
+    bikes: yes
+    note: Liechtenstein's trains (Feldkirch–Buchs) are run by ÖBB, under ÖBB's bike rules (see Austria).
+    source: https://www.oebb.at/en/reiseplanung-services/im-zug/fahrradmitnahme
+    confidence: medium
+  - country: NL
+    bikes: limited
+    note: >-
+      NS carries bikes with a bike ticket only off-peak on weekdays (before 06:30, 09:00-16:00, after 18:30); all
+      day at weekends, on public holidays (not King's Day) and in July and August. Not on Intercity Direct. Folded
+      bikes go free at any time.
+    source: https://www.ns.nl/en/travel-information/bikes-on-the-train.html
     confidence: high
   - kind: ferry_terminal
     bikes: yes
