@@ -51,6 +51,19 @@ export function range(a: string, b: string): string {
   return `${day(a)} ${ya} – ${day(b)} ${yb}`;
 }
 
+/**
+ * A night's places of the rider's kind and what we know of their opening, said once for the night rather than on
+ * each place (D61): "19 places of your kind; we don't know which are open in September: check before you book".
+ */
+export function bedsKnown(beds: { count: number; open: number; partly: number }, month: string, what = "places"): string {
+  const known = beds.open + beds.partly;
+  const n = `${beds.count} ${beds.count === 1 ? what.replace(/places/, "place") : what} of your kind`;
+  if (!beds.count) return `no known ${what.replace(/places/, "place")} of your kind`;
+  if (!known) return `${n}; we don't know which are open in ${month}: check before you book`;
+  if (known < beds.count) return `${n}, ${known} known open in ${month}: check the others before you book`;
+  return `${n}, ${beds.count === 1 ? "known" : "all known"} open in ${month}`;
+}
+
 /** A stay from the night in to the morning out: "14–15 May", or "31 May – 2 June" across months. */
 export function stayDates(checkIn: string, checkOut: string): string {
   const [, ma, da] = checkIn.split("-").map(Number) as [number, number, number];

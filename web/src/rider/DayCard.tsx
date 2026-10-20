@@ -5,6 +5,7 @@
  */
 import {
   bedsFor,
+  bedsKnown,
   bookingSearches,
   CAPS,
   clock,
@@ -269,10 +270,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
             {night && (
               <Part icon={<Icons.Bed />} label="Sleep">
                 <span>
-                  <b>{stopName(night.stop)}</b>:{" "}
-                  {night.beds.count
-                    ? `${night.beds.count} ${night.beds.count === 1 ? "place" : "places"} of your kind, ${night.beds.open + night.beds.partly} known open in ${month}`
-                    : "no known place of your kind"}
+                  <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, month)}
                   {night.stop.station ? ` · station: ${night.stop.station}` : ""}
                 </span>
                 <span className="text-muted-foreground">{night.why}</span>
@@ -292,14 +290,8 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                               {p.kind.replace("_", " ")} · {km((p.access_m ?? 0) / 1000)} km off the route
                             </span>
                           </div>
-                          {open ? (
-                            <Badge variant="secondary">{code === "o" ? `Open in ${month}` : `Partly open in ${month}`}</Badge>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-unknown px-2 py-0.5 text-xs font-medium text-unknown-foreground">
-                              <Icons.CircleHelp className="size-3" />
-                              {month} unknown: check
-                            </span>
-                          )}
+                          {/* Only what we know: an unknown month is said once, on the night's line above (D61). */}
+                          {open && <Badge variant="secondary">{code === "o" ? `Open in ${month}` : `Partly open in ${month}`}</Badge>}
                           <Links links={placeLinks(p)} />
                           {!readOnly && (
                             <Button variant={chosen === p.id ? "secondary" : "ghost"} size="xs" onPress={() => onChooseBed(night.index, chosen === p.id ? null : p.id)}>

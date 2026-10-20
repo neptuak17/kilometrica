@@ -9,6 +9,7 @@
  */
 import type { Place } from "@dpg/contracts";
 import {
+  bedsKnown,
   clock,
   day as dayText,
   dayIndex,
@@ -641,10 +642,7 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
             <Part icon={<Icons.Bed />} label="Sleep">
               <span className="flex flex-wrap items-center gap-x-3">
                 <span>
-                  <b>{stopName(night.stop)}</b>:{" "}
-                  {night.beds.count
-                    ? `${night.beds.count} ${night.beds.count === 1 ? "place" : "places"} to stay of your kind, ${night.beds.open + night.beds.partly} known open in ${f.month}. Open first, then nearest.`
-                    : "no known place of your kind."}
+                  <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, f.month, "places to stay")}.{night.beds.count ? " Open first, then nearest." : ""}
                 </span>
                 {booked && (
                   <span className="inline-flex items-center gap-1 font-semibold">
@@ -685,7 +683,8 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
 
 function BedCell({ p, month, code, chosen, right, bottom }: { p: Place; month: string; code: string | undefined; chosen: boolean; right: boolean; bottom: boolean }) {
   const m = month.slice(0, 3);
-  const open = code === "o" ? `Open in ${m}` : code === "p" ? `Partly open in ${m}` : `${m} unknown: call`;
+  // Only what we know: an unknown month is said once, on the night's line (D61).
+  const open = code === "o" ? `Open in ${m}` : code === "p" ? `Partly open in ${m}` : null;
   const contact = handoffsText(placeLinks(p));
   return (
     <div className={cn("grid px-2.5 py-1", right && "border-r", bottom && "border-b")}>
@@ -697,7 +696,13 @@ function BedCell({ p, month, code, chosen, right, bottom }: { p: Place; month: s
         </span>
       </span>
       <span className="text-[12.5px]">
-        {cap(p.kind.replace("_", " "))} · {p.on_route ? "on route" : `${km((p.access_m ?? 0) / 1000)} km off`} · <b>{open}</b>
+        {cap(p.kind.replace("_", " "))} · {p.on_route ? "on route" : `${km((p.access_m ?? 0) / 1000)} km off`}
+        {open && (
+          <>
+            {" · "}
+            <b>{open}</b>
+          </>
+        )}
       </span>
       <span className="truncate text-[12.5px] text-muted-foreground">{contact || "No phone or website in our data"}</span>
     </div>

@@ -12,7 +12,7 @@ import { makePlan } from "./plan";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
 import { addDays, clock, sunTimes, weekday } from "./sun";
-import { stayDates } from "./text";
+import { bedsKnown, stayDates } from "./text";
 import { NO_CHOICES, type NightPlan, type PlanData, type PlanInputs } from "./types";
 
 const LEVELS = [
@@ -510,6 +510,15 @@ describe("exports", () => {
     expect(unnamed[1]!.url).toContain("sort=DISTANCE");
     expect(stayDates("2027-05-14", "2027-05-15")).toBe("14–15 May");
     expect(stayDates("2027-05-31", "2027-06-02")).toBe("31 May – 2 June");
+  });
+
+  it("says once per night what we know of its places' opening (D61)", () => {
+    const b = (count: number, open: number, partly = 0) => ({ count, open, partly });
+    expect(bedsKnown(b(19, 0), "September")).toBe("19 places of your kind; we don't know which are open in September: check before you book");
+    expect(bedsKnown(b(19, 3, 1), "September")).toBe("19 places of your kind, 4 known open in September: check the others before you book");
+    expect(bedsKnown(b(2, 2), "May", "places to stay")).toBe("2 places to stay of your kind, all known open in May");
+    expect(bedsKnown(b(1, 1), "May")).toBe("1 place of your kind, known open in May");
+    expect(bedsKnown(b(0, 0), "May")).toBe("no known place of your kind");
   });
 
   it("writes one calendar event per day", () => {
