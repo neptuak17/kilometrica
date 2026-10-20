@@ -37,7 +37,7 @@ import {
   type Ask,
   climbText,
   EMPTY,
-  EXAMPLES,
+  examplesFor,
   factsText,
   gradeText,
   keyOf,
@@ -300,6 +300,7 @@ function DreamRoute({ route }: { route: string }) {
   const daily = useMemo(() => new Map((files?.daily ?? []).map((d) => [d.number, d])), [files]);
   const points = useMemo(() => pointsOf(sections, daily), [sections, daily]);
   const countries = useMemo(() => countryRows(sections).length, [sections]);
+  const examples = useMemo(() => examplesFor(sections), [sections]);
   // Every stretch that fits is counted; the list shows the best few (the search's own cap is lifted).
   const results = useMemo(
     () => (files && a.level !== null && a.days !== null ? findStretches(files.dream, { ...a, level: a.level, days: a.days, limit: 1000 }) : []),
@@ -575,7 +576,7 @@ function DreamRoute({ route }: { route: string }) {
             <div className="flex flex-col gap-2.5">
               <h2 className="text-lg font-semibold">Start from an example trip</h2>
               <div className="grid gap-3 sm:grid-cols-2">
-                {EXAMPLES.map((e) => (
+                {examples.map((e) => (
                   <Card key={e.title} size="sm">
                     <CardHeader>
                       <CardTitle className="font-semibold">{e.title}</CardTitle>

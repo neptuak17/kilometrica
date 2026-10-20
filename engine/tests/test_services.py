@@ -313,3 +313,16 @@ def test_shared_front_pages_are_not_a_places_own_site():
         ("https://www.hotel-lafon.com/", "Hôtel Lafon"),
     ]
     assert shared_homepages(sites) == {"http://www.gcu.asso.fr", "https://www.gcu.asso.fr/", "http://gcu.asso.fr"}
+
+
+def test_trams_and_museum_railways_are_never_a_bail_out():
+    from dpg_audit.services.policy import CARRIED, BikePolicy
+
+    policy = BikePolicy.load()
+    tram = policy.lookup("rail", "DE", {"operator": "Rhein-Neckar-Verkehr", "name": "Kurpfalzbrücke"})
+    assert tram is not None and tram.bikes == "no_bailout" and tram.bikes not in CARRIED
+    db = policy.lookup("rail", "DE", {"operator": "DB InfraGO", "name": "Mannheim Hauptbahnhof"})
+    assert db is not None and db.bikes == "yes"
+    museum = policy.lookup("rail", "DE", {"operator": "Technoseum", "name": "Feldbahn"})
+    assert museum is not None and museum.bikes == "no_bailout"
+    assert policy.lookup("rail", "DE", {"name": "Feldbahn"}).bikes == "no_bailout"

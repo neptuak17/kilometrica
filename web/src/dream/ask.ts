@@ -34,9 +34,19 @@ export const EXAMPLES: { title: string; sub: string; q: Partial<Ask> }[] = [
     q: { level: 2, days: 7, themes: ["coast", "heritage"], trainBothEnds: true, stay: "rooms", avoidBusy: true, surfaces: { road: "ok", cycle_path: "prefer", gravel: "ok" } },
   },
   { title: "A long weekend by the sea", sub: "Easy-moderate, three days, a train at both ends", q: { level: 2, days: 3, themes: ["coast"], trainBothEnds: true } },
+  { title: "A week along the river", sub: "Easy, rooms, cycle paths", q: { level: 1, days: 7, themes: ["water"], stay: "rooms", surfaces: { road: "ok", cycle_path: "prefer", gravel: "ok" } } },
   { title: "Ten days of wine and towns", sub: "Moderate, rooms", q: { level: 3, days: 10, themes: ["wine", "culture"], stay: "rooms" } },
   { title: "Two weeks in the hills", sub: "Challenging, mountains and viewpoints", q: { level: 4, days: 14, themes: ["mountains", "viewpoints"] } },
 ];
+
+/** A route has a theme when this much of it is strong in it (a section scores 0.5 or more): a few days' worth. */
+const THEME_ENOUGH_M = 150_000;
+
+/** The examples whose scenery the route has: no seaside weekend on the Rhine. */
+export function examplesFor(sections: { length_m: number; themes: Record<string, { score: number | null } | undefined> }[]) {
+  const strong = (id: string) => sections.reduce((a, s) => a + ((s.themes[id]?.score ?? 0) >= 0.5 ? s.length_m : 0), 0);
+  return EXAMPLES.filter((e) => (e.q.themes ?? []).every((id) => strong(id) >= THEME_ENOUGH_M));
+}
 
 export const SURFACES: { key: SurfaceKind; label: string; url: string }[] = [
   { key: "cycle_path", label: "cycle paths", url: "paths" },

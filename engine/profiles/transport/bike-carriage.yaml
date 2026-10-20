@@ -2,11 +2,13 @@
 # (matched case-insensitively against the station's OSM operator/network/name tags). The first matching row wins,
 # so operator rows come before the country default.
 #
-#   bikes: yes | reservation | limited | no | unknown
+#   bikes: yes | reservation | limited | no | no_bailout | unknown
 #     yes          assembled bikes are carried on the usual regional trains, space permitting
 #     reservation  carried, but a (sometimes seasonal) booking or supplement is required
 #     limited      carried only on some trains or outside peak hours
 #     no           assembled bikes are not carried
+#     no_bailout   a city tram, light rail or museum railway whose stops OSM tags as train halts: kept as a place,
+#                  never offered as a bail-out (the owner, 2026-10-20). Added as they turn up.
 #     unknown      no reliable published policy found
 #   confidence: how far the row can be trusted (high = operator's own page; low = secondary or anecdotal source)
 #
@@ -106,6 +108,18 @@ rows:
   - country: CY
     bikes: unknown
     note: Cyprus has no railway.
+    source: null
+    confidence: high
+  - country: DE
+    operator: Rhein-Neckar-Verkehr|\bRNV\b
+    bikes: no_bailout
+    note: Mannheim, Ludwigshafen and Heidelberg's trams and light rail; its stops are tagged as train halts in OSM.
+    source: null
+    confidence: high
+  - country: DE
+    operator: Technoseum|\bFeldbahn\b
+    bikes: no_bailout
+    note: Museum field railways (Feldbahn), e.g. at Mannheim's Technoseum, whose halt carries only its name.
     source: null
     confidence: high
   - country: DE
