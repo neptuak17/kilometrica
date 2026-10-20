@@ -67,6 +67,7 @@ import { DayCard } from "./DayCard";
 import { type Step, usePlanHistory } from "./history";
 import { PlanMap } from "./PlanMap";
 import { Profile } from "./Profile";
+import { TripBook } from "./TripBook";
 import { Questions } from "./Questions";
 import { useRouteList } from "./routes";
 import { deletePlan, download, fileSafe, savedPlans, savePlan } from "./storage";
@@ -394,60 +395,6 @@ function TitleBlock({ plan }: { plan: PlanResult }) {
   );
 }
 
-/**
- * The trip book (11.6), until its own layout is built (D55): the brief, then each day on a page of its own, with the
- * "why" behind each item printed, since paper can't open it.
- */
-function TripBook({ plan, data, onDone }: { plan: PlanResult; data: PlanData; onDone: () => void }) {
-  const book = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const after = () => onDone();
-    window.addEventListener("afterprint", after);
-    const t = setTimeout(() => {
-      for (const d of book.current?.querySelectorAll("details") ?? []) d.open = true;
-      window.print();
-    }, 300);
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener("afterprint", after);
-    };
-  }, [onDone]);
-  const noop = () => {};
-  return (
-    <div ref={book} className="mx-auto grid max-w-3xl gap-6 bg-background px-4 py-8 font-sans text-sm text-foreground print:max-w-none print:p-0">
-      <div className="print:hidden">
-        <Button variant="outline" size="sm" onPress={onDone}>
-          <Icons.ArrowLeft data-icon="inline-start" />
-          Back to the plan
-        </Button>
-      </div>
-      <TitleBlock plan={plan} />
-      <Brief plan={plan} onLine={noop} />
-      {plan.days.map((d) => (
-        <div key={d.number} className="break-before-page">
-          <DayCard
-            plan={plan}
-            data={data}
-            day={d}
-            free={false}
-            readOnly
-            choices={plan.choices}
-            onLockNight={noop}
-            onToggleBooked={noop}
-            onChooseBed={noop}
-            onToggleRest={noop}
-            onDone={noop}
-            onGpx={noop}
-          />
-        </div>
-      ))}
-      <p className="text-xs text-muted-foreground">
-        Kilometrica trip book · {plan.route.name} · audit {plan.route.runId}
-      </p>
-    </div>
-  );
-}
-
 // --- the plan -----------------------------------------------------------------------------------------------
 
 /** A call's option shown on the plan before the rider applies it (11.7). */
@@ -610,7 +557,6 @@ function PlanPage({ start }: { start: Start }) {
         <p className="text-muted-foreground">Loading the route…</p>
       </Page>
     );
-  if (printing) return <TripBook plan={plan} data={data} onDone={() => setPrinting(false)} />;
 
   const free = !data.full;
   const calls = plan.items.filter((i) => i.kind === "call" && !choices.dismissed.includes(i.id));
@@ -626,6 +572,20 @@ function PlanPage({ start }: { start: Start }) {
     : [];
   const levelName = data.dream.levels.find((l) => l.level === inputs.level)?.name ?? `level ${inputs.level}`;
   const routeName = files.manifest.route.name;
+  if (printing)
+    return (
+      <TripBook
+        plan={plan}
+        data={data}
+        geometry={files.geometry}
+        attribution={files.manifest.attribution}
+        auditedAt={files.manifest.created_at}
+        routeName={routeName}
+        levelName={levelName}
+        link={isPrivate ? null : links.full}
+        onDone={() => setPrinting(false)}
+      />
+    );
 
   const onExport = (k: ExportKind) => {
     const name = fileSafe(doc.name);

@@ -22,7 +22,8 @@ interface Props {
   links: { full: string; itinerary: string };
 }
 
-const GROUPS: { title: string; test: (i: PlanItem) => boolean }[] = [
+/** The to-do list's groups, on screen and in the trip book. */
+export const GROUPS: { title: string; test: (i: PlanItem) => boolean }[] = [
   { title: "Book and check places to stay", test: (i) => i.id.startsWith("bed:") || i.id.startsWith("book:") },
   { title: "Ferries and transport", test: (i) => i.id.startsWith("ferry:") || i.id.startsWith("transport:") },
   { title: "Getting there and back", test: (i) => i.id.startsWith("travel:") },
@@ -37,7 +38,7 @@ const EXPORTS: { kind: ExportKind; title: string; what: string; action: string }
   { kind: "plan-file", title: "Plan file", what: "To keep a copy, or open the plan on another computer.", action: "Plan file" },
 ];
 
-function Qr({ text }: { text: string }) {
+export function Qr({ text, className = "size-40 rounded-xl p-1.5" }: { text: string; className?: string }) {
   const svg = useMemo(() => {
     try {
       const qr = qrcode(0, "L");
@@ -49,7 +50,7 @@ function Qr({ text }: { text: string }) {
     }
   }, [text]);
   if (!svg) return <p className="text-muted-foreground">This plan is too long for a QR code: send yourself the link instead.</p>;
-  return <div className="size-40 shrink-0 rounded-xl bg-white p-1.5 ring-1 ring-border" dangerouslySetInnerHTML={{ __html: svg }} />;
+  return <div className={cn("shrink-0 bg-white ring-1 ring-border", className)} dangerouslySetInnerHTML={{ __html: svg }} />;
 }
 
 function Copy({ text, label, variant = "outline" }: { text: string; label: string; variant?: "default" | "outline" }) {

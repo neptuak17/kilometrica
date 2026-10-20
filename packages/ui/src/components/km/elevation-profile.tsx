@@ -3,7 +3,7 @@
  * drawn in the route teal with its days marked; a single day in the chosen orange. Where the terrain is unknown the
  * line breaks, never drawn flat (D37). Night stops are numbered markers; when `onMarkerMove` is given they can be
  * dragged, and the app decides where a dropped marker lands (the nearest real stop). Labels are HTML, so they stay
- * crisp at any width.
+ * crisp at any width. On paper, `marks` adds a km mark every so many km under a single day (D55).
  */
 import { useRef, useState } from "react"
 import { cn } from "cn"
@@ -43,6 +43,8 @@ export interface ElevationProfileProps {
   onSpanPick?: (index: number) => void
   /** A marker was dragged and let go at this km. */
   onMarkerMove?: (index: number, km: number) => void
+  /** A km mark every this many km, under a profile without spans (a day on paper, D55). */
+  marks?: number
   /** What it shows, for screen readers, e.g. "Elevation along the trip". */
   label: string
   className?: string
@@ -51,7 +53,7 @@ export interface ElevationProfileProps {
 const TOP = 30 // room above the highest point for the markers and the label (of 100)
 const BOTTOM = 3
 
-export function ElevationProfile({ points, tone = "route", spans = [], markers = [], onSpanPick, onMarkerMove, label, className }: ElevationProfileProps) {
+export function ElevationProfile({ points, tone = "route", spans = [], markers = [], onSpanPick, onMarkerMove, marks, label, className }: ElevationProfileProps) {
   const plot = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<{ index: number; km: number } | null>(null)
 
@@ -85,6 +87,13 @@ export function ElevationProfile({ points, tone = "route", spans = [], markers =
   const release = () => {
     if (drag && onMarkerMove) onMarkerMove(drag.index, drag.km)
     setDrag(null)
+  }
+
+  // Marks at whole multiples, kept clear of the two end labels.
+  const ticks: number[] = []
+  if (marks && marks > 0) {
+    const clear = (k1 - k0) * 0.06
+    for (let k = Math.ceil((k0 + 0.001) / marks) * marks; k < k1; k += marks) if (k - k0 > clear && k1 - k > clear) ticks.push(k)
   }
 
   const chosen = tone === "chosen"
@@ -130,6 +139,10 @@ export function ElevationProfile({ points, tone = "route", spans = [], markers =
             />
           ))}
           <line x1={0} x2={100} y1={100} y2={100} className="stroke-border stroke-[1.5] [vector-effect:non-scaling-stroke]" />
+          {!spans.length &&
+            ticks.map((k) => (
+              <line key={`tick-${k}`} x1={x(k)} x2={x(k)} y1={95} y2={100} className="stroke-muted-foreground stroke-1 [vector-effect:non-scaling-stroke]" />
+            ))}
         </svg>
         {peak !== null && <span className="pointer-events-none absolute top-0 left-0 text-xs text-muted-foreground tabular-nums">highest point {Math.round(peak).toLocaleString("en-GB")} m</span>}
         {!known.length && <span className="absolute inset-0 grid place-items-center text-xs text-unknown-foreground">Terrain unknown: check yourself</span>}
@@ -176,6 +189,11 @@ export function ElevationProfile({ points, tone = "route", spans = [], markers =
         ) : (
           <>
             <span className="absolute top-0 left-0">km {Math.round(k0)}</span>
+            {ticks.map((k) => (
+              <span key={k} className="absolute top-0 -translate-x-1/2" style={{ left: `${x(k)}%` }}>
+                {k}
+              </span>
+            ))}
             <span className="absolute top-0 right-0">km {Math.round(k1)}</span>
           </>
         )}

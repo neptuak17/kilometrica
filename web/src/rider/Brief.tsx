@@ -20,7 +20,8 @@ export function EffortChart({ plan, selected, onPick, changed }: { plan: PlanRes
   );
 }
 
-const TOPIC: Record<string, { icon: ReactNode; tone: string }> = {
+/** Each brief line's icon: on screen and in the trip book. */
+export const TOPIC: Record<string, { icon: ReactNode; tone: string }> = {
   able: { icon: <Icons.Bike className="size-[18px]" />, tone: "text-primary" },
   sleep: { icon: <Icons.Bed className="size-[18px]" />, tone: "text-primary" },
   risk: { icon: <Icons.TriangleAlert className="size-[18px]" />, tone: "text-headsup-foreground" },

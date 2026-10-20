@@ -19,6 +19,12 @@ export const Trip = () => (
   </Card>
 );
 
+export const DayWithMarks = () => (
+  <Card className="max-w-3xl py-3">
+    <ElevationProfile label="Elevation for day 3, with a mark every 10 km" className="px-4" tone="chosen" marks={10} points={points.slice(133, 192).map((p) => ({ ...p, km: p.km - 133 }))} />
+  </Card>
+);
+
 export const Day = () => (
   <Card className="max-w-3xl py-3">
     <ElevationProfile label="Elevation for day 3" className="px-4" tone="chosen" points={points.slice(133, 192).map((p) => ({ ...p, km: p.km - 133 }))} />

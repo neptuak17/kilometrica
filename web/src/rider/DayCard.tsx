@@ -3,7 +3,6 @@
  * only (D45); with the Trip Pass, water and food, heads-ups, highlights, where to sleep (places with their links,
  * D48), plan B and bail-out.
  */
-import type { Place } from "@dpg/contracts";
 import {
   bedsFor,
   CAPS,
@@ -13,7 +12,6 @@ import {
   dayStory,
   hours,
   km,
-  MONTHS_LONG,
   monthOf,
   placeLinks,
   type DayPlan,
@@ -21,11 +19,11 @@ import {
   type PlanData,
   type PlanItem,
   type PlanResult,
-  placesMissing,
   stopName,
 } from "@dpg/planner";
 import { Badge, Button, Card, CardContent, Checkbox, cn, Icons, Label, LinkButton } from "@dpg/ui";
 import { type ReactNode, useId, useState } from "react";
+import { dayFacts } from "./dayFacts";
 import { looksUp, openPhoto } from "./photos";
 
 const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
@@ -140,64 +138,17 @@ interface Props {
   onNext?: () => void;
 }
 
-function dayPlaces(data: PlanData, d: DayPlan, services: string[], counting = true): Place[] {
-  const lo = Math.min(d.fromM, d.toM);
-  const hi = Math.max(d.fromM, d.toM);
-  return (data.full?.places ?? []).filter((p) => services.includes(p.service) && (!counting || p.counts) && p.access_at_m >= lo && p.access_at_m <= hi);
-}
-
 export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNight, onToggleBooked, onChooseBed, onToggleRest, onDone, onGpx, onClose, onNext }: Props) {
   const ids = useId();
   const mine = dayItems(plan.items, d.number);
   const all = (kind: PlanItem["kind"]) => plan.items.filter((i) => i.day === d.number && i.kind === kind);
-  const night = plan.nights.find((n) => n.afterRide === d.ride && d.kind === "ride");
-  const kmOf = (m: number) => Math.max(0, (plan.axis.tOf(m) - d.fromT) / 1000);
+  const { night, unloaded, waterFood, thinned, longest, stations, beds, bedsUnloaded, month, planB } = dayFacts(plan, data, d, free);
   const range = d.hoursFast !== d.hoursSlow && Math.abs(d.hoursSlow - d.hoursFast) > 0.05;
   const ride = d.kind === "ride";
   const isLastRide = d.ride === plan.inputs.days;
   const next = plan.days.find((x) => x.number === d.number + 1);
-
-  // Parts of the day whose places didn't load, in the day's km: nothing is "none" there (D37).
-  const unloaded = (data.full ? placesMissing(data.full, Math.min(d.fromM, d.toM), Math.max(d.fromM, d.toM)) : []).map((r) =>
-    [kmOf(r.fromM), kmOf(r.toM)].sort((a, b) => a - b).map((x) => Math.round(Math.min(x, d.km))),
-  );
   const unloadedText = unloaded.map(([a, b]) => `km ${a}–${b}`).join(", ");
-  const waterFood = free ? [] : dayPlaces(data, d, ["water", "food"]).map((p) => ({ p, at: kmOf(p.access_at_m) })).sort((a, b) => a.at - b.at);
-  const thinned: { p: Place; at: number }[] = [];
-  for (const w of waterFood) if (!thinned.length || w.at - thinned[thinned.length - 1]!.at >= 5) thinned.push(w);
-  let longest = 0;
-  const pts = [0, ...waterFood.map((w) => w.at), d.km];
-  for (let i = 1; i < pts.length; i++) longest = Math.max(longest, pts[i]! - pts[i - 1]!);
-  const stations = free
-    ? []
-    : dayPlaces(data, d, ["station"], false)
-        .filter((p) => ["yes", "reservation", "limited"].includes(String(p.detail.bikes)) && (p.access_m ?? 1e9) <= 10_000)
-        .map((p) => ({ p, at: kmOf(p.access_at_m) }))
-        .sort((a, b) => a.at - b.at);
-  const beds =
-    !free && night
-      ? (data.full?.places ?? [])
-          .filter(
-            (p) =>
-              p.service === "accommodation" &&
-              p.counts &&
-              Math.abs(p.access_at_m - night.stop.at_m) <= 5000 &&
-              (plan.inputs.sleep === "mix" || (plan.inputs.sleep === "camping") === (p.kind === "campsite")) &&
-              p.months[monthOf(night.date)] !== "c",
-          )
-          .sort((a, b) => {
-            const known = (p: Place) => (["o", "p"].includes(p.months[monthOf(night.date)] ?? "?") ? 0 : 1);
-            return known(a) - known(b) || (a.access_m ?? 0) - (b.access_m ?? 0);
-          })
-      : [];
-  const bedsUnloaded = !!night && !!data.full && placesMissing(data.full, night.stop.at_m - 5000, night.stop.at_m + 5000).length > 0;
   const chosen = night ? choices.beds[night.index] : undefined;
-  const month = night ? MONTHS_LONG[monthOf(night.date)] : "";
-  const planB = night
-    ? [night.planB.before && `${stopName(night.planB.before.stop)}, ${km(Math.abs(night.planB.before.km))} km back`, night.planB.after && `${stopName(night.planB.after.stop)}, ${km(night.planB.after.km)} km on`]
-        .filter(Boolean)
-        .join(" · ")
-    : "";
   const headsups = all("headsup");
   const highlights = all("highlight");
 
