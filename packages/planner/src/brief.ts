@@ -6,7 +6,7 @@
 import type { PlanCore } from "./plan";
 import { monthOf } from "./sun";
 import { foodOnDay } from "./items";
-import { dayList, hours, KNOWN_ENOUGH, km, MONTHS_LONG, oneIn, plural, range, shareOf } from "./text";
+import { dayList, hours, KNOWN_ENOUGH, km, MONTHS_LONG, oneIn, plural, range, shareOf, sleepNoun } from "./text";
 import type { Brief, BriefLine, DayPlan, PlanData, PlanItem } from "./types";
 
 const THEME_PHRASE: Record<string, string> = {
@@ -124,7 +124,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
     question: "Where will I sleep?",
     answer: !nights.length
       ? "No night to plan: a one-day ride."
-      : (noBed ? `No known place of your kind on ${plural(noBed, "night")}.` : "A stop every night.") +
+      : (noBed ? `No known ${sleepNoun(inputs.sleep)} on ${plural(noBed, "night")}.` : "A stop every night.") +
         (unknown ? ` ${unknown} of ${nights.length} rely on places with no ${month} dates.` : ""),
     more: sleepItems.length,
   });

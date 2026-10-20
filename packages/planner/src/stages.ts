@@ -28,14 +28,17 @@ export interface BedCount {
   partly: number;
   closed: number;
   unknown: number;
+  /** The places by kind, leaving out the ones known closed that month, e.g. 1 campsite and 2 hotels (D62). */
+  kinds: { kind: string; count: number }[];
 }
 
 /** Beds of the rider's kind at a stop in a month (D18). */
 export function bedsFor(stop: Stop, sleep: Sleep, month: number): BedCount {
-  const out: BedCount = { count: 0, open: 0, partly: 0, closed: 0, unknown: 0 };
+  const out: BedCount = { count: 0, open: 0, partly: 0, closed: 0, unknown: 0, kinds: [] };
   for (const b of stop.beds) {
     const camping = b.kind === "campsite";
     if (sleep === "camping" ? !camping : sleep === "rooms" ? !ROOM_KINDS.has(b.kind) : false) continue;
+    let notClosed = 0;
     for (const [code, n] of b.seasons) {
       out.count += n;
       const c = code[month] ?? "?";
@@ -43,7 +46,11 @@ export function bedsFor(stop: Stop, sleep: Sleep, month: number): BedCount {
       else if (c === "p") out.partly += n;
       else if (c === "c") out.closed += n;
       else out.unknown += n;
+      if (c !== "c") notClosed += n;
     }
+    const same = out.kinds.find((k) => k.kind === b.kind);
+    if (same) same.count += notClosed;
+    else if (notClosed) out.kinds.push({ kind: b.kind, count: notClosed });
   }
   return out;
 }

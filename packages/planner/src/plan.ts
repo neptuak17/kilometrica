@@ -22,7 +22,7 @@ import {
   usable,
 } from "./stages";
 import { addDays, monthOf, sunTimes } from "./sun";
-import { km as kmText, MONTHS_LONG, stopName } from "./text";
+import { bedsKnown, km as kmText, MONTHS_LONG, stopName } from "./text";
 import {
   type Brief,
   type DayPlan,
@@ -256,11 +256,7 @@ export function makePlan(
       const pb = planB(ctx, stage, k);
       const shift = (j: number | null) =>
         j === null ? null : { stop: candidates[j]!.stop, km: (candidates[j]!.t - candidates[ci]!.t) / 1000 };
-      const known = b.open + b.partly;
-      const bedText =
-        b.count === 0
-          ? "no known place to stay of your kind"
-          : `${b.count - b.closed} ${b.count - b.closed === 1 ? "bed" : "beds"} of your kind, ${known} known open in ${MONTHS_LONG[monthOf(date)]}`;
+      const bedText = bedsKnown({ ...b, count: b.count - b.closed }, MONTHS_LONG[monthOf(date)]!, inputs.sleep);
       const extras = [
         (stop.services.food ?? 0) > 0 ? "food" : null,
         stop.station ? "a station" : null,
@@ -271,7 +267,7 @@ export function makePlan(
         afterRide: k + 1,
         stop,
         locked: locked.get(k) === ci,
-        beds: { count: b.count - b.closed, open: b.open, partly: b.partly, closed: b.closed, unknown: b.unknown },
+        beds: { count: b.count - b.closed, open: b.open, partly: b.partly, closed: b.closed, unknown: b.unknown, kinds: b.kinds },
         alternatives: alts,
         planB: { before: shift(pb.before), after: shift(pb.after) },
         why: `Stopping ${stop.name ? `at ${stop.name}` : stopName(stop)}: ${bedText}${extras.length ? `; ${extras.join(" and ")}` : ""}; makes a ${kmText(stats.km)} km day.`,

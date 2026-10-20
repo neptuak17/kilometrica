@@ -12,7 +12,7 @@ import { makePlan } from "./plan";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
 import { addDays, clock, sunTimes, weekday } from "./sun";
-import { bedsKnown, stayDates } from "./text";
+import { bedKinds, bedsKnown, stayDates } from "./text";
 import { NO_CHOICES, type NightPlan, type PlanData, type PlanInputs } from "./types";
 
 const LEVELS = [
@@ -253,7 +253,7 @@ describe("makePlan", () => {
     const noCamps = data({ stops: Array.from({ length: 29 }, (_, i) => stop((i + 1) * 10, { beds: [{ kind: "hotel", count: 1, seasons: [["????????????", 1]] }] })) });
     const p = makePlan(noCamps, inputs({ sleep: "camping" }));
     expect(p.items.some((i) => i.id.startsWith("bed:none:"))).toBe(true);
-    expect(bedsFor(stop(10), "camping", 9)).toEqual({ count: 1, open: 1, partly: 0, closed: 0, unknown: 0 });
+    expect(bedsFor(stop(10), "camping", 9)).toEqual({ count: 1, open: 1, partly: 0, closed: 0, unknown: 0, kinds: [{ kind: "campsite", count: 1 }] });
   });
 
   it("highlights an unfilled gap and counts it as ridden; a ferry becomes a check (D50)", () => {
@@ -512,13 +512,20 @@ describe("exports", () => {
     expect(stayDates("2027-05-31", "2027-06-02")).toBe("31 May – 2 June");
   });
 
-  it("says once per night what we know of its places' opening (D61)", () => {
-    const b = (count: number, open: number, partly = 0) => ({ count, open, partly });
-    expect(bedsKnown(b(19, 0), "September")).toBe("19 places of your kind; we don't know which are open in September: check before you book");
-    expect(bedsKnown(b(19, 3, 1), "September")).toBe("19 places of your kind, 4 known open in September: check the others before you book");
-    expect(bedsKnown(b(2, 2), "May", "places to stay")).toBe("2 places to stay of your kind, all known open in May");
-    expect(bedsKnown(b(1, 1), "May")).toBe("1 place of your kind, known open in May");
-    expect(bedsKnown(b(0, 0), "May")).toBe("no known place of your kind");
+  it("names a night's places by kind and says once what we know of their opening (D61, D62)", () => {
+    const kinds = [
+      { kind: "hotel", count: 2 },
+      { kind: "campsite", count: 1 },
+    ];
+    const b = (count: number, open: number, partly = 0) => ({ count, open, partly, kinds });
+    expect(bedsKnown(b(3, 0), "May", "mix")).toBe("1 campsite and 2 hotels nearby, check ahead if they're open");
+    expect(bedsKnown(b(3, 1, 1), "May", "mix")).toBe("1 campsite and 2 hotels nearby, 2 open in May: check ahead for the others");
+    expect(bedsKnown(b(3, 3), "May", "mix")).toBe("1 campsite and 2 hotels nearby, all open in May");
+    expect(bedsKnown({ count: 1, open: 0, partly: 0, kinds: [{ kind: "guest_house", count: 1 }] }, "May", "rooms")).toBe("1 guest house nearby, check ahead if it's open");
+    expect(bedsKnown({ count: 0, open: 0, partly: 0, kinds: [] }, "May", "camping")).toBe("no known campsite nearby");
+    expect(bedKinds([{ kind: "hostel", count: 1 }, { kind: "hut", count: 2 }, { kind: "hotel", count: 1 }])).toBe("1 hotel, 1 hostel and 2 huts");
+    // Known-closed places drop out of the kinds.
+    expect(bedsFor(stop(10, { beds: [{ kind: "hotel", count: 2, seasons: [["cccccccccccc", 1], ["????????????", 1]] }] }), "rooms", 4).kinds).toEqual([{ kind: "hotel", count: 1 }]);
   });
 
   it("writes one calendar event per day", () => {

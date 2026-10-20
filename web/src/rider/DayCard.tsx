@@ -5,6 +5,7 @@
  */
 import {
   bedsFor,
+  bedKinds,
   bedsKnown,
   bookingSearches,
   CAPS,
@@ -16,12 +17,14 @@ import {
   km,
   monthOf,
   nightStay,
+  opening,
   placeLinks,
   type DayPlan,
   type Handoff,
   type PlanData,
   type PlanItem,
   type PlanResult,
+  sleepNoun,
   stayDates,
   stopName,
 } from "@dpg/planner";
@@ -270,7 +273,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
             {night && (
               <Part icon={<Icons.Bed />} label="Sleep">
                 <span>
-                  <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, month)}
+                  <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, month, plan.inputs.sleep)}
                   {night.stop.station ? ` · station: ${night.stop.station}` : ""}
                 </span>
                 <span className="text-muted-foreground">{night.why}</span>
@@ -315,7 +318,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                 {search.length > 0 && (
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1.5 print:hidden">
                     <span className="text-muted-foreground">
-                      {beds.length ? "None of these suit? " : night.beds.count ? "" : "No known place of your kind here. "}Search for {night.stop.name ?? "places near this stop"},{" "}
+                      {beds.length ? "None of these suit? " : night.beds.count ? "" : `No known ${sleepNoun(plan.inputs.sleep)} here. `}Search for {night.stop.name ?? "places near this stop"},{" "}
                       {stayDates(stay!.checkIn, stay!.checkOut)}:
                     </span>
                     <Links links={search} />
@@ -323,7 +326,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                 )}
                 <span>
                   <span className="text-muted-foreground">Plan B: </span>
-                  {planB || "no other stop of your kind nearby"}
+                  {planB || `no other stop with a ${sleepNoun(plan.inputs.sleep)} nearby`}
                 </span>
                 {!readOnly && (
                   <div className="grid gap-2.5 print:hidden">
@@ -348,7 +351,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                                   {stopName(a.stop)}
                                 </Button>
                                 <span className="text-xs text-muted-foreground tabular-nums">
-                                  this day {km(a.dayKm)} km, next day {a.nextKm === null ? "–" : `${km(a.nextKm)} km`} · {b.count - b.closed} places, {b.open + b.partly} known open
+                                  this day {km(a.dayKm)} km, next day {a.nextKm === null ? "–" : `${km(a.nextKm)} km`} · {b.count - b.closed ? `${bedKinds(b.kinds)}, ${opening({ ...b, count: b.count - b.closed }, month)}` : `no known ${sleepNoun(plan.inputs.sleep)}`}
                                 </span>
                               </li>
                             );

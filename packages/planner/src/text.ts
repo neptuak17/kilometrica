@@ -1,5 +1,6 @@
 /** Wording helpers: numbers in the rider's own terms (11.6). */
 import type { Stop } from "@dpg/contracts";
+import type { Sleep } from "./types";
 
 /** A stop by its town, else by its km. */
 export const stopName = (s: Stop) => s.name ?? `near km ${Math.round(s.at_m / 1000)}`;
@@ -51,17 +52,47 @@ export function range(a: string, b: string): string {
   return `${day(a)} ${ya} – ${day(b)} ${yb}`;
 }
 
-/**
- * A night's places of the rider's kind and what we know of their opening, said once for the night rather than on
- * each place (D61): "19 places of your kind; we don't know which are open in September: check before you book".
- */
-export function bedsKnown(beds: { count: number; open: number; partly: number }, month: string, what = "places"): string {
+const KIND_ORDER = ["campsite", "hotel", "guest_house", "hostel", "hut", "other"];
+const KIND_WORDS: Record<string, [string, string]> = {
+  campsite: ["campsite", "campsites"],
+  hotel: ["hotel", "hotels"],
+  guest_house: ["guest house", "guest houses"],
+  hostel: ["hostel", "hostels"],
+  hut: ["hut", "huts"],
+  other: ["other place to stay", "other places to stay"],
+};
+
+/** A place's kind in a word: "guest house"; null for "other". */
+export const kindWord = (kind: string) => (kind === "other" ? null : (KIND_WORDS[kind]?.[0] ?? null));
+
+/** Places by kind, campsites first (D62): "1 campsite and 2 hotels". */
+export function bedKinds(kinds: { kind: string; count: number }[]): string {
+  const rank = (k: string) => (KIND_ORDER.includes(k) ? KIND_ORDER.indexOf(k) : KIND_ORDER.length);
+  const parts = [...kinds]
+    .filter((k) => k.count > 0)
+    .sort((a, b) => rank(a.kind) - rank(b.kind))
+    .map((k) => `${k.count} ${(KIND_WORDS[k.kind] ?? KIND_WORDS.other!)[k.count === 1 ? 0 : 1]}`);
+  return parts.length > 1 ? `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}` : (parts[0] ?? "");
+}
+
+/** What the rider sleeps in, for when there's none (D62): "campsite", "place with rooms", "place to stay". */
+export const sleepNoun = (sleep: Sleep) => (sleep === "camping" ? "campsite" : sleep === "rooms" ? "place with rooms" : "place to stay");
+
+/** What we know of places' opening in a month (D57, D62): "all open in May", or "check ahead if they're open". */
+export function opening(beds: { count: number; open: number; partly: number }, month: string): string {
   const known = beds.open + beds.partly;
-  const n = `${beds.count} ${beds.count === 1 ? what.replace(/places/, "place") : what} of your kind`;
-  if (!beds.count) return `no known ${what.replace(/places/, "place")} of your kind`;
-  if (!known) return `${n}; we don't know which are open in ${month}: check before you book`;
-  if (known < beds.count) return `${n}, ${known} known open in ${month}: check the others before you book`;
-  return `${n}, ${beds.count === 1 ? "known" : "all known"} open in ${month}`;
+  if (!known) return `check ahead if ${beds.count === 1 ? "it's" : "they're"} open`;
+  if (known < beds.count) return `${known} open in ${month}: check ahead for the others`;
+  return beds.count === 1 ? `open in ${month}` : `all open in ${month}`;
+}
+
+/**
+ * A night's places and what we know of their opening, said once for the night rather than on each place (D61, D62):
+ * "1 campsite and 2 hotels nearby, check ahead if they're open".
+ */
+export function bedsKnown(beds: { count: number; open: number; partly: number; kinds: { kind: string; count: number }[] }, month: string, sleep: Sleep): string {
+  if (!beds.count) return `no known ${sleepNoun(sleep)} nearby`;
+  return `${bedKinds(beds.kinds)} nearby, ${opening(beds, month)}`;
 }
 
 /** A stay from the night in to the morning out: "14–15 May", or "31 May – 2 June" across months. */

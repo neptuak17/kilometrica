@@ -11,7 +11,7 @@ import { bearing, type Geometry, locate } from "./geometry";
 import type { PlanCore } from "./plan";
 import { bedsFor } from "./stages";
 import { addDays, clock, dayIndex, monthOf, weekday } from "./sun";
-import { country, day as dayText, hours, KNOWN_ENOUGH, km, MONTHS_LONG, plural, stopName, WEEKDAYS_LONG } from "./text";
+import { bedKinds, country, day as dayText, hours, KNOWN_ENOUGH, km, kindWord, MONTHS_LONG, plural, sleepNoun, stopName, WEEKDAYS_LONG } from "./text";
 import { type DayPlan, type Handoff, type NightPlan, type PlanData, type PlanItem, placesMissing, type Sleep } from "./types";
 
 export const CAPS = { headsup: 3, highlight: 3, brief: 5 };
@@ -454,7 +454,7 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
         day: d.number,
         fromM: n.stop.at_m,
         toM: n.stop.at_m,
-        title: `No known place to stay of your kind at the end of day ${d.number}`,
+        title: `No known ${sleepNoun(inputs.sleep)} at the end of day ${d.number}`,
         why: "None counts within 5 km of the route here: check yourself, or change how you sleep.",
         rank: 48,
         topic: "sleep",
@@ -471,7 +471,7 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
         fromM: n.stop.at_m,
         toM: n.stop.at_m,
         title: `Check a bed at ${name} for ${dayText(n.date)}`,
-        why: `${plural(n.beds.count, "place")} of your kind there; none publishes ${MONTHS_LONG[monthOf(n.date)]} dates.`,
+        why: `${bedKinds(n.beds.kinds)} nearby, with no ${MONTHS_LONG[monthOf(n.date)]} dates published: check ahead if ${n.beds.count === 1 ? "it's" : "they're"} open.`,
         rank: 42,
         topic: "sleep",
         evidence: { source: "stops.json (D18)" },
@@ -485,7 +485,7 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
         day: d.number,
         fromM: n.stop.at_m,
         toM: n.stop.at_m,
-        title: `Only one place of your kind at ${name}`,
+        title: `Only one place to stay at ${name}${n.beds.kinds[0] && kindWord(n.beds.kinds[0].kind) ? `: a ${kindWord(n.beds.kinds[0].kind)}` : ""}`,
         why: b ? `Plan B: ${stopName(b.stop)}, ${km(Math.abs(b.km))} km ${b.km > 0 ? "on" : "back"}.` : "No other stop nearby.",
         rank: 41,
         topic: "sleep",
@@ -506,7 +506,7 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
         fromM: n.stop.at_m,
         toM: n.stop.at_m,
         title: `Book ahead at ${name} for ${dayText(n.date)}`,
-        why: `${plural(n.beds.count, "place")} of your kind, on ${why}.`,
+        why: `${bedKinds(n.beds.kinds)}, on ${why}.`,
         rank: 40,
         topic: "sleep",
         evidence: { source: "stops.json; OpenHolidays; Eurostat" },

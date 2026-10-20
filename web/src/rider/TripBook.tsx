@@ -29,6 +29,7 @@ import {
   type PlanData,
   type PlanItem,
   type PlanResult,
+  sleepNoun,
   slice,
   stopName,
   WEEKDAYS_LONG,
@@ -642,7 +643,7 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
             <Part icon={<Icons.Bed />} label="Sleep">
               <span className="flex flex-wrap items-center gap-x-3">
                 <span>
-                  <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, f.month, "places to stay")}.{night.beds.count ? " Open first, then nearest." : ""}
+                  <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, f.month, plan.inputs.sleep)}.{night.beds.count ? " Open first, then nearest." : ""}
                 </span>
                 {booked && (
                   <span className="inline-flex items-center gap-1 font-semibold">
@@ -661,7 +662,7 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
               {f.bedsUnloaded && <span className="text-[12.5px] text-unknown-foreground">The names of places to stay here didn't load: the count is from the route's stops.</span>}
               <span className="text-[12.5px]">
                 {f.beds.length > 6 && `+${f.beds.length - 6} more: scan the QR code on page 1. `}
-                <b>Plan B:</b> {f.planB || "no other stop of your kind nearby."}
+                <b>Plan B:</b> {f.planB || `no other stop with a ${sleepNoun(plan.inputs.sleep)} nearby.`}
               </span>
             </Part>
           )}
