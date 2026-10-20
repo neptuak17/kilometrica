@@ -106,16 +106,20 @@ export function zoneOffset(zone: string, utcMs: number): number {
   return Math.round((asUtc - utcMs) / 60_000);
 }
 
-/** Minutes to add to UTC for local clock time on `iso` (at noon UTC), and whether that is only approximate. */
-export function localOffset(iso: string, country: string | null, lon: number): { offset: number; approximate: boolean } {
-  const zone = country ? TIME_ZONES[country] : undefined;
+/**
+ * Minutes to add to UTC for local clock time on `iso` (at noon UTC), and whether that is only approximate. The
+ * stop's own time zone comes first (D68): a country can span several. Then the country's, for bundles without one;
+ * else the longitude, flagged approximate.
+ */
+export function localOffset(iso: string, country: string | null, lon: number, timeZone?: string | null): { offset: number; approximate: boolean } {
+  const zone = timeZone || (country ? TIME_ZONES[country] : undefined);
   const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
   if (zone) return { offset: zoneOffset(zone, Date.UTC(y, m - 1, d, 12)), approximate: false };
   return { offset: Math.round(lon / 15) * 60, approximate: true };
 }
 
-export function sunTimes(iso: string, lat: number, lon: number, country: string | null): SunTimes {
-  const { offset, approximate } = localOffset(iso, country, lon);
+export function sunTimes(iso: string, lat: number, lon: number, country: string | null, timeZone?: string | null): SunTimes {
+  const { offset, approximate } = localOffset(iso, country, lon, timeZone);
   const set = crossings(iso, lat, lon, 90.833);
   const civil = crossings(iso, lat, lon, 96);
   const local = (v: number | undefined) => (v === undefined ? null : Math.round(v + offset));

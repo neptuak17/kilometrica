@@ -100,6 +100,7 @@ function pseudoStop(id: string, m: number, near: Stop | null): Stop {
     lon: near?.lon ?? 0,
     lat: near?.lat ?? 0,
     country: near?.country ?? null,
+    time_zone: near?.time_zone ?? null,
     detour_m: null,
     beds: [],
     services: {},
@@ -142,7 +143,7 @@ export function makePlan(
     startMinutes: inputs.startMinutes,
     stopStyle: inputs.stopStyle,
     dayDate,
-    end: { lat: endStop?.lat ?? 0, lon: endStop?.lon ?? 0, country: endStop?.country ?? null },
+    end: { lat: endStop?.lat ?? 0, lon: endStop?.lon ?? 0, country: endStop?.country ?? null, timeZone: endStop?.time_zone },
   };
   const index = new Map(candidates.map((c, i) => [c.stop.id, i]));
   const locked = new Map<number, number>();
@@ -208,7 +209,7 @@ export function makePlan(
     const stop = k === rides - 1 ? null : candidates[stage.nights[k]!]!.stop;
     const date = dayDate(k);
     const where = stop ?? endStop;
-    const sun = sunTimes(date, where?.lat ?? 0, where?.lon ?? 0, where?.country ?? null);
+    const sun = sunTimes(date, where?.lat ?? 0, where?.lon ?? 0, where?.country ?? null, where?.time_zone);
     const fromM = axis.mOf(t0);
     const toM = axis.mOf(t1);
     number += 1;

@@ -61,6 +61,7 @@ function stop(km: number, over: Partial<Stop> = {}): Stop {
     lon: km * 1000 * DEG_PER_M,
     lat: LAT,
     country: "FR",
+    time_zone: null,
     detour_m: 200,
     beds: [
       { kind: "hotel", count: 2, seasons: [["????????????", 2]] },
@@ -170,6 +171,13 @@ describe("sun", () => {
     expect(s.sunset!).toBeLessThan(19 * 60 + 20);
     expect(s.sunrise!).toBeLessThan(8 * 60 + 15);
     expect(sunTimes("2027-10-13", 43.6, 3.88, null).approximate).toBe(true);
+    // A stop's own time zone wins (D68): Hope, BC in July is on Pacific Daylight Time (UTC−7), an hour later than
+    // its longitude alone (UTC−8) would say.
+    const hope = sunTimes("2027-07-15", 49.38, -121.44, "CA", "America/Vancouver");
+    const guess = sunTimes("2027-07-15", 49.38, -121.44, "CA");
+    expect(hope.approximate).toBe(false);
+    expect(guess.approximate).toBe(true);
+    expect(hope.sunset! - guess.sunset!).toBe(60);
     expect(clock(19 * 60 + 5)).toBe("19:05");
     expect(weekday("2027-10-17")).toBe(6); // a Sunday
   });

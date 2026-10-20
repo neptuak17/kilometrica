@@ -888,6 +888,10 @@ export interface Stop {
   lat: number;
   country: string | null;
   /**
+   * IANA time zone at the stop, for clock times such as sunset (D68)
+   */
+  time_zone: string | null;
+  /**
    * The shortest ridden distance from the route to one of its beds
    */
   detour_m: number | null;

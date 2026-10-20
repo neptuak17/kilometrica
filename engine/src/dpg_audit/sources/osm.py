@@ -53,6 +53,76 @@ def country_extracts(index: dict, area: MultiPolygon) -> list[dict]:
     return sorted(hits, key=lambda p: p["id"])
 
 
+OPEN_BORDERS = {
+    "AT", "BE", "BG", "CH", "CZ", "DE", "DK", "EE", "ES", "FR", "GR", "HR", "HU", "IS", "IT", "LI", "LT", "LU", "LV",
+    "MT", "NL", "NO", "PL", "PT", "RO", "SE", "SI", "SK", "MC", "SM", "VA", "AD",
+}  # fmt: skip
+"""Countries whose land borders with each other are open to ride across (the Schengen area, and the microstates
+inside it); the planner keeps the same list for its border checks."""
+
+ENTERED_M = 1_000.0
+"""A route enters a country when at least this much of it lies inside that country alone."""
+
+
+def _iso(props: dict) -> str | None:
+    iso = props.get("iso3166-1:alpha2")
+    return iso[0] if isinstance(iso, list) else iso
+
+
+def route_extracts(index: dict, lines: list, near: MultiPolygon, step_m: float = 500.0) -> list[dict]:
+    """The smallest Geofabrik regions a route needs (D67).
+
+    The countries near the route (`country_extracts`) are kept when the route enters them, or when their border with
+    one it enters is open (Schengen): services across the Rhine from Switzerland count, but a route along the
+    Canadian side of the US border needs no US data. Within each country kept, its smallest regions (provinces,
+    states, Regierungsbezirke) that come near the route are taken; a country with none is taken whole."""
+    import numpy as np
+    import shapely
+
+    features = [f for f in index["features"] if f.get("geometry")]
+    countries = country_extracts(index, near)
+    geometry = {f["properties"]["id"]: f["geometry"] for f in features}
+    shapes = {c["id"]: shape(geometry[c["id"]]) for c in countries}
+    lon = np.concatenate([ln.resample(step_m).lon for ln in lines])
+    lat = np.concatenate([ln.resample(step_m).lat for ln in lines])
+    points = shapely.points(lon, lat)
+    # Extracts overlap at borders by a margin, so a point counts for the country whose outline it is deepest inside:
+    # Neum's coast is Bosnian though inside Croatia's margin, the Canadian side of the 49th parallel is Canadian.
+    ids = list(shapes)
+    depth = np.full((len(ids), len(points)), -1.0)
+    for k, cid in enumerate(ids):
+        inside = shapely.contains(shapes[cid], points)
+        depth[k, inside] = shapely.distance(shapes[cid].boundary, points[inside])
+    owner = np.where(depth.max(axis=0) >= 0, depth.argmax(axis=0), -1)
+    entered = {cid for k, cid in enumerate(ids) if (owner == k).sum() * step_m >= ENTERED_M}
+    open_entered = any(_iso(c) in OPEN_BORDERS for c in countries if c["id"] in entered)
+    kept = [c for c in countries if c["id"] in entered or (open_entered and _iso(c) in OPEN_BORDERS)]
+
+    children: dict[str, list[dict]] = {}
+    for f in features:
+        parent = f["properties"].get("parent")
+        if parent:
+            children.setdefault(parent, []).append(f)
+
+    def leaves(region_id: str) -> list[dict]:
+        out = []
+        for f in children.get(region_id, []):
+            props = f["properties"]
+            if not shape(f["geometry"]).intersects(near):
+                continue
+            below = leaves(props["id"])
+            if below:
+                out.extend(below)
+            elif "pbf" in props.get("urls", {}):
+                out.append(props)
+        return out
+
+    picked: list[dict] = []
+    for c in kept:
+        picked.extend(leaves(c["id"]) or [c])
+    return sorted({p["id"]: p for p in picked}.values(), key=lambda p: p["id"])
+
+
 def _osmium(*args: str) -> str:
     if not shutil.which("osmium"):
         raise RuntimeError("osmium-tool is not installed (sudo apt install osmium-tool)")

@@ -592,6 +592,9 @@ class Stop(Model):
     lon: float = Field(description="The town's position, else the route at at_m")
     lat: float
     country: str | None
+    time_zone: str | None = Field(
+        default=None, description="IANA time zone at the stop, for clock times such as sunset (D68)"
+    )
     detour_m: float | None = Field(description="The shortest ridden distance from the route to one of its beds")
     beds: list[StopBeds]
     services: dict[str, int] = Field(

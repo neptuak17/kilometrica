@@ -2817,6 +2817,18 @@
             }
           ]
         },
+        "time_zone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "IANA time zone at the stop, for clock times such as sunset (D68)"
+        },
         "detour_m": {
           "anyOf": [
             {
@@ -2871,6 +2883,7 @@
         "lon",
         "lat",
         "country",
+        "time_zone",
         "detour_m",
         "beds",
         "services",

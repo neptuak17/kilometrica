@@ -10,6 +10,7 @@ import numpy as np
 
 from dpg_audit.lrs import MeasuredLine, RoutePath
 from dpg_audit.lrs.geodesy import distance
+from dpg_audit.lrs.index import use_projection_for
 from dpg_audit.lrs.sections import runs
 from dpg_audit.models import (
     Component,
@@ -204,6 +205,8 @@ def assemble(route: Route, tracks: list[TrackInput], params: BuildParams | None 
 
     # Other ways along a stretch already covered are set aside: one line is audited and planned (D65).
     tracks, variants = split_variants(tracks, params)
+    # Every distance from here on is measured in a projection that suits where the route is (D68).
+    use_projection_for(np.concatenate([t.line.lon for t in tracks]), np.concatenate([t.line.lat for t in tracks]))
 
     flips = choose_orientations([_ends(t.line) for t in tracks], params.reverse_penalty_m)
     lines = [t.line.reversed() if flip else t.line for t, flip in zip(tracks, flips, strict=True)]

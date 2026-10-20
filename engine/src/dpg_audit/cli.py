@@ -168,7 +168,7 @@ def osm_prepare(
     area = corridor(build.lines, buffer_km * 1000)
     corridor_path = wd / "corridor.geojson"
     write_geojson(area, corridor_path, {"route": build.route.id, "buffer_km": buffer_km})
-    regions = osm.country_extracts(osm.geofabrik_index(root), corridor(build.lines, 3000))
+    regions = osm.route_extracts(osm.geofabrik_index(root), build.lines, corridor(build.lines, 3000))
     typer.echo(f"corridor: {len(area.geoms)} polygon(s), {buffer_km:g} km either side -> {corridor_path}")
     typer.echo("extracts: " + ", ".join(r["id"] for r in regions))
     if dry_run:

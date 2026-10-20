@@ -92,7 +92,7 @@ export interface DayContext {
   /** Date of riding day k (0-based). */
   dayDate: (k: number) => string;
   /** Where the trip ends, for the last day's sunset. */
-  end: { lat: number; lon: number; country: string | null };
+  end: { lat: number; lon: number; country: string | null; timeZone?: string | null };
   /** Sunset cache: date and place -> minutes. */
   sunsets?: Map<string, number | null>;
 }
@@ -116,8 +116,8 @@ function sunsetAt(ctx: DayContext, date: string, endStop: Stop | null): number |
   const key = `${date}|${endStop?.id ?? "end"}`;
   ctx.sunsets ??= new Map();
   if (!ctx.sunsets.has(key)) {
-    const where = endStop ? { lat: endStop.lat, lon: endStop.lon, country: endStop.country } : ctx.end;
-    ctx.sunsets.set(key, sunTimes(date, where.lat, where.lon, where.country).sunset);
+    const where = endStop ? { lat: endStop.lat, lon: endStop.lon, country: endStop.country, timeZone: endStop.time_zone } : ctx.end;
+    ctx.sunsets.set(key, sunTimes(date, where.lat, where.lon, where.country, where.timeZone).sunset);
   }
   return ctx.sunsets.get(key) ?? null;
 }

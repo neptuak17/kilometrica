@@ -18,6 +18,7 @@ dependencies = [
     "rasterio>=1.4",
     "scipy>=1.14",
     "shapely>=2.0",
+    "timezonefinder>=6.5",
     "typer>=0.12",
 ]
 

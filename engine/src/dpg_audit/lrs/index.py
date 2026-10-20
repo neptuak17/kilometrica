@@ -1,7 +1,8 @@
 """Spatial index over a route path, for projecting many points (places) onto it quickly.
 
-Candidate search runs in ETRS89-LAEA metres (EPSG:3035), which is close enough to find the nearest segment; the
-reported measures and offsets are then computed exactly (geodesic) on the chosen part.
+Candidate search runs in equal-area metres, which is close enough to find the nearest segment; the reported measures
+and offsets are then computed exactly (geodesic) on the chosen part. The projection is ETRS89-LAEA (EPSG:3035) for
+routes in and around Europe, and a LAEA centred on the route elsewhere (D68): `use_projection_for`.
 """
 
 from dataclasses import dataclass
@@ -14,14 +15,48 @@ from scipy.spatial import cKDTree
 from dpg_audit.lrs.line import Projection
 from dpg_audit.lrs.path import RoutePath
 
-_TO_LAEA = Transformer.from_crs("EPSG:4326", "EPSG:3035", always_xy=True)
+EUROPE = "EPSG:3035"
 LAEA_SLACK = 1.12
 """LAEA distances can be a few per cent off far from its centre (e.g. Cyprus); pre-filters widen by this factor."""
 
+_projection: dict = {}
+
+
+def _use(crs: str) -> None:
+    _projection.update(
+        crs=crs,
+        to=Transformer.from_crs("EPSG:4326", crs, always_xy=True),
+        back=Transformer.from_crs(crs, "EPSG:4326", always_xy=True),
+    )
+
+
+_use(EUROPE)
+
+
+def use_projection_for(lon, lat) -> str:
+    """Pick the metric projection for a route's audit, from its points (D68). ETRS89-LAEA serves Europe, Türkiye and
+    Cyprus; far from its centre its distances are tens of per cent off (British Columbia lies 130° of longitude away),
+    so a route elsewhere gets a LAEA centred on itself. Set once per run, when the route is assembled; every corridor,
+    nearness search and grouping then measures in the same frame."""
+    lon, lat = np.asarray(lon, dtype=float), np.asarray(lat, dtype=float)
+    if lon.min() >= -32 and lon.max() <= 45 and lat.min() >= 27 and lat.max() <= 72:
+        crs = EUROPE
+    else:
+        lon0, lat0 = (lon.min() + lon.max()) / 2, (lat.min() + lat.max()) / 2
+        crs = f"+proj=laea +lat_0={lat0:.4f} +lon_0={lon0:.4f} +ellps=GRS80 +units=m +no_defs"
+    if crs != _projection["crs"]:
+        _use(crs)
+    return crs
+
 
 def to_laea(lon, lat) -> tuple[np.ndarray, np.ndarray]:
-    x, y = _TO_LAEA.transform(np.asarray(lon, dtype=float), np.asarray(lat, dtype=float))
+    x, y = _projection["to"].transform(np.asarray(lon, dtype=float), np.asarray(lat, dtype=float))
     return np.asarray(x), np.asarray(y)
+
+
+def from_laea(x, y) -> tuple[np.ndarray, np.ndarray]:
+    lon, lat = _projection["back"].transform(np.asarray(x, dtype=float), np.asarray(y, dtype=float))
+    return np.asarray(lon), np.asarray(lat)
 
 
 @dataclass

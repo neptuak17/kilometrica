@@ -10,6 +10,7 @@ filters stops by how the rider sleeps and by the month.
 
 from bisect import bisect_left, bisect_right
 from collections import Counter
+from functools import cache
 from statistics import median
 
 import numpy as np
@@ -58,6 +59,20 @@ def _groups(beds: list[Place], towns: list[Settlement]) -> list[tuple[Settlement
     if current:
         out.append((None, current))
     return out
+
+
+@cache
+def _zones():
+    from timezonefinder import TimezoneFinder  # 30 MB of boundary data, loaded once per run
+
+    return TimezoneFinder()
+
+
+def time_zone_at(lon: float, lat: float) -> str | None:
+    """The IANA time zone at a point (D68), from timezone-boundary-builder's boundaries (ODbL) via timezonefinder.
+    A country can span several zones (British Columbia's Kootenays straddle Pacific and Mountain time), so clock
+    times such as sunset use the stop's own zone, not its country's."""
+    return _zones().timezone_at(lng=lon, lat=lat)
 
 
 def _near(positions: list[float], m: float, reach: float) -> int:
@@ -115,6 +130,7 @@ def build_stops(
                 lon=round(lon, 6),
                 lat=round(lat, 6),
                 country=countries.most_common(1)[0][0] if countries else None,
+                time_zone=time_zone_at(lon, lat),
                 detour_m=round(min(detours)) if detours else None,
                 beds=bed_list,
                 services={s: _near(pos, at_m, SERVICE_REACH_M) for s, pos in services.items()},
