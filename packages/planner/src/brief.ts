@@ -5,7 +5,7 @@
  */
 import type { PlanCore } from "./plan";
 import { monthOf } from "./sun";
-import { foodOnDay } from "./items";
+import { foodOnDay, isNightLine, toDo } from "./items";
 import { dayList, hours, KNOWN_ENOUGH, km, MONTHS_LONG, oneIn, plural, range, shareOf, sleepNoun } from "./text";
 import type { Brief, BriefLine, DayPlan, PlanData, PlanItem } from "./types";
 
@@ -118,7 +118,9 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
   const month = MONTHS_LONG[monthOf(inputs.startDate)]!;
   const noBed = nights.filter((n) => n.beds.count === 0).length;
   const unknown = nights.filter((n) => n.beds.count > 0 && n.beds.open + n.beds.partly === 0).length;
-  const sleepItems = byTopic("sleep");
+  // What's still to sort out, as the to-do shows it (D64).
+  const open = toDo(items, core.choices).open;
+  const sleepItems = open.filter(isNightLine);
   lines.push({
     topic: "sleep",
     question: "Where will I sleep?",
@@ -153,22 +155,26 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
     more: Math.max(0, risks.length - 1),
   });
 
-  const calls = items.filter((i) => i.kind === "call").length;
-  const todos = items.filter((i) => i.kind === "todo");
-  const checks = todos.filter((i) => !i.id.startsWith("travel:")).length;
-  const travel = todos.filter((i) => i.id.startsWith("travel:") && !i.title.includes("no bike")).length;
+  const calls = open.filter((i) => i.kind === "call").length;
+  const travelItems = open.filter((i) => i.id.startsWith("travel:"));
+  const trains = travelItems.filter((i) => !i.title.includes("no bike")).length;
+  const checks = open.length - calls - sleepItems.length - travelItems.length;
   lines.push({
     topic: "prepare",
     question: "What do I sort out before I go?",
-    answer: [
-      calls ? plural(calls, "call") : null,
-      checks ? plural(checks, "check") : null,
-      travel === 2 ? "trains both ends" : travel === 1 ? "a train at one end" : "how to get there and back",
-    ]
-      .filter(Boolean)
-      .join(", ")
-      .replace(/^./, (c) => c.toUpperCase()) + ".",
-    more: todos.length,
+    answer: open.length
+      ? [
+          calls ? plural(calls, "call") : null,
+          sleepItems.length ? `accommodation for ${plural(sleepItems.length, "night")}` : null,
+          checks ? plural(checks, "check") : null,
+          trains === 2 ? "trains both ends" : trains === 1 ? "a train at one end" : null,
+          travelItems.length > trains ? "how to get there and back" : null,
+        ]
+          .filter(Boolean)
+          .join(", ")
+          .replace(/^./, (c) => c.toUpperCase()) + "."
+      : "Nothing: everything is taken care of.",
+    more: open.length,
   });
 
   const highlights = items.filter((i) => i.kind === "highlight" && i.id.startsWith("highlight:")).slice(0, 3);
@@ -187,7 +193,9 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
 
   const readiness = calls
     ? `${plural(calls, "thing")} ${calls === 1 ? "needs" : "need"} your call`
-    : `Ready to go${noBed ? "" : ": a bed every night"}${beyond.length ? "" : `${noBed ? ": " : ", "}every day within your level`}, ${plural(checks, "check")} before you leave`;
+    : !open.length
+      ? "Ready to go: everything is taken care of"
+      : `Ready to go${noBed ? "" : ": a bed every night"}${beyond.length ? "" : `${noBed ? ": " : ", "}every day within your level`}, ${plural(open.length, "thing")} to sort out before you leave`;
 
   // How well we know these days: what it means for the rider, in words, never a percentage (D57).
   const confidence: string[] = [];

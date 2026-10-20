@@ -424,6 +424,17 @@ function PlanPage({ start }: { start: Start }) {
   const [attempt, setAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  // A day opened from elsewhere on the page (the to-do, a call): its card is scrolled into view, at Sleep for a night.
+  const [focus, setFocus] = useState<{ part: "card" | "sleep"; at: number } | null>(null);
+  const showDay = useCallback((n: number, part: "card" | "sleep" = "card") => {
+    setSelected(n);
+    setFocus({ part, at: Date.now() });
+  }, []);
+  useEffect(() => {
+    if (!focus) return;
+    const el = (focus.part === "sleep" && document.getElementById("day-sleep")) || document.getElementById("day-card");
+    el?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+  }, [focus]);
   const [pinned, setPinned] = useState<Pinned[]>([]);
   const [printing, setPrinting] = useState(false);
   const [editing, setEditing] = useState(!start.doc);
@@ -520,7 +531,7 @@ function PlanPage({ start }: { start: Start }) {
   const onOption = (item: PlanItem, id: string) => {
     const out = optionOutcome(item, id);
     if (!out || !history.present) return;
-    if ("showDay" in out) return setSelected(out.showDay);
+    if ("showDay" in out) return showDay(out.showDay);
     if (out.action.type === "dismiss") return apply(out.action);
     const label = item.options?.find((o) => o.id === id)?.label ?? "a change";
     setPreview({ label, state: applyAction(history.present, out.action), callId: item.id, optionId: id });
@@ -775,10 +786,20 @@ function PlanPage({ start }: { start: Start }) {
               readOnly={readOnly}
               previewing={preview ? `${preview.callId}/${preview.optionId}` : null}
               onOption={onOption}
-              onShowDay={setSelected}
+              onShowDay={showDay}
             />
             <DayList plan={shown} selected={selected} onPick={(n) => setSelected(selected === n ? null : n)} free={free} changed={preview ? changes?.days : undefined} />
-            <BeforeYouGo plan={plan} free={free} readOnly={readOnly} isPrivate={isPrivate} done={choices.done} onDone={toggleDone} onExport={onExport} links={links} />
+            <BeforeYouGo
+              plan={plan}
+              free={free}
+              readOnly={readOnly}
+              isPrivate={isPrivate}
+              done={choices.done}
+              onDone={toggleDone}
+              onShowDay={showDay}
+              onExport={onExport}
+              links={links}
+            />
             <Compare
               data={data}
               current={plan}

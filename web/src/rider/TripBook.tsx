@@ -10,6 +10,7 @@
 import type { Place } from "@dpg/contracts";
 import {
   bedsKnown,
+  chosenBed,
   clock,
   day as dayText,
   dayIndex,
@@ -32,6 +33,7 @@ import {
   sleepNoun,
   slice,
   stopName,
+  toDo,
   WEEKDAYS_LONG,
   weekday,
   wikiLinks,
@@ -476,16 +478,15 @@ function TripPage({ plan, geometry, routeName, levelName, link, pages, pageOf }:
 }
 
 function BeforeYouGoPage({ plan, pages, pageOf }: { plan: PlanResult; pages: number; pageOf: (n: number) => number }) {
-  const todos = plan.items.filter((i) => i.kind === "todo");
-  const calls = plan.items.filter((i) => i.kind === "call" && !plan.choices.dismissed.includes(i.id));
-  const groups = [{ title: "Still your call", items: calls }, ...GROUPS.map((g) => ({ title: g.title, items: todos.filter(g.test) }))].filter((g) => g.items.length);
-  const counts = [calls.length && `${calls.length} ${calls.length === 1 ? "call" : "calls"} still yours`, todos.length && `${todos.length} things to sort out`].filter(Boolean);
+  // What's still to sort out, as the to-do shows it (D64).
+  const open = toDo(plan.items, plan.choices).open;
+  const groups = GROUPS.map((g) => ({ title: g.title, items: open.filter(g.test) })).filter((g) => g.items.length);
   return (
     <Sheet page={2} pages={pages} left={`${plan.brief.title} · Kilometrica trip book`}>
       <header className="grid gap-1">
         <Kicker>{plan.brief.title}</Kicker>
         <h1 className="text-[28px] leading-tight font-bold tracking-tight">Before you go</h1>
-        <p className="text-[15px]">{counts.length ? `${counts.join(", ")}. Tick them off as you go.` : "Nothing to sort out."}</p>
+        <p className="text-[15px]">{open.length ? `${open.length === 1 ? "1 thing" : `${open.length} things`} left to sort out. Tick them off as you go.` : "Hooray! Everything is taken care of!"}</p>
       </header>
       {groups.map((g) => (
         <section key={g.title} className="grid">
@@ -528,7 +529,8 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
     });
   }, [plan, data.effort, d]);
   const booked = night ? plan.choices.booked.includes(night.index) : false;
-  const chosen = night ? plan.choices.beds[night.index] : undefined;
+  const chosen = night ? chosenBed(data, night, plan.choices, plan.inputs.sleep)?.id : undefined;
+  const openToday = toDo(plan.items, plan.choices).open.filter((i) => i.day === d.number);
   return (
     <Sheet page={page} pages={pages} left={`${plan.brief.title} · Day ${d.number} · ${dayText(d.date)}`}>
       <header className="flex items-end justify-between gap-4">
@@ -634,10 +636,10 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
               })}
             </Part>
           )}
-          {mine.todos.length > 0 && (
+          {openToday.length > 0 && (
             <Part icon={<Icons.Flag />} label="Before you go">
               <span>
-                {mine.todos.length} {mine.todos.length === 1 ? "thing" : "things"} to sort out for this day: page 2.
+                {openToday.length} {openToday.length === 1 ? "thing" : "things"} left to sort out for this day: page 2.
               </span>
             </Part>
           )}

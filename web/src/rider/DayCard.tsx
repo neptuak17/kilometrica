@@ -9,11 +9,13 @@ import {
   bedsKnown,
   bookingSearches,
   CAPS,
+  chosenBed,
   clock,
   day as dayText,
   dayItems,
   dayStory,
   hours,
+  isNightLine,
   km,
   monthOf,
   nightStay,
@@ -74,9 +76,9 @@ export function Links({ links, size = "xs" }: { links: Handoff[]; size?: "xs" | 
 }
 
 /** A labelled part of the card: the label on the left, the content beside it (stacked when narrow). */
-function Part({ icon, label, tone, children }: { icon: ReactNode; label: string; tone?: string; children: ReactNode }) {
+function Part({ icon, label, tone, id, children }: { icon: ReactNode; label: string; tone?: string; id?: string; children: ReactNode }) {
   return (
-    <div className="grid gap-x-5 gap-y-1.5 border-t pt-4 sm:grid-cols-[9.5rem_minmax(0,1fr)]">
+    <div id={id} className="grid scroll-mt-4 gap-x-5 gap-y-1.5 border-t pt-4 sm:grid-cols-[9.5rem_minmax(0,1fr)]">
       <div className={cn("flex items-center gap-2 self-start font-semibold [&_svg]:size-4", tone)}>
         {icon}
         {label}
@@ -149,6 +151,8 @@ interface Props {
 export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNight, onToggleBooked, onChooseBed, onToggleRest, onDone, onGpx, onClose, onNext }: Props) {
   const ids = useId();
   const mine = dayItems(plan.items, d.number);
+  // The night's own line is settled in Sleep below, so the day's to-dos leave it out (D64).
+  const todos = mine.todos.filter((i) => !isNightLine(i));
   const all = (kind: PlanItem["kind"]) => plan.items.filter((i) => i.day === d.number && i.kind === kind);
   const { night, unloaded, waterFood, thinned, longest, stations, beds, bedsUnloaded, month, planB } = dayFacts(plan, data, d, free);
   const range = d.hoursFast !== d.hoursSlow && Math.abs(d.hoursSlow - d.hoursFast) > 0.05;
@@ -156,7 +160,8 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   const isLastRide = d.ride === plan.inputs.days;
   const next = plan.days.find((x) => x.number === d.number + 1);
   const unloadedText = unloaded.map(([a, b]) => `km ${a}–${b}`).join(", ");
-  const chosen = night ? choices.beds[night.index] : undefined;
+  // The place chosen for the night, while it is still one of this town's (D64).
+  const chosen = night ? chosenBed(data, night, choices, plan.inputs.sleep)?.id : undefined;
   // When none of our places suit: the big booking sites, searched for the stop and its nights (D60).
   const search = night ? bookingSearches(night, plan.inputs) : [];
   const stay = night ? nightStay(night, plan.inputs.restAfter) : undefined;
@@ -164,7 +169,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   const highlights = all("highlight");
 
   return (
-    <Card className="break-inside-avoid">
+    <Card id="day-card" className="scroll-mt-4 break-inside-avoid">
       <CardContent className="grid gap-5 px-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="grid min-w-0 gap-1">
@@ -266,13 +271,13 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                 <ItemList items={highlights} cap={CAPS.highlight} />
               </Part>
             )}
-            {mine.todos.length > 0 && (
+            {todos.length > 0 && (
               <Part icon={<Icons.Flag />} label="Before you go">
-                <ItemList items={mine.todos} done={choices.done} onDone={readOnly ? undefined : onDone} />
+                <ItemList items={todos} done={choices.done} onDone={readOnly ? undefined : onDone} />
               </Part>
             )}
             {night && (
-              <Part icon={<Icons.Bed />} label="Sleep">
+              <Part icon={<Icons.Bed />} label="Sleep" id="day-sleep">
                 <span>
                   <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, month, plan.inputs.sleep)}
                   {night.stop.station ? ` · station: ${night.stop.station}` : ""}

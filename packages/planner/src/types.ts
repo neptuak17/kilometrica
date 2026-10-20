@@ -192,6 +192,11 @@ export interface PlanItem {
   evidence: { findings?: string[]; places?: string[]; highlights?: string[]; source?: string; date?: string };
   handoffs: Handoff[];
   options?: CallOption[];
+  /**
+   * A night's line in the to-do (D64): what settles it on the day card, "Chosen: La Gloriette" or "Booked"; absent
+   * while the night is still to sort. Other to-dos are settled by the rider's tick, calls by an answer.
+   */
+  settled?: string;
 }
 
 export interface NightPlan {

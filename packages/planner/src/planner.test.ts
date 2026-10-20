@@ -6,7 +6,7 @@ import { planChanges } from "./changes";
 import { choicesOf, parseDocument, toDocument } from "./document";
 import { calendarFile, dayGpx, tripGpx } from "./exports";
 import { bearing, type Geometry } from "./geometry";
-import { bookingSearches, dayItems, mapsSearch, nightStay, railLinks, streetPhotos, wikiLinks } from "./items";
+import { bookingSearches, dayItems, isNightLine, mapsSearch, nightStay, railLinks, streetPhotos, toDo, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan } from "./plan";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
@@ -242,18 +242,53 @@ describe("makePlan", () => {
     const p = makePlan(data({ stops }), inputs({ sleep: "camping" }), { ...NO_CHOICES, locked: { 1: "s120" } });
     expect(p.nights[1]!.stop.id).toBe("s120");
     expect(p.nights.every((n) => !n.stop.id.startsWith("none-"))).toBe(true);
-    expect(p.items.some((i) => i.id === "bed:none:1")).toBe(true);
+    expect(p.items.find((i) => i.id === "bed:1:s120")?.why).toMatch(/^No known campsite/);
   });
 
-  it("checks beds whose season is unknown, and knows when no bed of the rider's kind exists", () => {
-    const rooms = makePlan(data(), inputs({ sleep: "rooms" }));
-    expect(rooms.items.filter((i) => i.id.startsWith("bed:check:"))).toHaveLength(4); // hotels publish no dates
+  it("gives every night one line in the to-do, with a nudge where the day card needs more of the rider (D64)", () => {
+    const rooms = makePlan(data(), inputs({ sleep: "rooms", restAfter: [1] }));
+    const lines = rooms.items.filter(isNightLine);
+    expect(lines).toHaveLength(rooms.nights.length);
+    expect(lines[0]!.title).toMatch(/^Find accommodation at Town \d+ for \w{3} \d+ \w{3}, 2 nights$/);
+    expect(lines[1]!.title).not.toContain("2 nights");
+    expect(lines.every((i) => i.why.includes("Check ahead if they're open."))).toBe(true); // hotels publish no dates
+    expect(lines.every((i) => i.handoffs.length === 0)).toBe(true); // the day card has the places and their links
     const camping = makePlan(data(), inputs({ sleep: "camping" }));
-    expect(camping.items.some((i) => i.id.startsWith("bed:check:"))).toBe(false); // campsites publish theirs
+    expect(camping.items.filter(isNightLine).some((i) => i.why.includes("Check ahead"))).toBe(false); // campsites publish theirs
     const noCamps = data({ stops: Array.from({ length: 29 }, (_, i) => stop((i + 1) * 10, { beds: [{ kind: "hotel", count: 1, seasons: [["????????????", 1]] }] })) });
     const p = makePlan(noCamps, inputs({ sleep: "camping" }));
-    expect(p.items.some((i) => i.id.startsWith("bed:none:"))).toBe(true);
+    expect(p.items.filter(isNightLine).some((i) => i.why.startsWith("No known campsite"))).toBe(true);
     expect(bedsFor(stop(10), "camping", 9)).toEqual({ count: 1, open: 1, partly: 0, closed: 0, unknown: 0, kinds: [{ kind: "campsite", count: 1 }] });
+  });
+
+  it("settles a night when a place there is chosen or it's booked, only in that town; the plan is complete when nothing's left (D64)", () => {
+    const base = data();
+    const first = makePlan(base, inputs({ sleep: "rooms" }));
+    const n0 = first.nights[0]!;
+    const hotel = { id: "h1", service: "accommodation", kind: "hotel", name: "Hôtel Un", lon: 0, lat: 0, access_at_m: n0.stop.at_m, access_m: 100, counts: true, months: "????????????", detail: {} } as unknown as Place;
+    const full: PlanData = { ...base, full: { findings: [], places: [hotel], placesMissing: [], highlights: [], climbs: [], serviceTypes: [] } };
+    const lineOf = (p: ReturnType<typeof makePlan>, k: number) => p.items.find((i) => i.id === `bed:${k}:${p.nights[k]!.stop.id}`)!;
+    const chosen = makePlan(full, inputs({ sleep: "rooms" }), { ...NO_CHOICES, beds: { 0: "h1" } });
+    expect(lineOf(chosen, 0).settled).toBe("Chosen: Hôtel Un");
+    expect(toDo(chosen.items, chosen.choices).open.some((i) => i.id === lineOf(chosen, 0).id)).toBe(false);
+    // The night moved 10 km: the choice stays with its town and the line is open again, under a new id.
+    const moved = makePlan(full, inputs({ sleep: "rooms" }), { ...NO_CHOICES, beds: { 0: "h1" }, locked: { 0: `s${n0.stop.at_m / 1000 - 10}` } });
+    expect(lineOf(moved, 0).id).not.toBe(lineOf(chosen, 0).id);
+    expect(lineOf(moved, 0).settled).toBeUndefined();
+    const booked = makePlan(full, inputs({ sleep: "rooms" }), { ...NO_CHOICES, booked: [1], locked: { 1: first.nights[1]!.stop.id } });
+    expect(lineOf(booked, 1).settled).toBe("Booked");
+    // Everything settled: nights booked, other to-dos ticked, calls answered.
+    const all = { ...NO_CHOICES, booked: first.nights.map((n) => n.index), locked: Object.fromEntries(first.nights.map((n) => [n.index, n.stop.id])) };
+    const settled = makePlan(full, inputs({ sleep: "rooms" }), all);
+    const rest = { ...all, done: settled.items.filter((i) => i.kind === "todo").map((i) => i.id), dismissed: settled.items.filter((i) => i.kind === "call").map((i) => i.id) };
+    const complete = makePlan(full, inputs({ sleep: "rooms" }), rest);
+    expect(toDo(complete.items, complete.choices).open).toEqual([]);
+    expect(complete.brief.readiness).toBe("Ready to go: everything is taken care of");
+    expect(complete.brief.lines.find((l) => l.topic === "prepare")!.answer).toBe("Nothing: everything is taken care of.");
+    // Unticking reopens it.
+    const start = rest.done.find((id) => id.startsWith("travel:start:"))!;
+    const reopened = makePlan(full, inputs({ sleep: "rooms" }), { ...rest, done: rest.done.filter((id) => id !== start) });
+    expect(toDo(reopened.items, reopened.choices).open.map((i) => i.id)).toEqual([start]);
   });
 
   it("highlights an unfilled gap and counts it as ridden; a ferry becomes a check (D50)", () => {

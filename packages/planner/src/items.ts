@@ -11,8 +11,8 @@ import { bearing, type Geometry, locate } from "./geometry";
 import type { PlanCore } from "./plan";
 import { bedsFor } from "./stages";
 import { addDays, clock, dayIndex, monthOf, weekday } from "./sun";
-import { bedKinds, country, day as dayText, hours, KNOWN_ENOUGH, km, kindWord, MONTHS_LONG, plural, sleepNoun, stopName, WEEKDAYS_LONG } from "./text";
-import { type DayPlan, type Handoff, type NightPlan, type PlanData, type PlanItem, placesMissing, type Sleep } from "./types";
+import { country, day as dayText, hours, KNOWN_ENOUGH, km, plural, sleepNoun, stopName, WEEKDAYS_LONG } from "./text";
+import { type DayPlan, type Handoff, type NightPlan, type PlanChoices, type PlanData, type PlanItem, placesMissing, type Sleep } from "./types";
 
 export const CAPS = { headsup: 3, highlight: 3, brief: 5 };
 
@@ -457,85 +457,54 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
     }
   }
 
-  // --- nights (D18) ----------------------------------------------------------------------------------------
+  // --- nights (D18, D64) -----------------------------------------------------------------------------------
+  // One line per night, until the day card settles it: a place chosen there, or Booked. The line is a nudge, not a
+  // copy of the day card: the places, their links and the plan B are on the card, which its Day button opens. The
+  // id carries the stop, so a night moved to another town is a new line.
   for (const n of nights) {
     const d = days.find((x) => x.ride === n.afterRide)!;
     const name = stopName(n.stop);
-    const handoffs: Handoff[] = [];
-    if (data.full) {
-      for (const p of bedPlaces(data.full, n.stop, inputs.sleep).slice(0, 3)) {
-        // The place's own site and phone; Google Maps only for places that have neither.
-        const all = placeLinks(p);
-        const links = all.some((l) => l.kind !== "maps") ? all.filter((l) => l.kind !== "maps") : all;
-        if (links.length) handoffs.push(...links.map((l) => ({ ...l, label: `${p.name ?? "Unnamed"}: ${l.label}` })));
+    const twoNights = inputs.restAfter.includes(n.afterRide);
+    const nudges: string[] = [];
+    let rank = 30;
+    if (n.stop.beds.length === 0 || n.beds.count === 0) {
+      nudges.push(`No known ${sleepNoun(inputs.sleep)} within 5 km of the route: look further, or change how you sleep.`);
+      rank = 48;
+    } else {
+      if (n.beds.open + n.beds.partly === 0) {
+        nudges.push(`Check ahead if ${n.beds.count === 1 ? "it's" : "they're"} open.`);
+        rank = 42;
+      }
+      if (n.beds.count === 1) {
+        const b = n.planB.after ?? n.planB.before;
+        nudges.push(`Only one place nearby${b ? `; plan B: ${stopName(b.stop)}, ${km(Math.abs(b.km))} km ${b.km > 0 ? "on" : "back"}` : ""}.`);
+        rank = Math.max(rank, 41);
+      }
+      const hol = holidayOn(data, n.stop.country, n.date);
+      const school = schoolOn(data, n.stop.country, n.date);
+      const sec = data.dream.sections.find((s) => s.from_m <= n.stop.at_m && n.stop.at_m <= s.to_m);
+      const busy = sec?.crowding.tourism_index[monthOf(n.date)];
+      const why = hol ? `a public holiday (${hol.name})` : school ? `school holidays (${school.name})` : busy && busy >= 1.3 ? `a busy month for tourism there` : null;
+      if (why && n.beds.count <= 3) {
+        nudges.push(`Book ahead: ${why}.`);
+        rank = Math.max(rank, 40);
       }
     }
-    if (n.stop.beds.length === 0 || n.beds.count === 0) {
-      add({
-        id: `bed:none:${n.index}`,
-        kind: "todo",
-        day: d.number,
-        fromM: n.stop.at_m,
-        toM: n.stop.at_m,
-        title: `No known ${sleepNoun(inputs.sleep)} at the end of day ${d.number}`,
-        why: "None counts within 5 km of the route here: check yourself, or change how you sleep.",
-        rank: 48,
-        topic: "sleep",
-        evidence: { source: "stops.json" },
-        handoffs,
-      });
-      continue;
-    }
-    if (n.beds.open + n.beds.partly === 0) {
-      add({
-        id: `bed:check:${n.index}`,
-        kind: "todo",
-        day: d.number,
-        fromM: n.stop.at_m,
-        toM: n.stop.at_m,
-        title: `Check a bed at ${name} for ${dayText(n.date)}`,
-        why: `${bedKinds(n.beds.kinds)} nearby, with no ${MONTHS_LONG[monthOf(n.date)]} dates published: check ahead if ${n.beds.count === 1 ? "it's" : "they're"} open.`,
-        rank: 42,
-        topic: "sleep",
-        evidence: { source: "stops.json (D18)" },
-        handoffs,
-      });
-    } else if (n.beds.count === 1) {
-      const b = n.planB.after ?? n.planB.before;
-      add({
-        id: `bed:single:${n.index}`,
-        kind: "todo",
-        day: d.number,
-        fromM: n.stop.at_m,
-        toM: n.stop.at_m,
-        title: `Only one place to stay at ${name}${n.beds.kinds[0] && kindWord(n.beds.kinds[0].kind) ? `: a ${kindWord(n.beds.kinds[0].kind)}` : ""}`,
-        why: b ? `Plan B: ${stopName(b.stop)}, ${km(Math.abs(b.km))} km ${b.km > 0 ? "on" : "back"}.` : "No other stop nearby.",
-        rank: 41,
-        topic: "sleep",
-        evidence: { source: "stops.json" },
-        handoffs,
-      });
-    }
-    const hol = holidayOn(data, n.stop.country, n.date);
-    const school = schoolOn(data, n.stop.country, n.date);
-    const sec = data.dream.sections.find((s) => s.from_m <= n.stop.at_m && n.stop.at_m <= s.to_m);
-    const busy = sec?.crowding.tourism_index[monthOf(n.date)];
-    const why = hol ? `a public holiday (${hol.name})` : school ? `school holidays (${school.name})` : busy && busy >= 1.3 ? `a busy month for tourism there` : null;
-    if (why && n.beds.count <= 3) {
-      add({
-        id: `book:${n.index}`,
-        kind: "todo",
-        day: d.number,
-        fromM: n.stop.at_m,
-        toM: n.stop.at_m,
-        title: `Book ahead at ${name} for ${dayText(n.date)}`,
-        why: `${bedKinds(n.beds.kinds)}, on ${why}.`,
-        rank: 40,
-        topic: "sleep",
-        evidence: { source: "stops.json; OpenHolidays; Eurostat" },
-        handoffs,
-      });
-    }
+    const chosen = chosenBed(data, n, core.choices, inputs.sleep);
+    add({
+      id: `bed:${n.index}:${n.stop.id}`,
+      kind: "todo",
+      day: d.number,
+      fromM: n.stop.at_m,
+      toM: n.stop.at_m,
+      title: `Find accommodation at ${name} for ${dayText(n.date)}${twoNights ? ", 2 nights" : ""}`,
+      why: nudges.join(" "),
+      rank,
+      topic: "sleep",
+      evidence: { source: "stops.json (D18); OpenHolidays; Eurostat" },
+      handoffs: [],
+      settled: core.choices.booked.includes(n.index) ? "Booked" : chosen ? `Chosen: ${chosen.name ?? "a place without a name"}` : undefined,
+    });
   }
 
   // --- getting there and back, borders ---------------------------------------------------------------------
@@ -548,7 +517,8 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
       .filter((s) => s.station && s.station_at_m !== null && Math.abs(s.station_at_m - e.m) <= 10_000)
       .sort((a, b) => Math.abs(a.station_at_m! - e.m) - Math.abs(b.station_at_m! - e.m))[0];
     add({
-      id: `travel:${e.id}`,
+      // The station in the id: a tick belongs to it, not to whichever station the start moves to (D64).
+      id: `travel:${e.id}:${near?.id ?? "none"}`,
       kind: "todo",
       day: e.d.number,
       fromM: e.m,
@@ -840,5 +810,30 @@ export function dayItems(items: PlanItem[], dayNumber: number) {
 
 export const openItems = (items: PlanItem[], done: string[], dismissed: string[]) =>
   items.filter((i) => !done.includes(i.id) && !dismissed.includes(i.id));
+
+/** A night's line in the to-do (D64). */
+export const isNightLine = (i: PlanItem) => i.kind === "todo" && i.id.startsWith("bed:");
+
+/**
+ * The place the rider chose for a night on its day card, while it is still one of that night's places (D64). A
+ * choice stays with its town: when the night moves elsewhere it no longer counts, and counts again if it moves back.
+ */
+export function chosenBed(data: PlanData, night: NightPlan, choices: Pick<PlanChoices, "beds">, sleep: Sleep): Place | null {
+  const id = choices.beds[night.index];
+  if (!id || !data.full) return null;
+  return bedPlaces(data.full, night.stop, sleep).find((p) => p.id === id) ?? null;
+}
+
+/**
+ * What's left to sort out before the trip (D64): the calls not yet answered, the nights not yet settled on their day
+ * card, and the other to-dos not yet ticked, calls first; and what's done. The plan is complete when `open` is empty.
+ */
+export function toDo(items: PlanItem[], choices: PlanChoices): { open: PlanItem[]; done: PlanItem[] } {
+  const isDone = (i: PlanItem) => (i.kind === "call" ? choices.dismissed.includes(i.id) : isNightLine(i) ? !!i.settled : choices.done.includes(i.id));
+  // In the order of the trip: by day, the whole trip's lines last.
+  const mine = items.filter((i) => i.kind === "call" || i.kind === "todo").sort((a, b) => (a.day ?? Infinity) - (b.day ?? Infinity));
+  const open = mine.filter((i) => !isDone(i));
+  return { open: [...open.filter((i) => i.kind === "call"), ...open.filter((i) => i.kind !== "call")], done: mine.filter(isDone) };
+}
 
 export { bedsFor };
