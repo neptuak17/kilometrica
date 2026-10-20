@@ -105,8 +105,14 @@ export function opening(beds: { count: number; open: number; partly: number; unm
  * A night's places and what we know of their opening, said once for the night rather than on each place (D61, D62):
  * "1 campsite and 2 hotels nearby, check ahead if they're open".
  */
-export function bedsKnown(beds: { count: number; open: number; partly: number; unmanaged?: number; kinds: { kind: string; count: number }[] }, month: string, sleep: Sleep): string {
-  if (!beds.count) return `no known ${sleepNoun(sleep)} nearby`;
+export function bedsKnown(
+  beds: { count: number; open: number; partly: number; unmanaged?: number; kinds: { kind: string; count: number }[] },
+  month: string,
+  sleep: Sleep,
+  own = false,
+): string {
+  // The rider's own stop (D70): they have a place in mind, so it's the others we don't know of.
+  if (!beds.count) return own ? `no other ${sleepNoun(sleep)} known nearby` : `no known ${sleepNoun(sleep)} nearby`;
   const open = opening(beds, month);
   return `${bedKinds(beds.kinds)} nearby${open ? `, ${open}` : ""}`;
 }

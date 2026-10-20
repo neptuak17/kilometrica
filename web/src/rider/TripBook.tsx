@@ -648,7 +648,10 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
             <Part icon={<Icons.Bed />} label="Sleep">
               <span className="flex flex-wrap items-center gap-x-3">
                 <span>
-                  <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, f.month, plan.inputs.sleep)}.{night.beds.count ? " Open first, then nearest." : ""}
+                  <b>{stopName(night.stop)}</b>
+                  {night.own ? ` (your stop${night.own.name && night.own.name !== night.stop.name ? `: ${night.own.name}` : ""})` : ""}: {bedsKnown(night.beds, f.month, plan.inputs.sleep, !!night.own)}.
+                  {night.beds.count ? " Open first, then nearest." : ""}
+                  {night.wildCamp && ` ${night.wildCamp}`}
                 </span>
                 {booked && (
                   <span className="inline-flex items-center gap-1 font-semibold">

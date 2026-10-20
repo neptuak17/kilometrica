@@ -20,7 +20,7 @@ export interface PlanChanges {
 }
 
 const SLEEP: Record<Sleep, string> = { camping: "camping", rooms: "rooms", mix: "rooms or camping" };
-const BIKE: Record<Bike, string> = { road: "road bike", touring: "touring bike", gravel: "gravel bike", ebike: "e-bike" };
+const BIKE: Record<Bike, string> = { road: "road bike", touring: "touring bike", gravel: "gravel bike", ebike: "e-bike", bikepacking: "bikepacking bike" };
 const STOPS: Record<StopStyle, string> = { short: "short", normal: "normal", long: "long" };
 
 /** A day's distance counts as changed from this many km. */

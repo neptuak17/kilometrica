@@ -10,10 +10,11 @@ import type {
   ServiceType,
   Stop,
   StopsFile,
+  UserPlace,
 } from "@dpg/contracts";
 
 export type Direction = "forward" | "reverse";
-export type Bike = "road" | "touring" | "gravel" | "ebike";
+export type Bike = "road" | "touring" | "gravel" | "ebike" | "bikepacking";
 export type Sleep = "camping" | "rooms" | "mix";
 export type StopStyle = "short" | "normal" | "long";
 
@@ -39,6 +40,11 @@ export interface PlanInputs {
   /** From Dream: avoid gravel, avoid busy roads. */
   avoidGravel: boolean;
   avoidBusy: boolean;
+  /**
+   * Whose nights (D70): "own" takes the nights the rider's route file marks, and the days follow from them; "ours"
+   * plans the stops. Unset means the file's when it marks any.
+   */
+  stops?: "own" | "ours";
 }
 
 export interface RouteRef {
@@ -56,6 +62,8 @@ export interface FreeData {
   effort: EffortFile;
   calendar: CalendarFile | null;
   daily: DailySection[];
+  /** Waypoints from the rider's own file (D24), for the nights it marks (D70). */
+  userPlaces?: UserPlace[];
 }
 
 /** Route metres from fromM to toM. */
@@ -215,6 +223,13 @@ export interface NightPlan {
   why: string;
   /** The same without the beds, for where they're said just above it (the day card, D62): "Stopping at Apt: food; …". */
   whyOther: string;
+  /** A night the rider's file marks (D70), with the name it gives it. */
+  own: { name: string | null } | null;
+  /**
+   * For a rider who camps, where no known campsite is in reach (D69, D70): wild camp if it's feasible and allowed,
+   * push on to the next one, or change the plan.
+   */
+  wildCamp: string | null;
 }
 
 export interface BriefLine {

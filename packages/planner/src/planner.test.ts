@@ -1,4 +1,4 @@
-import type { DreamSection, EffortFile, Highlight, Place, ServiceType, Stop } from "@dpg/contracts";
+import type { DreamSection, EffortFile, Finding, Highlight, Place, ServiceType, Stop, UserPlace } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
 import { applyAction, optionOutcome, type PlanState } from "./actions";
 import { TripAxis } from "./axis";
@@ -251,7 +251,7 @@ describe("makePlan", () => {
     const p = makePlan(data({ stops }), inputs({ sleep: "camping" }), { ...NO_CHOICES, locked: { 1: "s120" } });
     expect(p.nights[1]!.stop.id).toBe("s120");
     expect(p.nights.every((n) => !n.stop.id.startsWith("none-"))).toBe(true);
-    expect(p.items.find((i) => i.id === "bed:1:s120")?.why).toMatch(/^No known campsite/);
+    expect(p.items.find((i) => i.id === "bed:1:s120")?.why).toMatch(/^Wild camp if it.s feasible and allowed/);
   });
 
   it("gives every night one line in the to-do, with a nudge where the day card needs more of the rider (D64)", () => {
@@ -266,7 +266,7 @@ describe("makePlan", () => {
     expect(camping.items.filter(isNightLine).some((i) => i.why.includes("Check ahead"))).toBe(false); // campsites publish theirs
     const noCamps = data({ stops: Array.from({ length: 29 }, (_, i) => stop((i + 1) * 10, { beds: [{ kind: "hotel", count: 1, seasons: [["????????????", 1]] }] })) });
     const p = makePlan(noCamps, inputs({ sleep: "camping" }));
-    expect(p.items.filter(isNightLine).some((i) => i.why.startsWith("No known campsite"))).toBe(true);
+    expect(p.items.filter(isNightLine).some((i) => i.why.startsWith("Wild camp if it's feasible"))).toBe(true);
     expect(bedsFor(stop(10), "camping", 9)).toEqual({ count: 1, open: 1, partly: 0, closed: 0, unknown: 0, unmanaged: 0, kinds: [{ kind: "campsite", count: 1 }] });
   });
 
@@ -331,7 +331,9 @@ describe("makePlan", () => {
     const all = makePlan(withFull([]), inputs());
     const part = makePlan(withFull([{ fromM: 150_000, toM: 300_000 }]), inputs());
     const gapDays = (p: typeof all) => p.items.filter((i) => i.id.startsWith("water:gap:")).map((i) => i.day);
-    expect(gapDays(all)).toEqual(all.days.map((d) => d.number));
+    // No water on any day: one piece of advice for the trip instead of a warning a day (D70).
+    expect(gapDays(all)).toEqual([]);
+    expect(all.items.find((i) => i.id === "supply:sparse")?.title).toBe("Long stretches without water or food on 5 of 5 days, up to 80 km");
     // Days touching the part that didn't load make no claim; the others still do.
     expect(gapDays(part)).toEqual(part.days.filter((d) => Math.max(d.fromM, d.toM) <= 150_000).map((d) => d.number));
     expect(gapDays(part).length).toBeGreaterThan(0);
@@ -599,5 +601,72 @@ describe("exports", () => {
     expect(ics).toContain("rest day");
     const bytes = (l: string) => [...l].reduce((a, ch) => a + (ch.codePointAt(0)! < 0x80 ? 1 : ch.codePointAt(0)! < 0x800 ? 2 : 3), 0);
     expect(ics.split("\r\n").every((l) => bytes(l) <= 75)).toBe(true);
+  });
+});
+
+describe("sparse country and the rider's own stops (D69, D70)", () => {
+  const wp = (id: string, km: number, name: string | null, kind = "shelter", note = "lodging"): UserPlace => ({
+    id,
+    name,
+    kind,
+    note,
+    lon: km * 1000 * DEG_PER_M,
+    lat: LAT,
+    ele: null,
+    at_m: km * 1000,
+    offset_m: 100,
+    section: null,
+  });
+  const own = (): PlanData => ({
+    ...data(),
+    userPlaces: [wp("w1", 61, "Best Western"), wp("w2", 135, "Cabins"), wp("w3", 200.5, null, "generic", "generic"), wp("w4", 299.5, "Selkirk Inn")],
+  });
+
+  it("takes the nights the rider's file marks, on our stop when it's close, and shows what they bring", () => {
+    const p = makePlan(own(), inputs({ sleep: "camping" }));
+    expect(p.days).toHaveLength(3); // two nights in the file (a generic waypoint and one at the finish aren't)
+    expect(p.nights[0]!.stop.id).toBe("s60");
+    expect(p.nights[0]!.why).toContain("Stopping at Town 60 (your stop: Best Western): 1 campsite nearby");
+    expect(p.nights[1]!.stop.name).toBe("Cabins");
+    expect(p.nights[1]!.why).toContain("Stopping at Cabins (your stop): no other campsite known nearby");
+    expect(p.nights[1]!.wildCamp).toBeNull(); // they have a place in mind
+    expect(p.items.find((i) => i.id === `bed:1:${p.nights[1]!.stop.id}`)?.why).toBe("");
+    expect(p.offers).toEqual([]);
+    // Our stops instead, for the rider's days; choosing a number of days means ours.
+    expect(makePlan(own(), inputs({ stops: "ours" })).days).toHaveLength(5);
+    const state: PlanState = { inputs: inputs(), choices: NO_CHOICES };
+    expect(applyAction(state, { type: "set", inputs: { ...inputs(), days: 6 } }).inputs.stops).toBe("ours");
+    expect(applyAction(state, { type: "set", inputs: { ...inputs(), bike: "gravel" } }).inputs.stops).toBeUndefined();
+  });
+
+  it("lets a rider who camps wild camp only where no campsite is in reach, with pushing on as the other choice", () => {
+    const sparse = data({ stops: [10, 20, 30, 40, 50, 60, 240, 250, 260, 270, 280, 290].map((k) => stop(k)) });
+    const p = makePlan(sparse, inputs({ sleep: "camping" }));
+    const wild = p.nights.filter((n) => n.stop.id.startsWith("wild-"));
+    expect(wild.length).toBeGreaterThan(0);
+    expect(p.days.filter((d) => d.effort === "beyond")).toEqual([]);
+    expect(wild[0]!.wildCamp).toMatch(/^Wild camp if it's feasible and allowed \(your call\), push on to Town 240, \d+ km more, for a longer day than your usual, or change the plan\.$/);
+    expect(wild[0]!.why).toMatch(/^Stopping \d+ km from Town (60|240): no known campsite nearby/);
+    // Known campsites win wherever they're in reach, and riders who take rooms never get a spot to wild camp.
+    expect(makePlan(data(), inputs({ sleep: "camping" })).nights.some((n) => n.wildCamp)).toBe(false);
+    expect(makePlan(sparse, inputs({ sleep: "rooms" })).nights.some((n) => n.stop.id.startsWith("wild-"))).toBe(false);
+  });
+
+  it("says once that getting home is the rider's own affair where most of the way has no trains", () => {
+    const noTrains = { id: "f1", rule_id: "services.bail_out", from_m: 20_000, to_m: 280_000 } as unknown as Finding;
+    const withFull = (findings: Finding[]): PlanData => ({ ...data(), full: { findings, places: [], placesMissing: [], highlights: [], climbs: [], serviceTypes: [] } });
+    const p = makePlan(withFull([noTrains]), inputs());
+    expect(p.items.find((i) => i.id.startsWith("travel:end:"))?.why).toBe("No trains that carry bikes along most of this route: you organise your own way there and back.");
+    expect(p.items.some((i) => i.id.startsWith("finding:f1:"))).toBe(false);
+    const short = { ...noTrains, to_m: 80_000 } as Finding;
+    expect(makePlan(withFull([short]), inputs()).items.some((i) => i.id.startsWith("finding:f1:"))).toBe(true);
+  });
+
+  it("plans a bikepacking bike slower than a touring bike on tarmac and faster on gravel", () => {
+    const b = riderFor(3, "bikepacking");
+    const t = riderFor(3, "touring");
+    expect(b.massKg).toBe(75 + 13 + 12);
+    expect(speed(b, 0, "paved")).toBeLessThan(speed(t, 0, "paved") * 1.02);
+    expect(speed(b, 0, "gravel")).toBeGreaterThan(speed(t, 0, "gravel"));
   });
 });

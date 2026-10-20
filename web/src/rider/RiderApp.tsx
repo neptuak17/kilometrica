@@ -20,6 +20,7 @@ import {
   km,
   makePlan,
   NO_CHOICES,
+  ownNights,
   newId,
   numberList,
   optionOutcome,
@@ -766,6 +767,7 @@ function PlanPage({ start }: { start: Start }) {
                     daily={data.daily}
                     suggestedMonth={suggested}
                     datesConfirmed={datesConfirmed}
+                    ownNights={ownNights(data, inputs.fromM, inputs.toM).length}
                     readOnly={readOnly}
                     onChange={edit}
                   />

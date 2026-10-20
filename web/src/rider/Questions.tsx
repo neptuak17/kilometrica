@@ -29,6 +29,8 @@ interface Props {
   /** The month Dream suggested, until the rider confirms a date. */
   suggestedMonth: number | null;
   datesConfirmed: boolean;
+  /** Nights the rider's own file marks on the stretch (D70): then they choose whose stops to plan with. */
+  ownNights: number;
   readOnly: boolean;
   onChange: (next: PlanInputs, confirmDates?: boolean) => void;
 }
@@ -43,6 +45,11 @@ const BIKES = [
   ["road", "Road"],
   ["gravel", "Gravel"],
   ["ebike", "E-bike"],
+  ["bikepacking", "Bikepacking"],
+] as const;
+const WHOSE = [
+  ["own", "Your stops"],
+  ["ours", "Our stops"],
 ] as const;
 const STOPS = [
   ["short", "Short"],
@@ -104,7 +111,8 @@ function Check({ label, checked, disabled, onChange }: { label: string; checked:
   );
 }
 
-export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirmed, readOnly, onChange }: Props) {
+export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirmed, ownNights, readOnly, onChange }: Props) {
+  const own = ownNights > 0 && inputs.stops !== "ours";
   const set = <K extends keyof PlanInputs>(k: K, v: PlanInputs[K]) => onChange({ ...inputs, [k]: v });
   const sections = [...daily].sort((a, b) => a.from_m - b.from_m);
   const first = sections.find((s) => Math.abs(s.from_m - inputs.fromM) < 1) ?? sections[0];
@@ -145,12 +153,24 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
             <Input type="date" />
           </TextField>
         </Field>
-        <Field label="Riding days" hint="Rest days can be added to any day later.">
-          <TextField aria-label="Riding days" value={String(inputs.days)} isDisabled={readOnly} onChange={(v) => set("days", Math.max(1, Math.min(60, Math.round(Number(v)) || 1)))}>
+        <Field label="Riding days" hint={own ? "From the nights in your file. Rest days can be added to any day later." : "Rest days can be added to any day later."}>
+          <TextField aria-label="Riding days" value={String(own ? ownNights + 1 : inputs.days)} isDisabled={readOnly || own} onChange={(v) => set("days", Math.max(1, Math.min(60, Math.round(Number(v)) || 1)))}>
             <Input type="number" min={1} max={60} />
           </TextField>
         </Field>
       </div>
+
+      {ownNights > 0 && (
+        <Field label="Where you stop" hint={own ? `The ${ownNights} nights your file marks; each day card shows what they bring, and our other stops.` : "Our stops, planned for your days and level."}>
+          <Choice
+            label="Where you stop"
+            value={own ? "own" : "ours"}
+            options={WHOSE}
+            disabled={readOnly}
+            onPick={(v) => onChange(v === "own" ? { ...inputs, stops: "own" } : { ...inputs, stops: "ours", days: ownNights + 1 })}
+          />
+        </Field>
+      )}
 
       <Field label="Your level" hint={level ? `${level.km_min}–${level.km_max} km a day with luggage, up to about ${level.climb_max_m.toLocaleString("en-GB")} m of climbing.` : undefined}>
         <Select aria-label="Your level" selectedKey={String(inputs.level)} onSelectionChange={(k) => k !== null && set("level", Number(k))} isDisabled={readOnly} className="w-full">

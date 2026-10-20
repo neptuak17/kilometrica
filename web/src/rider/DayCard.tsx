@@ -280,10 +280,11 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
             {night && (
               <Part icon={<Icons.Bed />} label="Sleep" id="day-sleep">
                 <span>
-                  <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, month, plan.inputs.sleep)}
+                  <b>{stopName(night.stop)}</b>: {bedsKnown(night.beds, month, plan.inputs.sleep, !!night.own)}
                   {night.stop.station ? ` · station: ${night.stop.station}` : ""}
                 </span>
                 <span className="text-muted-foreground">{night.whyOther}</span>
+                {night.wildCamp && <span>{night.wildCamp}</span>}
                 {beds.length > 0 && (
                   <ul className="overflow-hidden rounded-2xl border">
                     {beds.slice(0, 6).map((p) => {

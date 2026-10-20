@@ -279,6 +279,19 @@ function bedPlaces(full: NonNullable<PlanData["full"]>, stop: Stop, sleep: strin
     .sort((a, b) => Math.abs(a.access_at_m - stop.at_m) - Math.abs(b.access_at_m - stop.at_m));
 }
 
+/**
+ * Whether most of the stretch has no station that carries bikes (D70): then getting home is the rider's own affair,
+ * said once, with no warning on each day. Routes like the Trans Canada Trail draw riders who expect that.
+ */
+function fewTrains(data: PlanData, core: PlanCore): boolean {
+  const lo = Math.min(core.axis.startM, core.axis.endM);
+  const hi = Math.max(core.axis.startM, core.axis.endM);
+  const none = (data.full?.findings ?? [])
+    .filter((f) => f.rule_id === "services.bail_out")
+    .reduce((a, f) => a + Math.max(0, Math.min(hi, Math.max(f.from_m, f.to_m)) - Math.max(lo, Math.min(f.from_m, f.to_m))), 0);
+  return hi > lo && none / (hi - lo) > 0.5;
+}
+
 export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanItem[] {
   const items: PlanItem[] = [];
   const { inputs, level, usual, days, nights } = core;
@@ -473,7 +486,12 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
     const twoNights = inputs.restAfter.includes(n.afterRide);
     const nudges: string[] = [];
     let rank = 30;
-    if (n.stop.beds.length === 0 || n.beds.count === 0) {
+    if (n.own && n.beds.count === 0) {
+      // The rider's own stop (D70): they have a place in mind.
+    } else if (n.wildCamp) {
+      nudges.push(n.wildCamp);
+      rank = 48;
+    } else if (n.stop.beds.length === 0 || n.beds.count === 0) {
       nudges.push(`No known ${sleepNoun(inputs.sleep)} within 5 km of the route: look further, or change how you sleep.`);
       rank = 48;
     } else {
@@ -503,7 +521,7 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
       day: d.number,
       fromM: n.stop.at_m,
       toM: n.stop.at_m,
-      title: `Find accommodation at ${name} for ${dayText(n.date)}${twoNights ? ", 2 nights" : ""}`,
+      title: `${n.wildCamp ? "Find a place to camp" : "Find accommodation"} at ${name} for ${dayText(n.date)}${twoNights ? ", 2 nights" : ""}`,
       why: nudges.join(" "),
       rank,
       topic: "sleep",
@@ -518,6 +536,7 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
     { id: "start", m: core.axis.startM, d: rides[0]!, word: "to the start" },
     { id: "end", m: core.axis.endM, d: rides[rides.length - 1]!, word: "home from the end" },
   ];
+  const ownWay = fewTrains(data, core);
   for (const e of ends) {
     const near = data.stops.stops
       .filter((s) => s.station && s.station_at_m !== null && Math.abs(s.station_at_m - e.m) <= 10_000)
@@ -529,10 +548,12 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
       day: e.d.number,
       fromM: e.m,
       toM: e.m,
-      title: near ? `Train ${e.word}: ${near.station}` : `Getting ${e.word}: no bike-carrying station found nearby`,
+      title: near ? `Train ${e.word}: ${near.station}` : ownWay ? `Getting ${e.word}: your own arrangements` : `Getting ${e.word}: no bike-carrying station found nearby`,
       why: near
         ? `${near.station} carries bikes (our bike-carriage table) and is ${km(Math.abs(near.station_at_m! - e.m) / 1000)} km from the ${e.id}.`
-        : "Plan how you get there and back; we found no station within 10 km.",
+        : ownWay
+          ? "No trains that carry bikes along most of this route: you organise your own way there and back."
+          : "Plan how you get there and back; we found no station within 10 km.",
       rank: 25,
       topic: "prepare",
       evidence: { source: "M2 stations, bike-carriage table (D20)" },
@@ -667,11 +688,14 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
   const rides = core.days.filter((d) => d.kind === "ride");
   const water = full.serviceTypes.find((t) => t.id === "water");
   const food = full.serviceTypes.find((t) => t.id === "food");
+  const ownWay = fewTrains(data, core);
+  const gaps: { item: PlanItem; km: number }[] = [];
   for (const d of rides) {
     // Findings on the day.
     for (const f of full.findings) {
       const rule = FINDING_RULES[f.rule_id];
       if (!rule || !inDay(core, d, f.from_m, f.to_m)) continue;
+      if (ownWay && f.rule_id === "services.bail_out") continue;
       // Only the part of the finding on this day counts, and its km are the day's own.
       const lo = Math.max(Math.min(f.from_m, f.to_m), Math.min(d.fromM, d.toM));
       const hi = Math.min(Math.max(f.from_m, f.to_m), Math.max(d.fromM, d.toM));
@@ -719,7 +743,7 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
         }
       }
       if (worst * 1000 > cfg.gap_m) {
-        add({
+        gaps.push({ km: worst, item: {
           id: `${label}:gap:${d.number}`,
           kind: "headsup",
           day: d.number,
@@ -732,7 +756,7 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
           topic: "risk",
           evidence: { source: "M2 places" },
           handoffs: [],
-        });
+        } });
       }
     }
     // Few food places open on the date: said only when we know the hours of nearly all of them (D57), since a
@@ -796,6 +820,26 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
         handoffs: links,
       });
     }
+  }
+  // Water and food gaps on most days (sparse country, D69, D70): one piece of advice for the trip, not a warning a
+  // day. The day cards still show each day's longest stretch.
+  const gapDays = new Set(gaps.map((g) => g.item.day)).size;
+  if (gapDays >= 3 && gapDays * 2 >= rides.length) {
+    add({
+      id: "supply:sparse",
+      kind: "todo",
+      day: null,
+      fromM: null,
+      toM: null,
+      title: `Long stretches without water or food on ${gapDays} of ${plural(rides.length, "day")}, up to ${Math.round(Math.max(...gaps.map((g) => g.km)))} km`,
+      why: "Bring a water filter and enough food: filter from streams and lakes on the way where there are any, your judgement. Each day card shows the day's longest stretch.",
+      rank: 47,
+      topic: "prepare",
+      evidence: { source: "M2 places" },
+      handoffs: [],
+    });
+  } else {
+    for (const g of gaps) add(g.item);
   }
 }
 

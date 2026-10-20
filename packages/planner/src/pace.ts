@@ -38,6 +38,8 @@ export const BIKES: Record<Bike, BikeSpec> = {
   touring: { kg: 16, crrPaved: 0.007, crrGravel: 0.012, cda: 0.55, downPavedKmh: 40, downGravelKmh: 25, assistW: 0 },
   gravel: { kg: 11, crrPaved: 0.006, crrGravel: 0.01, cda: 0.5, downPavedKmh: 42, downGravelKmh: 28, assistW: 0 },
   ebike: { kg: 25, crrPaved: 0.008, crrGravel: 0.012, cda: 0.55, downPavedKmh: 40, downGravelKmh: 25, assistW: 250 },
+  // Wide tyres (D70): a little slower than a touring bike on tarmac, faster and steadier on gravel. Same luggage.
+  bikepacking: { kg: 13, crrPaved: 0.0085, crrGravel: 0.0095, cda: 0.55, downPavedKmh: 38, downGravelKmh: 30, assistW: 0 },
 };
 
 export interface Rider {

@@ -48,10 +48,12 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
     case "set": {
       const next = { ...action.inputs };
       if (next.days !== undefined) next.days = Math.max(1, Math.round(next.days));
+      // Choosing a number of days means planning the stops (D70): the file's nights set their own.
+      if (next.days !== undefined && next.days !== inputs.days && next.stops === inputs.stops) next.stops = "ours";
       return replan(next);
     }
     case "add-day":
-      return replan({ days: inputs.days + 1 });
+      return replan({ days: inputs.days + 1, stops: "ours" });
     case "start-earlier":
       return replan({ startMinutes: Math.max(EARLIEST_START, inputs.startMinutes - action.minutes) });
     case "rest":

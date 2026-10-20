@@ -15,6 +15,7 @@ import type {
   SectionsFile,
   ServicesFile,
   StopsFile,
+  UserPlacesFile,
 } from "@dpg/contracts";
 import type { FreeData, FullData, Geometry, MRange } from "@dpg/planner";
 import type { PathCollection } from "../api";
@@ -59,13 +60,15 @@ export async function loadRoute(network: string, ref: string): Promise<RouteFile
   if (!("stops" in manifest.files) || !("effort" in manifest.files) || !("dream" in manifest.files)) {
     throw new Error("This route's audit predates Plan (M4): re-run its audit to plan it.");
   }
-  const [dream, stops, effort, calendar, sections, path] = await Promise.all([
+  const [dream, stops, effort, calendar, sections, path, user] = await Promise.all([
     get<DreamFile>(`${base}/dream`),
     get<StopsFile>(`${base}/stops`),
     get<EffortFile>(`${base}/effort`),
     "calendar" in manifest.files ? get<CalendarFile>(`${base}/calendar`) : Promise.resolve(null),
     get<SectionsFile>(`${base}/sections`),
     get<PathCollection>(`${base}/path`),
+    // A rider's own file: its waypoints, for the nights it marks (D70).
+    "user_places" in manifest.files ? get<UserPlacesFile>(`${base}/user_places`) : Promise.resolve(null),
   ]);
   return {
     manifest,
@@ -78,6 +81,7 @@ export async function loadRoute(network: string, ref: string): Promise<RouteFile
       effort,
       calendar,
       daily: sections.daily,
+      userPlaces: user?.places ?? [],
     },
   };
 }

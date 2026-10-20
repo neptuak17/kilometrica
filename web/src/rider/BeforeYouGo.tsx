@@ -31,6 +31,7 @@ interface Props {
 export const GROUPS: { title: string; test: (i: PlanItem) => boolean }[] = [
   { title: "Your calls", test: (i) => i.kind === "call" },
   { title: "Places to stay", test: isNightLine },
+  { title: "Water and food", test: (i) => i.id.startsWith("supply:") },
   { title: "Ferries and transport", test: (i) => i.id.startsWith("ferry:") || i.id.startsWith("transport:") },
   { title: "Getting there and back", test: (i) => i.id.startsWith("travel:") },
   { title: "Borders", test: (i) => i.id.startsWith("border:") },

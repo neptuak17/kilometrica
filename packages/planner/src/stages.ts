@@ -150,9 +150,15 @@ export function evalDay(
   return { stats, ...q, hours, effort, endMinutes, sunset, afterSunset, cost };
 }
 
+/**
+ * A rider who camps can wild camp where no known campsite is in reach, if it's feasible and allowed (D69, D70). It
+ * costs less than a day beyond their level and more than one ending after dark, so known sites win, then daylight.
+ */
+export const WILD_CAMP_COST = 3.5;
+
 function nightCost(c: Candidate, sleep: Sleep, month: number): number {
   const b = bedsFor(c.stop, sleep, month);
-  if (!usable(b)) return Number.POSITIVE_INFINITY;
+  if (!usable(b)) return sleep === "camping" ? WILD_CAMP_COST : Number.POSITIVE_INFINITY;
   return (1 - quality(b, c.stop)) * 0.8;
 }
 
@@ -295,8 +301,9 @@ export function alternatives(ctx: DayContext, plan: StagePlan, k: number, limit 
   for (let j = 0; j < C.length; j++) {
     const c = C[j]!;
     if (j === plan.nights[k] || c.t <= prevT || c.t >= nextT) continue;
+    // Other stops are places to stay, never another spot to wild camp.
+    if (!usable(bedsFor(c.stop, ctx.sleep, monthOf(ctx.dayDate(k))))) continue;
     const n = nightCost(c, ctx.sleep, monthOf(ctx.dayDate(k)));
-    if (!Number.isFinite(n)) continue;
     const a = evalDay(ctx, k, prevT, c.t, c.stop, false);
     const b = evalDay(ctx, k + 1, c.t, nextT, isLastNight ? null : C[plan.nights[k + 1]!]!.stop, isLastNight);
     out.push({ c: j, cost: a.cost + b.cost + n, dayKm: a.km, nextKm: b.km });
