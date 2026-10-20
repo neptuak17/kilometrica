@@ -201,6 +201,12 @@ def fetch_all(
 
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         by_cell = dict(zip(cells, pool.map(one, cells.values()), strict=True))
+    # The CDS caps queued requests per dataset and turns the rest away: those are asked again, one at a time.
+    retry = [c for c, (d, _) in by_cell.items() if d is None]
+    if retry and workers > 1:
+        log(f"ERA5: asking again for {len(retry)} grid cell{'s' if len(retry) > 1 else ''}, one at a time …")
+        for c in retry:
+            by_cell[c] = one(cells[c])
     results = [by_cell[grid_cell(p.lon, p.lat)] for p in points]
     return [d for d, _ in results], list(dict.fromkeys(f for _, f in results if f is not None))
 

@@ -194,3 +194,22 @@ Places come from OSM and Overture release 2026-09-23.1. Overture contributes Met
 - Gaps become typed components (ferry, rail link, missing) once matched against OSM `route=ferry` and rail data. A small curated file of gap classifications will back this up where the data can't decide; it starts with the two sea crossings above.
 - Orientation must be inferred, not trusted.
 - These defects are useful feedback for ECF (D5).
+
+## EV15 – Rhine Cycle Route (fetched 2026-10-20)
+
+The adapter found EV15's GPX on its own route page. It has 66 tracks and 2,455 km, in the same `NNN: Start – End (Status)` form as EV8, with one new status word: **Certified**. EV8 has none.
+
+**Both banks of the Rhine, as their own sections.** The numbering runs down one bank, then jumps back upstream for the other: 12–16 run Konstanz → Basel on the Swiss side, then 17–21 run Konstanz → Basel again on the German side. Chained in number order, that made one line with false gaps of up to 173 km. The engine now keeps one main line and sets the other ways aside (D65):
+
+| | Sections | km |
+|---|---|---:|
+| Main line (left bank) | 1–7, 10–16, 22–26, 33–37, 44–48, 53–57, 62–66 | 1,463 |
+| Set aside | 8–9 Trübbach – St Margrethen; 17–21 Konstanz – Basel; 27–32 Basel – Wörth; 38–43 Karlsruhe – Rüdesheim; 49–52 Kamp-Bornhofen – Cologne; 58–61 Cologne – Spijk | 990 |
+
+The main line has 8.9 km of short gaps, all river crossings or a change of bank. The longest is 3.7 km at Basel, between the Swiss and French tracks. Run on EV8, the same rule keeps all 151 sections and sets aside only 152, Kykkos – Nicosia: a branch off the Cyprus route, set aside at EV8's next audit.
+
+**Audit (bundle 2026-10-20):**
+- **Map data:** OSM extracts for Austria, France, Germany, Liechtenstein, the Netherlands and Switzerland, about 13 GB, cut to a 998 MB corridor. Geofabrik had no MD5 file for Germany that day, so the download now checks the length instead. Valhalla built its tiles in about 3 minutes.
+- **First run:** about 18 minutes, 14 of them on places. 100,699 OSM and 144,290 Overture places; kept 5,644 places to stay, 20,423 food places and 1,067 stations. 1,834 Overture websites were checked, and 806 dropped as dead, moved or not the place's own.
+- **Climate:** the CDS turned away 4 of 15 ERA5 requests ("maximum number of queued requests"). Turned-away cells are now asked again one at a time, and a re-run (3 minutes, the rest cached) completed all 15.
+- **Plan data:** 665 candidate stops, 36 of them without a town name (5%; EV8 has 14%). Mannheim is one of them, with 21 places to stay: its places are across the river from the stop. 680 highlights.

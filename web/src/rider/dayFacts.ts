@@ -17,7 +17,7 @@ export interface DayFacts {
   waterFood: { p: Place; at: number }[];
   thinned: { p: Place; at: number }[];
   longest: number;
-  /** Stations within 10 km that carry bikes. */
+  /** Train stations within 10 km that carry bikes. */
   stations: { p: Place; at: number }[];
   /** Places to stay of the rider's kind at the night's stop, not known closed, open first then nearest. */
   beds: Place[];
@@ -47,12 +47,14 @@ export function dayFacts(plan: PlanResult, data: PlanData, d: DayPlan, free: boo
   let longest = 0;
   const pts = [0, ...waterFood.map((w) => w.at), d.km];
   for (let i = 1; i < pts.length; i++) longest = Math.max(longest, pts[i]! - pts[i - 1]!);
+  // Bail-outs are trains (D63): ferry landings aren't, and a station listed twice (both platforms) counts once.
   const stations = free
     ? []
     : dayPlaces(data, d, ["station"], false)
-        .filter((p) => ["yes", "reservation", "limited"].includes(String(p.detail.bikes)) && (p.access_m ?? 1e9) <= 10_000)
+        .filter((p) => p.kind !== "ferry_terminal" && ["yes", "reservation", "limited"].includes(String(p.detail.bikes)) && (p.access_m ?? 1e9) <= 10_000)
         .map((p) => ({ p, at: kmOf(p.access_at_m) }))
-        .sort((a, b) => a.at - b.at);
+        .sort((a, b) => a.at - b.at)
+        .filter((s, i, all) => !s.p.name || all.findIndex((x) => x.p.name === s.p.name) === i);
   const beds =
     !free && night
       ? (data.full?.places ?? [])
