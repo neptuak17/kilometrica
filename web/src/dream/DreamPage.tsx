@@ -43,6 +43,8 @@ import {
   keyOf,
   type Level,
   planHref,
+  daysText,
+  ridingDays,
   type Point,
   pointsOf,
   readAsk,
@@ -148,7 +150,7 @@ function Comparison({ pair, names, a, levels, titles, route }: {
     return text.charAt(0).toUpperCase() + text.slice(1);
   };
   const rows: { label: string; f: (r: StretchResult) => string; tone?: "watch" | "unknown" }[] = [
-    { label: "Days", f: (r) => `${r.days} · ${km(r.km)} km · ${r.kmPerDay} km a day` },
+    { label: "Days", f: (r) => `${daysText(r, a)} · ${km(r.km)} km · ${r.kmPerDay} km a day` },
     { label: "Climbing", f: climbText },
     { label: "Grade", f: (r) => gradeText(r, levels) },
     { label: "When", f: (r) => whenText(r, a) ?? "–" },
@@ -303,7 +305,7 @@ function DreamRoute({ route }: { route: string }) {
   const examples = useMemo(() => examplesFor(sections), [sections]);
   // Every stretch that fits is counted; the list shows the best few (the search's own cap is lifted).
   const results = useMemo(
-    () => (files && a.level !== null && a.days !== null ? findStretches(files.dream, { ...a, level: a.level, days: a.days, limit: 1000 }) : []),
+    () => (files && a.level !== null && a.days !== null ? findStretches(files.dream, { ...a, level: a.level, days: ridingDays(a.days, a.pace), limit: 1000 }) : []),
     [files, a],
   );
   const shown = useMemo(() => results.slice(0, count), [results, count]);
@@ -429,7 +431,7 @@ function DreamRoute({ route }: { route: string }) {
             {ownResult && (
               <StretchCard
                 name={ownName}
-                facts={factsText(ownResult, levels)}
+                facts={factsText(ownResult, levels, a)}
                 when={whenText(ownResult, a)}
                 why={whyLines(ownResult).slice(0, 4)}
                 watch={ownResult.watch.slice(0, 4)}
@@ -498,7 +500,7 @@ function DreamRoute({ route }: { route: string }) {
                 key={keyOf(r)}
                 rank={i + 1}
                 name={stretchName(daily, r)}
-                facts={factsText(r, levels)}
+                facts={factsText(r, levels, a)}
                 when={whenText(r, a)}
                 why={whyLines(r).slice(0, 4)}
                 watch={r.watch.slice(0, 4)}

@@ -24,9 +24,9 @@ import {
 import type { ReactNode } from "react";
 import { Dialog, type Key } from "react-aria-components";
 import { SELECTED } from "../rider/Questions";
-import { and, type Ask, type Level, PREFS, STAY, SURFACES, surfacesText, WAY } from "./ask";
+import { and, type Ask, type Level, PACE, PREFS, STAY, SURFACES, surfacesText, WAY } from "./ask";
 
-export type ChipId = "level" | "days" | "month" | "surfaces" | "scenery" | "stay" | "direction";
+export type ChipId = "level" | "days" | "pace" | "month" | "surfaces" | "scenery" | "stay" | "direction";
 
 const first = (keys: Set<Key>) => [...keys][0];
 
@@ -122,7 +122,7 @@ export function Chips({ a, levels, themes, open, onOpen, onChange }: {
         value={a.days === null ? "" : String(a.days)}
         onChange={(v) => onChange({ days: v === "" ? null : Math.max(1, Math.min(60, Math.round(Number(v)) || 1)) })}
       >
-        <Label>Riding days</Label>
+        <Label>Days in all</Label>
         <Input type="number" min={1} max={60} placeholder="7" />
       </TextField>
       <div className="flex flex-wrap gap-2">
@@ -196,10 +196,18 @@ export function Chips({ a, levels, themes, open, onOpen, onChange }: {
         "days",
         <Icons.Calendar />,
         a.days === null ? "How many days?" : `${a.days} ${a.days === 1 ? "day" : "days"}`,
-        "How many riding days",
-        "Rest days come later, in Plan.",
+        "How many days",
+        "All the days you have, rest days included: how you like to travel decides how many are rest days.",
         daysEditor,
         a.days === null,
+      )}
+      {chip(
+        "pace",
+        <Icons.Clock />,
+        PACE[a.pace],
+        "How do you like to travel?",
+        "Relaxed: a rest day about every 4 riding days. Steady: about every 6. Keep moving: none. You can move them in Plan.",
+        single("How do you like to travel", ["relaxed", "steady", "moving"] as const, a.pace, (v) => PACE[v], (v) => onChange({ pace: v })),
       )}
       {chip("month", <Icons.Sun />, a.month === null ? "Any month" : MONTHS_LONG[a.month]!, "When", "Choose a month, or let each stretch show its best one.", monthEditor)}
       {chip("surfaces", <Icons.Route />, surfacesText(a), "Surfaces", "What you'd rather ride on.", surfacesEditor)}
