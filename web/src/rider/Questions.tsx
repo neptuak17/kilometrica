@@ -66,7 +66,7 @@ const WAYS = [
 
 function Field({ label, hint, children, attention }: { label: string; hint?: ReactNode; children: ReactNode; attention?: boolean }) {
   return (
-    <div className="grid content-start gap-1.5">
+    <div className="grid min-w-0 content-start gap-1.5">
       <span className={cn("text-sm font-medium", attention && "text-primary")}>{label}</span>
       {children}
       {hint && <span className={cn("text-xs", attention ? "text-primary" : "text-muted-foreground")}>{hint}</span>}
@@ -87,7 +87,7 @@ function Choice<T extends string>({ label, value, options, onPick, disabled }: {
       }}
       isDisabled={disabled}
       variant="outline"
-      spacing={0}
+      spacing={1.5}
       className="flex-wrap"
     >
       {options.map(([v, text]) => (
@@ -124,16 +124,19 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
     onChange({ ...inputs, fromM: Math.min(sa.from_m, sb.from_m), toM: Math.max(sa.to_m, sb.to_m) });
   };
   const level = levels.find((l) => l.level === inputs.level);
+  // A rider's file names its sections "Stage 1: …" already: the number isn't said twice.
+  const sectionName = (s: DailySection) => (/^stage\s*\d+\b/i.test(s.title) ? s.title : `${s.number}: ${s.title}`);
   const section = (label: string, value: number | undefined, pick: (n: number) => void) => (
     <Field label={label}>
-      <Select aria-label={label} selectedKey={value === undefined ? null : String(value)} onSelectionChange={(k) => k !== null && pick(Number(k))} isDisabled={readOnly} className="w-full">
-        <SelectTrigger className="w-full">
-          <SelectValue />
+      <Select aria-label={label} selectedKey={value === undefined ? null : String(value)} onSelectionChange={(k) => k !== null && pick(Number(k))} isDisabled={readOnly} className="w-full min-w-0">
+        <SelectTrigger className="w-full min-w-0">
+          {/* Long names end in "…" inside the field; the list shows them whole. */}
+          <SelectValue className="min-w-0">{({ selectedText }) => <span className="truncate">{selectedText}</span>}</SelectValue>
         </SelectTrigger>
         <SelectContent>
           {sections.map((s) => (
-            <SelectItem key={s.number} id={String(s.number)} textValue={`${s.number}: ${s.title}`}>
-              {s.number}: {s.title}
+            <SelectItem key={s.number} id={String(s.number)} textValue={sectionName(s)}>
+              {sectionName(s)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -221,7 +224,7 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
           <Icons.ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" />
         </summary>
         <div className="mt-4 grid gap-5">
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-5">
             {section("From section", first?.number, (n) => setRange(n, last?.number ?? n))}
             {section("To section", last?.number, (n) => setRange(first?.number ?? n, n))}
           </div>
