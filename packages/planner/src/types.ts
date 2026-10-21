@@ -35,8 +35,13 @@ export interface PlanInputs {
   /** Leaving time each morning, minutes after local midnight. */
   startMinutes: number;
   stopStyle: StopStyle;
-  /** A rest day follows these riding days (1-based): the rider stays a second night at that stop. */
+  /** The rider's own rest days (D74): one follows each of these riding days (1-based), a second night at that stop. */
   restAfter: number[];
+  /**
+   * How many rest days in all (D74): the rider's own and the planner's, placed where they help. The trip lasts
+   * `days` riding days plus these; unset means the rider's own only.
+   */
+  restDays?: number;
   /** From Dream: avoid gravel, avoid busy roads. */
   avoidGravel: boolean;
   avoidBusy: boolean;
@@ -108,6 +113,8 @@ export interface PlanChoices {
   /** Chosen bed per night: night index -> place id. */
   beds: Record<number, string>;
   booked: number[];
+  /** The date each booked night was booked for (D74): a booking whose night moves goes back on the to-do. */
+  bookedOn?: Record<number, string>;
   done: string[];
   dismissed: string[];
 }
@@ -157,6 +164,8 @@ export interface DayPlan {
   steepest: { grade: number; atKm: number } | null;
   /** Dream sections the day touches. */
   sections: number[];
+  /** A rest day's reason, and whether the rider placed it (D74). */
+  rest?: { why: string; own: boolean };
 }
 
 export type ItemKind = "call" | "todo" | "headsup" | "highlight";

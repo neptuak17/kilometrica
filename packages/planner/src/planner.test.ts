@@ -10,6 +10,7 @@ import { bearing, type Geometry } from "./geometry";
 import { bookingSearches, dayItems, isNightLine, mapsSearch, nightOptions, nightStay, railLinks, streetPhotos, toDo, WILD_CAMP, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan } from "./plan";
+import { suggestedRestDays } from "./rest";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
 import { addDays, clock, sunTimes, weekday } from "./sun";
@@ -723,5 +724,44 @@ describe("where to sleep: a preference, with every night's options (D72)", () =>
     const line = (sleep: "camping" | "rooms") => makePlan(withBeds([]), inputs({ sleep }), wild).items.find((i) => isNightLine(i) && i.id.startsWith("bed:0:"));
     expect(line("camping")?.settled).toBe("Wild camp");
     expect(line("rooms")?.settled).toBeUndefined();
+  });
+});
+
+describe("rest days: placed where they help, moved as life happens (D74)", () => {
+  it("places the rest days asked for, spaced, never after day 1 or the last day, each with its reason", () => {
+    const p = makePlan(data({ lengthKm: 900 }), inputs({ toM: 900_000, days: 12, restDays: 2 }));
+    expect(p.restAfter).toHaveLength(2);
+    expect(p.restAfter.every((r) => r >= 2 && r <= 11)).toBe(true);
+    expect(p.restAfter[1]! - p.restAfter[0]!).toBeGreaterThanOrEqual(3);
+    const rests = p.days.filter((d) => d.kind === "rest");
+    expect(rests).toHaveLength(2);
+    expect(p.days).toHaveLength(14);
+    expect(rests.every((d) => d.rest?.why.startsWith("Rest at Town ") && d.rest.own === false)).toBe(true);
+    expect(p.brief.lines[0]!.answer).toContain("2 rest days, after riding days");
+    expect(suggestedRestDays(12)).toBe(2);
+    expect(suggestedRestDays(6)).toBe(0);
+  });
+
+  it("keeps the end date: a rest day takes a riding day away, and a move changes only dates", () => {
+    const state: PlanState = { inputs: inputs({ days: 8, restDays: 1 }), choices: NO_CHOICES };
+    const added = applyAction(state, { type: "rest", afterRide: 2, on: true, current: [5], night: 1, stop: "s120" });
+    expect(added.inputs).toMatchObject({ days: 7, restDays: 2, restAfter: [2, 5] });
+    expect(added.choices.locked[1]).toBe("s120");
+    const removed = applyAction(added, { type: "rest", afterRide: 5, on: false, current: [2, 5] });
+    expect(removed.inputs).toMatchObject({ days: 8, restDays: 1, restAfter: [2] });
+    const moved = applyAction(state, { type: "rest-move", from: 5, to: 3, current: [5], nights: ["a", "b"] });
+    expect(moved.inputs.restAfter).toEqual([3]);
+    expect(moved.choices.nights).toEqual(["a", "b"]);
+  });
+
+  it("puts a booking back on the to-do when its night moves to another date", () => {
+    const p0 = makePlan(data(), inputs({ restAfter: [3] }));
+    const n1 = p0.nights[1]!;
+    const choices = { ...NO_CHOICES, booked: [1], locked: { 1: n1.stop.id }, bookedOn: { 1: n1.date } };
+    const line = (p: ReturnType<typeof makePlan>) => p.items.find((i) => isNightLine(i) && i.id.startsWith("bed:1:"))!;
+    expect(line(makePlan(data(), inputs({ restAfter: [3] }), choices)).settled).toBe("Booked");
+    const p1 = makePlan(data(), inputs({ restAfter: [1] }), choices);
+    expect(line(p1).settled).toBeUndefined();
+    expect(line(p1).why).toMatch(/^Your booking was for .+; this night is now .+: change it with them\.$/);
   });
 });

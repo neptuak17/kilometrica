@@ -9,6 +9,7 @@ import { TripAxis } from "./axis";
 import type { Geometry } from "./geometry";
 import { makeBrief } from "./brief";
 import { planItems } from "./items";
+import { placeRests, restWhy } from "./rest";
 import { type Rider, riderFor, usualDay } from "./pace";
 import {
   alternatives,
@@ -59,6 +60,16 @@ export interface PlanOptions {
   geometry?: Geometry;
 }
 
+/** A better town for a rest day that would make a day harder than the rider's usual: offered as a call (D74). */
+export interface RestOffer {
+  afterRide: number;
+  /** The night (0-based) that would move. */
+  night: number;
+  stop: Stop;
+  /** Along the way from the planned stop: + on, − back. */
+  km: number;
+}
+
 export interface PlanResult {
   route: RouteRef;
   languages: string[];
@@ -75,6 +86,9 @@ export interface PlanResult {
   items: PlanItem[];
   brief: Brief;
   offers: DaysOffer[];
+  /** Rest days in effect (D74): the rider's own and the planner's, after these riding days (1-based). */
+  restAfter: number[];
+  restOffers: RestOffer[];
   endDate: string;
 }
 
@@ -163,6 +177,7 @@ export function makePlan(
 
   // The nights the rider's file marks (D70): one of our stops when it's close, else the waypoint itself.
   const ownName = new Map<string, string | null>();
+  const ownRest = new Set<string>();
   for (const w of inputs.stops === "ours" ? [] : ownNights(data, inputs.fromM, inputs.toM)) {
     let best: Candidate | null = null;
     for (const c of candidates) {
@@ -178,6 +193,8 @@ export function makePlan(
       best.stop = { ...best.stop, name: w.name, near: null };
     }
     if (!ownName.has(best.stop.id)) ownName.set(best.stop.id, w.name);
+    // A night the file marks as a rest ("Nelson, rest day") gets a rest day after it (D74).
+    if (/\brest\b/i.test(`${w.name ?? ""} ${w.note ?? ""}`)) ownRest.add(best.stop.id);
   }
   // Spots to wild camp for a rider who camps, where stops are far apart (D69, D70): used only when they spare a day
   // beyond the rider's level (WILD_CAMP_COST).
@@ -199,7 +216,9 @@ export function makePlan(
   const own = candidates.flatMap((c, i) => (ownName.has(c.stop.id) ? [i] : []));
 
   const rides = own.length ? own.length + 1 : Math.max(1, Math.round(inputs.days));
-  const rest = new Set(inputs.restAfter.filter((r) => r >= 1 && r < rides));
+  const fileRests = own.flatMap((i, k) => (ownRest.has(candidates[i]!.stop.id) ? [k + 1] : []));
+  const rest = new Set([...inputs.restAfter, ...fileRests].filter((r) => r >= 1 && r < rides));
+  const ownRests = new Set(rest);
   const dayDate = (k: number) => addDays(inputs.startDate, k + [...rest].filter((r) => r <= k).length);
   const endStop = nearestStop(data.stops.stops, axis.endM);
   const ctx: DayContext = {
@@ -222,11 +241,12 @@ export function makePlan(
 
   let stage: StagePlan | null = null;
   const fixed = choices.nights?.map((id) => index.get(id));
+  const kept = !!fixed && fixed.length === rides - 1 && fixed.every((i) => i !== undefined);
   if (own.length) {
     // The rider's nights, unless they moved one on its day card.
     const moved = own.map((i, k) => locked.get(k) ?? i);
     stage = fixedStages(ctx, moved.every((i, k) => k === 0 || i > moved[k - 1]!) ? moved : own);
-  } else if (fixed && fixed.length === rides - 1 && fixed.every((i) => i !== undefined)) {
+  } else if (kept) {
     stage = fixedStages(ctx, fixed as number[]);
   }
   stage ??= planStages(ctx, rides, locked);
@@ -244,6 +264,36 @@ export function makePlan(
       Array.from({ length: rides - 1 }, (_, k) => ids.indexOf(`none-${k + 1}`)),
     );
   }
+
+  // Rest days (D74): the rider's own, then the planner's where they help most. A clearly better town nearby takes the
+  // night when that day stays within the rider's level, else it's offered. The days after a rest day move a day on.
+  const restOffers: RestOffer[] = [];
+  const moved = new Map<number, { from: Stop; km: number }>();
+  const wanted = Math.min(Math.max(0, rides - 2), Math.max(rest.size, inputs.restDays ?? 0));
+  if (wanted > rest.size) {
+    const nights = [...stage.nights];
+    for (const p of placeRests(data, ctx, stage, usual.hours, rest, wanted - rest.size, new Set(own))) {
+      const k = p.afterRide - 1;
+      if (p.move !== undefined && !own.length && !kept && !locked.has(k)) {
+        moved.set(p.afterRide, { from: candidates[nights[k]!]!.stop, km: (candidates[p.move]!.t - candidates[nights[k]!]!.t) / 1000 });
+        nights[k] = p.move;
+      } else if (p.offer) {
+        restOffers.push({ afterRide: p.afterRide, night: k, stop: candidates[p.offer.c]!.stop, km: p.offer.km });
+      }
+      rest.add(p.afterRide);
+    }
+    ctx.sunsets = undefined;
+    stage = fixedStages(ctx, nights);
+  }
+  const restAfter = [...rest].sort((a, b) => a - b);
+  const restInfo = new Map(
+    restAfter.map((r, i) => {
+      const m = moved.get(r);
+      const why = restWhy(data, ctx, stage, usual.hours, r, r - (restAfter[i - 1] ?? 0));
+      const note = m ? ` The day ends here, ${kmText(Math.abs(m.km))} km ${m.km > 0 ? "past" : "before"} ${stopName(m.from)}.` : "";
+      return [r, { why: why + note, own: ownRests.has(r) }];
+    }),
+  );
 
   // A day more or fewer, when it makes the plan clearly better (D48: Dream's number by default).
   const offers: DaysOffer[] = [];
@@ -384,6 +434,7 @@ export function makePlan(
           gaps: [],
           tailwindMs: null,
           steepest: null,
+          rest: restInfo.get(k + 1),
         });
       }
     }
@@ -403,6 +454,8 @@ export function makePlan(
     days,
     nights: nightsOut,
     offers,
+    restAfter,
+    restOffers,
     endDate: days[days.length - 1]!.date,
   };
   const items = planItems(data, partial, options.geometry);

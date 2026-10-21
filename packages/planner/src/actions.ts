@@ -15,13 +15,21 @@ export type PlanAction =
   | { type: "set"; inputs: Partial<PlanInputs> }
   | { type: "add-day" }
   | { type: "start-earlier"; minutes: number }
-  /** A rest day after this riding day (1-based), or none. */
-  | { type: "rest"; afterRide: number; on: boolean }
+  /**
+   * A rest day after this riding day (1-based), or none (D74). The end date holds, so a rest day takes a riding day
+   * away and removing one gives it back. `current` is the plan's rest days in effect, which then stay where they are;
+   * `night` and `stop` keep that night's stop, so the rest day stays in that town.
+   */
+  | { type: "rest"; afterRide: number; on: boolean; current?: number[]; night?: number; stop?: string }
+  /** Move a rest day to after another riding day; the riding days stay as they are (`nights`, the plan's stops). */
+  | { type: "rest-move"; from: number; to: number; current: number[]; nights: string[] }
+  /** Rest at this stop: the night (0-based) is kept there and a rest day follows; `add` makes it one more (D74). */
+  | { type: "rest-in"; night: number; stop: string; add: boolean; current?: number[] }
   /** Keep this night (0-based) at this stop, whatever else changes. */
   | { type: "lock-night"; night: number; stop: string }
   | { type: "release-night"; night: number }
   /** Booked keeps the night where it is. */
-  | { type: "booked"; night: number; stop: string; on: boolean }
+  | { type: "booked"; night: number; stop: string; on: boolean; date?: string }
   | { type: "bed"; night: number; place: string | null }
   /** Sleep at this place, one of a night's other options (D72): the night moves to its stop and is kept there. */
   | { type: "stay"; night: number; stop: string; place: string }
@@ -58,8 +66,30 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
       return replan({ days: inputs.days + 1, stops: "ours" });
     case "start-earlier":
       return replan({ startMinutes: Math.max(EARLIEST_START, inputs.startMinutes - action.minutes) });
-    case "rest":
-      return replan({ restAfter: action.on ? withOne(inputs.restAfter, action.afterRide).sort((a, b) => a - b) : without(inputs.restAfter, action.afterRide) });
+    case "rest": {
+      const current = action.current ?? inputs.restAfter;
+      const count = Math.max(inputs.restDays ?? 0, current.length);
+      if (!action.on) return replan({ restAfter: without(current, action.afterRide), restDays: Math.max(0, count - 1), days: inputs.days + 1 });
+      const locked = action.night !== undefined && action.stop ? { ...choices.locked, [action.night]: action.stop } : choices.locked;
+      return replan(
+        { restAfter: withOne(current, action.afterRide).sort((a, b) => a - b), restDays: count + 1, days: Math.max(1, inputs.days - 1) },
+        { ...choices, locked },
+      );
+    }
+    case "rest-move": {
+      const restAfter = withOne(without(action.current, action.from), action.to).sort((a, b) => a - b);
+      return { inputs: { ...inputs, restAfter, restDays: Math.max(inputs.restDays ?? 0, restAfter.length) }, choices: { ...choices, nights: action.nights } };
+    }
+    case "rest-in": {
+      const current = action.current ?? inputs.restAfter;
+      const count = Math.max(inputs.restDays ?? 0, current.length);
+      const restAfter = withOne(current, action.night + 1).sort((a, b) => a - b);
+      const locked = { ...choices.locked, [action.night]: action.stop };
+      return replan(
+        action.add ? { restAfter, restDays: count + 1, days: Math.max(1, inputs.days - 1) } : { restAfter, restDays: Math.max(count, restAfter.length) },
+        { ...choices, locked },
+      );
+    }
     case "lock-night":
       return replan({}, { ...choices, locked: { ...choices.locked, [action.night]: action.stop } });
     case "release-night": {
@@ -70,7 +100,11 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
     case "booked": {
       const booked = action.on ? withOne(choices.booked, action.night) : without(choices.booked, action.night);
       const locked = action.on ? { ...choices.locked, [action.night]: action.stop } : choices.locked;
-      return replan({}, { ...choices, booked, locked });
+      // The date it was booked for (D74): if the night moves, the booking goes back on the to-do.
+      const bookedOn = { ...choices.bookedOn };
+      if (action.on && action.date) bookedOn[action.night] = action.date;
+      else delete bookedOn[action.night];
+      return replan({}, { ...choices, booked, locked, bookedOn });
     }
     case "stay":
       return replan({}, { ...choices, locked: { ...choices.locked, [action.night]: action.stop }, beds: { ...choices.beds, [action.night]: action.place } });
@@ -104,6 +138,12 @@ export function optionOutcome(item: PlanItem, optionId: string): OptionOutcome |
       return Number.isFinite(n) ? { action: { type: "start-earlier", minutes: n } } : null;
     case "rest":
       return Number.isFinite(n) ? { action: { type: "rest", afterRide: n, on: true } } : null;
+    case "rest-in": {
+      // rest-in:<night>:<stop id>
+      const parts = optionId.split(":");
+      const stop = parts.slice(2).join(":");
+      return Number.isFinite(n) && stop ? { action: { type: "rest-in", night: n, stop, add: false } } : null;
+    }
     case "move":
       return Number.isFinite(n) ? { showDay: n } : null;
     default:

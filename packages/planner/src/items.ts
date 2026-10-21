@@ -409,11 +409,35 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
         evidence: { source: "pace model" },
         handoffs: [],
         options: [
-          { id: `rest:${run[1]!.ride}`, label: `Rest after day ${run[1]!.number}`, effect: "one more day on the calendar" },
+          { id: `rest:${run[1]!.ride}`, label: `Rest after day ${run[1]!.number}`, effect: "a rest day; the end date holds, so the other days get a little longer" },
           { id: "keep", label: "Keep it", effect: "no rest day" },
         ],
       });
     }
+  }
+  // A better town for a rest day that would make a day harder than the rider's usual (D74).
+  for (const o of core.restOffers) {
+    const d = days.find((x) => x.ride === o.afterRide);
+    const night = nights.find((n) => n.afterRide === o.afterRide);
+    if (!d || !night) continue;
+    const there = stopName(o.stop);
+    add({
+      id: `rest-town:${o.afterRide}:${o.stop.id}`,
+      kind: "call",
+      day: d.number + 1,
+      fromM: o.stop.at_m,
+      toM: o.stop.at_m,
+      title: `Rest in ${there} instead of ${stopName(night.stop)}?`,
+      why: `${there} is ${km(Math.abs(o.km))} km ${o.km > 0 ? "on" : "back"} and has more to see and do; day ${d.number} would be ${o.km > 0 ? "longer, harder than your usual" : "shorter"}.`,
+      rank: 22,
+      topic: "like",
+      evidence: { source: "rest days (D74): highlights, stops, Dream themes" },
+      handoffs: [],
+      options: [
+        { id: `rest-in:${o.night}:${o.stop.id}`, label: `Rest in ${there}`, effect: `day ${d.number} ends there` },
+        { id: "keep", label: "Keep it", effect: `rest in ${stopName(night.stop)}` },
+      ],
+    });
   }
   for (const o of core.offers) {
     add({
@@ -546,10 +570,17 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
   for (const n of nights) {
     const d = days.find((x) => x.ride === n.afterRide)!;
     const name = stopName(n.stop);
-    const twoNights = inputs.restAfter.includes(n.afterRide);
+    const twoNights = core.restAfter.includes(n.afterRide);
+    // A booking whose night has moved to another date (a rest day moved, D74) is to sort again.
+    const bookedFor = core.choices.bookedOn?.[n.index];
+    const booked = core.choices.booked.includes(n.index);
+    const moved = booked && !!bookedFor && bookedFor !== n.date;
     const nudges: string[] = [];
     let rank = 30;
-    if (n.own && n.beds.count === 0) {
+    if (moved) {
+      nudges.push(`Your booking was for ${dayText(bookedFor!)}; this night is now ${dayText(n.date)}: change it with them.`);
+      rank = 49;
+    } else if (n.own && n.beds.count === 0) {
       // The rider's own stop (D70): they have a place in mind.
     } else if (n.wildCamp) {
       nudges.push(n.wildCamp);
@@ -590,8 +621,10 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
       topic: "sleep",
       evidence: { source: "stops.json (D18); OpenHolidays; Eurostat" },
       handoffs: [],
-      settled: core.choices.booked.includes(n.index)
-        ? "Booked"
+      settled: moved
+        ? undefined
+        : booked
+          ? "Booked"
         : chosen
           ? `Chosen: ${chosen.name ?? "a place without a name"}`
           : core.choices.beds[n.index] === WILD_CAMP && inputs.sleep !== "rooms"

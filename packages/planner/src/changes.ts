@@ -41,8 +41,10 @@ export function planChanges(before: PlanResult, after: PlanResult): PlanChanges 
     const n = Math.abs(more);
     lines.push(`${n === 1 ? "One" : n} riding ${n === 1 ? "day" : "days"} ${more > 0 ? "more" : "fewer"} (${ridesB.length})`);
   }
-  for (const r of b.restAfter.filter((x) => !a.restAfter.includes(x))) lines.push(`A rest day after riding day ${r}`);
-  for (const r of a.restAfter.filter((x) => !b.restAfter.includes(x))) lines.push(`No rest day after riding day ${r}`);
+  // Rest days in effect, the rider's and the planner's (D74).
+  const ra = before.restAfter;
+  const rb = after.restAfter;
+  if (ra.join() !== rb.join()) lines.push(rb.length ? `Rest days now after riding ${rb.length === 1 ? "day" : "days"} ${numberList(rb)}` : "No rest days");
   if (a.fromM !== b.fromM || a.toM !== b.toM || a.direction !== b.direction) lines.push(`Now ${after.brief.title} (was ${before.brief.title})`);
   if (a.startDate !== b.startDate) lines.push(`Starts ${day(b.startDate)} (was ${day(a.startDate)})`);
   if (a.startMinutes !== b.startMinutes) lines.push(`Leave at ${clock(b.startMinutes)} (was ${clock(a.startMinutes)})`);

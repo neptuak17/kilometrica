@@ -6,7 +6,7 @@
 import type { PlanCore } from "./plan";
 import { monthOf } from "./sun";
 import { foodOnDay, isNightLine, toDo } from "./items";
-import { dayList, hours, KNOWN_ENOUGH, km, MONTHS_LONG, oneIn, plural, range, shareOf, sleepNoun } from "./text";
+import { dayList, hours, KNOWN_ENOUGH, km, MONTHS_LONG, numberList, oneIn, plural, range, shareOf, sleepNoun } from "./text";
 import type { Brief, BriefLine, DayPlan, PlanData, PlanItem } from "./types";
 
 const THEME_PHRASE: Record<string, string> = {
@@ -113,7 +113,8 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
       (beyond.length
         ? `Mostly, at ${level.name}: ${beyond.length === 1 ? `day ${beyond[0]!.number} is` : `${beyond.length} days are`} beyond your level.`
         : `Yes, at ${level.name}${harder.length ? `, with ${plural(harder.length, "harder day")}` : ""}.`) +
-      ` Day ${hardest.number} is the hardest: ${km(hardest.km)} km, about ${hours(hardest.hoursSlow)} riding.`,
+      ` Day ${hardest.number} is the hardest: ${km(hardest.km)} km, about ${hours(hardest.hoursSlow)} riding.` +
+      (core.restAfter.length ? ` ${plural(core.restAfter.length, "rest day")}, after riding ${core.restAfter.length === 1 ? "day" : "days"} ${numberList(core.restAfter)}.` : ""),
     more: ableCalls.length,
   });
 
