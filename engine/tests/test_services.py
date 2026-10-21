@@ -385,6 +385,16 @@ def test_shared_front_pages_are_not_a_places_own_site():
     assert shared_homepages(sites) == {"http://www.gcu.asso.fr", "https://www.gcu.asso.fr/", "http://gcu.asso.fr"}
 
 
+def test_a_ferry_landing_is_never_a_bail_out_station():
+    # D63, D66: bail-outs are trains, so a stop never names a ferry as its station ("Train to the start: Hullo").
+    places = [
+        place("station", 2000, kind="ferry_terminal", bikes="yes"),
+        place("station", 4000, kind="rail", bikes="yes"),
+    ]
+    cov = coverage.Coverage(places, load_services(), 6000)
+    assert [p.kind for p in cov.bail_out_stations()] == ["rail"]
+
+
 def test_trams_and_museum_railways_are_never_a_bail_out():
     from dpg_audit.services.policy import CARRIED, BikePolicy
 

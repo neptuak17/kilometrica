@@ -110,12 +110,17 @@ class Coverage:
         return sections, route
 
     def bail_out_stations(self) -> list[Place]:
-        """Stations that carry bikes within bail-out reach (a longer reach than for counting)."""
+        """Stations that carry bikes within bail-out reach (a longer reach than for counting). Bail-outs are trains
+        (D63, D66): a ferry landing isn't one, nor the station a stop names ("Train to the start: Hullo")."""
         st = self.profile.types.get("station")
         if st is None or "bail_out_m" not in st.extra:
             return []
         reach_m, reach_min = float(st.extra["bail_out_m"]), float(st.extra["bail_out_min"])
-        return [p for p in self.by_service.get("station", []) if carried(p) and within(p, reach_m, reach_min)]
+        return [
+            p
+            for p in self.by_service.get("station", [])
+            if p.kind != "ferry_terminal" and carried(p) and within(p, reach_m, reach_min)
+        ]
 
     def gap_list(self) -> list[ServiceGap]:
         """Stretches at least half the finding length without a service, per month: for the strip diagram."""
