@@ -111,6 +111,19 @@ def test_official_record_merges_by_shared_name_within_its_reach():
     assert confidence(merged["n1"]) == "high" and confidence(merged["bc-recsites:R2"]) == "high"
 
 
+def test_campgrounds_merge_whatever_generic_words_they_carry():
+    # "Otter Lake Campground" and "Otter Lake Provincial Park" are one place (D72), and so are an official record
+    # and the map's campground of the same name; another lake's campground stays apart.
+    camp = "campsite"
+    a = RawPlace("osm", "n1", "accommodation", camp, "Otter Lake Campground", 3.0, 43.0, {})
+    b = RawPlace("osm", "n2", "accommodation", camp, "Otter Lake Provincial Park", 3.0004, 43.0, {})
+    c = RawPlace("osm", "n3", "accommodation", camp, "Link Lake Campground", 3.001, 43.0, {})
+    off = RawPlace("official", "bc-recsites:R3", "accommodation", camp, "Granite Creek Recreation Site", 3.2, 43.0, {})
+    osm = RawPlace("osm", "n5", "accommodation", camp, "Granite Creek Campground", 3.207, 43.0, {})
+    groups = sorted(sorted(r.id for r in m.members) for m in conflate([a, b, c, off, osm]))
+    assert groups == [["bc-recsites:R3", "n5"], ["n1", "n2"], ["n3"]]
+
+
 def test_months_from_dated_ranges():
     from datetime import date
 

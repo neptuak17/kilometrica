@@ -1,10 +1,11 @@
 /**
  * What a day card and its trip-book page say about one day (11.6, D55), worked out once for both: water and food by
- * km and the longest gap, the bail-out stations, the places to stay at the night's stop (open first, then by detour,
- * never by quality: we have no prices or reviews) and the plan B. Where places didn't load, nothing is "none" (D37).
+ * km and the longest gap, the bail-out stations, and where to sleep: the places at the night's stop and the other
+ * options nearby (D72), never ranked by quality (we have no prices or reviews). Where places didn't load, nothing is
+ * "none" (D37).
  */
 import type { Place } from "@dpg/contracts";
-import { type DayPlan, km, MONTHS_LONG, monthOf, type NightPlan, type PlanData, type PlanResult, placesMissing, stopName } from "@dpg/planner";
+import { type DayPlan, km, MONTHS_LONG, monthOf, type NightOptions, nightOptions, type NightPlan, type PlanData, type PlanResult, placeKind, placesMissing } from "@dpg/planner";
 
 export interface DayFacts {
   /** The night after this day; none on a rest day or the last day. */
@@ -19,14 +20,16 @@ export interface DayFacts {
   longest: number;
   /** Train stations within 10 km that carry bikes. */
   stations: { p: Place; at: number }[];
-  /** Places to stay of the rider's kind at the night's stop, not known closed, open first then nearest. */
+  /** Places to stay at the night's stop, not known closed: the rider's kind first, then open, then nearest (D72). */
   beds: Place[];
+  /** The other options nearby and wild camping (D72). */
+  options: NightOptions | null;
   /** The night's stop is in a part whose places didn't load. */
   bedsUnloaded: boolean;
   /** The night's month, spelled out. */
   month: string;
-  /** "Frontignan, 14 km back · Sète, 9 km on", or empty. */
-  planB: string;
+  /** The other options in words, for the trip book: "Otter Lake Provincial Park (BC Parks campground), 5.5 km back · …". */
+  others: string;
 }
 
 export function dayPlaces(data: PlanData, d: DayPlan, services: string[], counting = true): Place[] {
@@ -55,31 +58,15 @@ export function dayFacts(plan: PlanResult, data: PlanData, d: DayPlan, free: boo
         .map((p) => ({ p, at: kmOf(p.access_at_m) }))
         .sort((a, b) => a.at - b.at)
         .filter((s, i, all) => !s.p.name || all.findIndex((x) => x.p.name === s.p.name) === i);
-  const beds =
-    !free && night
-      ? (data.full?.places ?? [])
-          .filter(
-            (p) =>
-              p.service === "accommodation" &&
-              p.counts &&
-              Math.abs(p.access_at_m - night.stop.at_m) <= 5000 &&
-              (plan.inputs.sleep === "mix" || (plan.inputs.sleep === "camping") === (p.kind === "campsite")) &&
-              p.months[monthOf(night.date)] !== "c",
-          )
-          .sort((a, b) => {
-            const known = (p: Place) => (["o", "p", "a"].includes(p.months[monthOf(night.date)] ?? "?") ? 0 : 1);
-            return known(a) - known(b) || (a.access_m ?? 0) - (b.access_m ?? 0);
-          })
-      : [];
+  const options = !free && night ? nightOptions(data, plan, night) : null;
+  const beds = options?.here ?? [];
   const bedsUnloaded = !!night && !!data.full && placesMissing(data.full, night.stop.at_m - 5000, night.stop.at_m + 5000).length > 0;
   const month = night ? MONTHS_LONG[monthOf(night.date)]! : "";
-  const planB = night
+  const others = options
     ? [
-        night.planB.before && `${stopName(night.planB.before.stop)}, ${km(Math.abs(night.planB.before.km))} km back`,
-        night.planB.after && `${stopName(night.planB.after.stop)}, ${km(night.planB.after.km)} km on`,
-      ]
-        .filter(Boolean)
-        .join(" · ")
+        ...options.others.map((o) => `${o.place.name ?? "Unnamed"} (${placeKind(o.place)}), ${km(Math.abs(o.km))} km ${o.km >= 0 ? "on" : "back"}`),
+        ...(options.wildCamp ? ["a wild camp, if it's allowed and feasible"] : []),
+      ].join(" · ")
     : "";
-  return { night, kmOf, unloaded, waterFood, thinned, longest, stations, beds, bedsUnloaded, month, planB };
+  return { night, kmOf, unloaded, waterFood, thinned, longest, stations, beds, options, bedsUnloaded, month, others };
 }

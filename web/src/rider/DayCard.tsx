@@ -23,6 +23,7 @@ import {
   placeKind,
   placeLinks,
   railLinks,
+  WILD_CAMP,
   type DayPlan,
   type Handoff,
   type PlanData,
@@ -142,6 +143,8 @@ interface Props {
   onLockNight: (night: number, stopId: string) => void;
   onToggleBooked: (night: number) => void;
   onChooseBed: (night: number, placeId: string | null) => void;
+  /** Sleep at one of the night's other options: the night moves to its stop (D72). */
+  onStay: (night: number, stopId: string, placeId: string) => void;
   onToggleRest: (ride: number) => void;
   onDone: (id: string) => void;
   onGpx: (day: DayPlan) => void;
@@ -149,13 +152,13 @@ interface Props {
   onNext?: () => void;
 }
 
-export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNight, onToggleBooked, onChooseBed, onToggleRest, onDone, onGpx, onClose, onNext }: Props) {
+export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNight, onToggleBooked, onChooseBed, onStay, onToggleRest, onDone, onGpx, onClose, onNext }: Props) {
   const ids = useId();
   const mine = dayItems(plan.items, d.number);
   // The night's own line is settled in Sleep below, so the day's to-dos leave it out (D64).
   const todos = mine.todos.filter((i) => !isNightLine(i));
   const all = (kind: PlanItem["kind"]) => plan.items.filter((i) => i.day === d.number && i.kind === kind);
-  const { night, unloaded, waterFood, thinned, longest, stations, beds, bedsUnloaded, month, planB } = dayFacts(plan, data, d, free);
+  const { night, unloaded, waterFood, thinned, longest, stations, beds, options, bedsUnloaded, month } = dayFacts(plan, data, d, free);
   const range = d.hoursFast !== d.hoursSlow && Math.abs(d.hoursSlow - d.hoursFast) > 0.05;
   const ride = d.kind === "ride";
   const isLastRide = d.ride === plan.inputs.days;
@@ -163,6 +166,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   const unloadedText = unloaded.map(([a, b]) => `km ${a}–${b}`).join(", ");
   // The place chosen for the night, while it is still one of this town's (D64).
   const chosen = night ? chosenBed(data, night, choices, plan.inputs.sleep)?.id : undefined;
+  const wild = !!night && choices.beds[night.index] === WILD_CAMP;
   // When none of our places suit: the big booking sites, searched for the stop and its nights (D60).
   const search = night ? bookingSearches(night, plan.inputs) : [];
   const stay = night ? nightStay(night, plan.inputs.restAfter) : undefined;
@@ -322,7 +326,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                   </ul>
                 )}
                 {bedsUnloaded && <span className="text-xs text-unknown-foreground">The names of places to stay here didn't load: the count above is from the route's stops.</span>}
-                {beds.length > 0 && <span className="text-xs text-muted-foreground">Listed by what we know (open first, then by detour), never by quality: we have no prices or reviews.</span>}
+                {beds.length > 0 && <span className="text-xs text-muted-foreground">Your kind of place first, then open, then nearest; never by quality: we have no prices or reviews.</span>}
                 {search.length > 0 && (
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1.5 print:hidden">
                     <span className="text-muted-foreground">
@@ -332,10 +336,50 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                     <Links links={search} />
                   </span>
                 )}
-                <span>
-                  <span className="text-muted-foreground">Plan B: </span>
-                  {planB || `no other stop with a ${sleepNoun(plan.inputs.sleep)} nearby`}
-                </span>
+                {options && (options.others.length > 0 || options.wildCamp) && (
+                  <div className="grid gap-1.5">
+                    <span className="font-medium">Other options</span>
+                    <ul className="overflow-hidden rounded-2xl border">
+                      {options.others.map(({ place: p, km: k, stop }) => (
+                        <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-3.5 py-2.5 last:border-b-0">
+                          <div className="grid min-w-0 flex-[1_1_200px]">
+                            <span className="font-semibold">{p.name ?? "Unnamed"}</span>
+                            <span className="text-xs text-muted-foreground tabular-nums">
+                              {placeKind(p)} · {km(Math.abs(k))} km {k >= 0 ? "on" : "back"} · this day {km(d.km + k)} km
+                            </span>
+                          </div>
+                          <Links links={placeLinks(p)} />
+                          {!readOnly && stop && (
+                            <Button variant="ghost" size="xs" onPress={() => onStay(night.index, stop.id, p.id)}>
+                              Choose
+                            </Button>
+                          )}
+                        </li>
+                      ))}
+                      {options.wildCamp && (
+                        <li className={cn("flex flex-wrap items-center gap-x-3 gap-y-2 px-3.5 py-2.5", wild && "bg-primary/8")}>
+                          <div className="grid min-w-0 flex-[1_1_200px]">
+                            <span className="font-semibold">Wild camp</span>
+                            <span className="text-xs text-muted-foreground">If it's allowed and feasible here: your call.</span>
+                          </div>
+                          {!readOnly && (
+                            <Button variant={wild ? "secondary" : "ghost"} size="xs" onPress={() => onChooseBed(night.index, wild ? null : WILD_CAMP)}>
+                              {wild ? (
+                                <>
+                                  <Icons.Check data-icon="inline-start" />
+                                  Chosen
+                                </>
+                              ) : (
+                                "Choose"
+                              )}
+                            </Button>
+                          )}
+                        </li>
+                      )}
+                    </ul>
+                    {options.more > 0 && <span className="text-xs text-muted-foreground">And {options.more} more within 10 km.</span>}
+                  </div>
+                )}
                 {!readOnly && (
                   <div className="grid gap-2.5 print:hidden">
                     <div className="flex items-center gap-2">

@@ -36,6 +36,12 @@ OFFICIAL_SIMILARITY = 85
 words ("Thalia Lake" and "Thalia Lake Recreation Site"): official positions are often an area's centre."""
 SOURCE_ORDER = {"osm": 0, "official": 1, "overture": 2}
 """Which record leads a merged place: OSM, then the official one, then Overture."""
+CAMP_WORDS = re.compile(
+    r"\b(campgrounds?|campsites?|camping|camp|rv park|recreation (site|area)|rec site"
+    r"|provincial park|national park|park|site)\b"
+)
+"""Words that say a campground is one without saying which (D72): "Otter Lake Campground" is "Otter Lake Provincial
+Park". Set aside only when both records are campsites, so "Camping Les Pins" never becomes "Hotel Les Pins"."""
 
 
 @dataclass
@@ -59,6 +65,18 @@ def norm_name(name: str | None) -> str:
     return re.sub(r"[^a-z0-9 ]+", " ", text).strip()
 
 
+def camp_name(name: str) -> str:
+    """A normalised campsite name without its generic words, or the name itself when nothing else is left."""
+    core = " ".join(CAMP_WORDS.sub(" ", name).split())
+    return core or name
+
+
+def similar(a: RawPlace, b: RawPlace, na: str, nb: str) -> float:
+    if a.kind == "campsite" and b.kind == "campsite":
+        na, nb = camp_name(na), camp_name(nb)
+    return fuzz.token_set_ratio(na, nb)
+
+
 def same_place(a: RawPlace, b: RawPlace, dist_m: float, na: str | None = None, nb: str | None = None) -> bool:
     if a.service != b.service:
         return False
@@ -67,7 +85,7 @@ def same_place(a: RawPlace, b: RawPlace, dist_m: float, na: str | None = None, n
     if not na or not nb:
         return dist_m <= BLIND_M
     limit = NEAR_LARGE_M if a.service in LARGE else NEAR_M
-    return dist_m <= limit and fuzz.token_set_ratio(na, nb) >= NAME_SIMILARITY
+    return dist_m <= limit and similar(a, b, na, nb) >= NAME_SIMILARITY
 
 
 def _same_name_pairs(ordered: list[RawPlace], names: list[str], x: np.ndarray, y: np.ndarray) -> list[tuple[int, int]]:
@@ -120,7 +138,7 @@ def _conflate_service(ordered: list[RawPlace], radius: float) -> list[Merged]:
         for j in tree.query_ball_point([x[i], y[i]], OFFICIAL_M):
             if ordered[j].source == "official" or not names[j]:
                 continue
-            if fuzz.token_set_ratio(names[i], names[j]) >= OFFICIAL_SIMILARITY:
+            if similar(p, ordered[j], names[i], names[j]) >= OFFICIAL_SIMILARITY:
                 join(i, int(j))
 
     groups: dict[int, Merged] = {}

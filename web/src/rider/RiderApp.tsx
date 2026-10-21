@@ -869,6 +869,7 @@ function PlanPage({ start }: { start: Start }) {
                   if (stop) apply({ type: "booked", night: k, stop, on: !choices.booked.includes(k) });
                 }}
                 onChooseBed={(k, id) => apply({ type: "bed", night: k, place: id })}
+                onStay={(k, stop, place) => apply({ type: "stay", night: k, stop, place })}
                 onToggleRest={(r) => apply({ type: "rest", afterRide: r, on: !inputs.restAfter.includes(r) })}
                 onDone={toggleDone}
                 onGpx={onGpx}

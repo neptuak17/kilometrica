@@ -158,7 +158,8 @@ export const WILD_CAMP_COST = 3.5;
 
 function nightCost(c: Candidate, sleep: Sleep, month: number): number {
   const b = bedsFor(c.stop, sleep, month);
-  if (!usable(b)) return sleep === "camping" ? WILD_CAMP_COST : Number.POSITIVE_INFINITY;
+  // No tent, no camping (D72): only riders who camp or take either carry one.
+  if (!usable(b)) return sleep !== "rooms" ? WILD_CAMP_COST : Number.POSITIVE_INFINITY;
   return (1 - quality(b, c.stop)) * 0.8;
 }
 

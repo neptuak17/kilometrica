@@ -23,6 +23,8 @@ export type PlanAction =
   /** Booked keeps the night where it is. */
   | { type: "booked"; night: number; stop: string; on: boolean }
   | { type: "bed"; night: number; place: string | null }
+  /** Sleep at this place, one of a night's other options (D72): the night moves to its stop and is kept there. */
+  | { type: "stay"; night: number; stop: string; place: string }
   | { type: "done"; item: string; on: boolean }
   /** "I know": the item stays as it is and is no longer raised. */
   | { type: "dismiss"; item: string };
@@ -70,6 +72,8 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
       const locked = action.on ? { ...choices.locked, [action.night]: action.stop } : choices.locked;
       return replan({}, { ...choices, booked, locked });
     }
+    case "stay":
+      return replan({}, { ...choices, locked: { ...choices.locked, [action.night]: action.stop }, beds: { ...choices.beds, [action.night]: action.place } });
     case "bed": {
       const beds = { ...choices.beds };
       if (action.place) beds[action.night] = action.place;

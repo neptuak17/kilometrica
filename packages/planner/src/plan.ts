@@ -181,7 +181,7 @@ export function makePlan(
   }
   // Spots to wild camp for a rider who camps, where stops are far apart (D69, D70): used only when they spare a day
   // beyond the rider's level (WILD_CAMP_COST).
-  if (inputs.sleep === "camping" && !ownName.size) {
+  if (inputs.sleep !== "rooms" && !ownName.size) {
     const ts = [0, ...candidates.map((c) => c.t), axis.length];
     for (let i = 1; i < ts.length; i++) {
       const gap = ts[i]! - ts[i - 1]!;
@@ -340,7 +340,7 @@ export function makePlan(
       // No known campsite in reach for a rider who camps (D69, D70): their call, never ours.
       const on = shift(pb.after);
       const wildCamp =
-        inputs.sleep === "camping" && !mine && !usable(b)
+        inputs.sleep !== "rooms" && !mine && !usable(b)
           ? `Wild camp if it's feasible and allowed (your call)${on ? `, push on to ${stopName(on.stop)}, ${kmText(on.km)} km more, for a longer day than your usual` : ""}, or change the plan.`
           : null;
       const dayText = `makes a ${kmText(stats.km)} km day.`;

@@ -6,7 +6,7 @@ import { planChanges } from "./changes";
 import { choicesOf, parseDocument, toDocument } from "./document";
 import { calendarFile, dayGpx, tripGpx } from "./exports";
 import { bearing, type Geometry } from "./geometry";
-import { bookingSearches, dayItems, isNightLine, mapsSearch, nightStay, railLinks, streetPhotos, toDo, wikiLinks } from "./items";
+import { bookingSearches, dayItems, isNightLine, mapsSearch, nightOptions, nightStay, railLinks, streetPhotos, toDo, WILD_CAMP, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan } from "./plan";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
@@ -668,5 +668,49 @@ describe("sparse country and the rider's own stops (D69, D70)", () => {
     expect(b.massKg).toBe(75 + 13 + 12);
     expect(speed(b, 0, "paved")).toBeLessThan(speed(t, 0, "paved") * 1.02);
     expect(speed(b, 0, "gravel")).toBeGreaterThan(speed(t, 0, "gravel"));
+  });
+});
+
+describe("where to sleep: a preference, with every night's options (D72)", () => {
+  const bed = (id: string, kind: string, km: number, access = 300): Place =>
+    ({ id, service: "accommodation", kind, name: id, access_at_m: km * 1000, access_m: access, counts: true, months: "o".repeat(12), detail: {} }) as unknown as Place;
+  const withBeds = (beds: Place[]): PlanData => ({
+    ...data(),
+    full: { findings: [], places: beds, placesMissing: [], highlights: [], climbs: [], serviceTypes: [] },
+  });
+
+  it("lists every kind here, the rider's first, and up to 5 other options with one of each other kind", () => {
+    const camp = makePlan(withBeds([]), inputs({ sleep: "camping" }));
+    const at = camp.nights[0]!.stop.at_m / 1000;
+    const beds = [
+      bed("hotel-here", "hotel", at, 100),
+      bed("camp-here", "campsite", at + 1, 400),
+      ...[6, 7, 8, -9].map((k, i) => bed(`camp-${i}`, "campsite", at + k)),
+      bed("hotel-near", "hotel", at + 6.5),
+      bed("guest-back", "guest_house", at - 7),
+      bed("hostel-far", "hostel", at + 9.5),
+      bed("too-far", "hotel", at + 12),
+    ];
+    const p = makePlan(withBeds(beds), inputs({ sleep: "camping" }));
+    const o = nightOptions(withBeds(beds), p, p.nights[0]!);
+    expect(o.here.map((b) => b.id)).toEqual(["camp-here", "hotel-here"]); // a preference, never a filter
+    expect(o.others.map((x) => x.place.id)).toEqual(["camp-0", "camp-1", "camp-2", "hotel-near", "guest-back"]);
+    expect(o.more).toBe(2); // camp-3 and the hostel; the hotel 12 km on is beyond reach
+    expect(o.others[4]!.km).toBeCloseTo(-7, 0);
+    expect(o.wildCamp).toBe(true);
+    expect(nightOptions(withBeds(beds), p, p.nights[0]!).others[0]!.stop?.id).toBe(`s${at + 10}`);
+    const rooms = makePlan(withBeds(beds), inputs({ sleep: "rooms" }));
+    expect(nightOptions(withBeds(beds), rooms, rooms.nights[0]!).wildCamp).toBe(false); // no tent, no camping
+  });
+
+  it("moves the night to a chosen option, and a wild camp settles a night for a rider with a tent", () => {
+    const state: PlanState = { inputs: inputs(), choices: NO_CHOICES };
+    const moved = applyAction(state, { type: "stay", night: 1, stop: "s130", place: "c9" }).choices;
+    expect(moved.locked[1]).toBe("s130");
+    expect(moved.beds[1]).toBe("c9");
+    const wild = { ...NO_CHOICES, beds: { 0: WILD_CAMP } };
+    const line = (sleep: "camping" | "rooms") => makePlan(withBeds([]), inputs({ sleep }), wild).items.find((i) => isNightLine(i) && i.id.startsWith("bed:0:"));
+    expect(line("camping")?.settled).toBe("Wild camp");
+    expect(line("rooms")?.settled).toBeUndefined();
   });
 });

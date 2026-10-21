@@ -113,7 +113,9 @@ def _match_anchored(
             name = cf.norm_name(merged[i].primary.name or next((p.name for p in merged[i].members if p.name), None))
             if not name:
                 continue
-            s = max(fuzz.token_set_ratio(cf.norm_name(n), name) for n in (r.name, r.detail.get("park")) if n)
+            own = cf.camp_name(name)
+            names = [cf.camp_name(cf.norm_name(n)) for n in (r.name, r.detail.get("park")) if n]
+            s = max(fuzz.token_set_ratio(n, own) for n in names)
             if s >= cf.OFFICIAL_SIMILARITY and s > score and i not in out:
                 best, score = i, s
         if best is not None:

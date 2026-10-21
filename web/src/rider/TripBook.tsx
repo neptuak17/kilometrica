@@ -670,7 +670,7 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
               {f.bedsUnloaded && <span className="text-[12.5px] text-unknown-foreground">The names of places to stay here didn't load: the count is from the route's stops.</span>}
               <span className="text-[12.5px]">
                 {f.beds.length > 6 && `+${f.beds.length - 6} more: scan the QR code on page 1. `}
-                <b>Plan B:</b> {f.planB || `no other stop with a ${sleepNoun(plan.inputs.sleep)} nearby.`}
+                <b>Other options:</b> {f.others || "none known within 10 km."}
               </span>
             </Part>
           )}

@@ -194,8 +194,8 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
         <Field label="Your bike" hint="Sets your pace. An e-bike plans with help up to 25 km/h.">
           <Choice label="Your bike" value={inputs.bike} options={BIKES} disabled={readOnly} onPick={(v) => set("bike", v)} />
         </Field>
-        <Field label="How you sleep">
-          <Choice label="How you sleep" value={inputs.sleep} options={SLEEP} disabled={readOnly} onPick={(v) => set("sleep", v)} />
+        <Field label="Where you'd rather sleep" hint="A preference: each night lists every kind of place, yours first.">
+          <Choice label="Where you'd rather sleep" value={inputs.sleep} options={SLEEP} disabled={readOnly} onPick={(v) => set("sleep", v)} />
         </Field>
       </div>
 
