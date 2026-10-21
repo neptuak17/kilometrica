@@ -47,9 +47,11 @@ export function dayStory(data: PlanData, d: DayPlan, items: PlanItem[]): string 
     .filter((i) => i.day === d.number && i.id.startsWith("finding:") && i.title.includes("busy roads"))
     .reduce((a, i) => a + Math.abs((i.toM ?? 0) - (i.fromM ?? 0)) / 1000, 0);
   if (busy >= 2) extras.push(`${Math.round(busy)} km on busy roads`);
+  // Ferries are counted, not listed: the Dutch delta has four in a day.
+  const ferries = d.gaps.filter((g) => g.type === "ferry").length;
+  if (ferries) extras.push(ferries === 1 ? "a ferry crossing" : `${ferries} ferry crossings`);
   for (const g of d.gaps) {
-    if (g.type === "ferry") extras.push("a ferry crossing");
-    else if ((g.type === "missing" || g.type === "unclassified") && g.km >= 1) extras.push(`a ${km(g.km)} km gap in the route`);
+    if ((g.type === "missing" || g.type === "unclassified") && g.km >= 1) extras.push(`a ${km(g.km)} km gap in the route`);
   }
   if (d.unknownKm >= 1 && !d.gaps.length) extras.push(`terrain unknown for ${km(d.unknownKm)} km`);
   return `${surface}, ${terrain}${theme ? `, ${theme}` : ""}${extras.length ? `; ${extras.join(", ")}` : ""}.`;

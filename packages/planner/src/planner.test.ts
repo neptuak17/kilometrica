@@ -2,6 +2,7 @@ import type { DreamSection, EffortFile, Finding, Highlight, Place, ServiceType, 
 import { describe, expect, it } from "vitest";
 import { applyAction, optionOutcome, type PlanState } from "./actions";
 import { TripAxis } from "./axis";
+import { dayStory } from "./brief";
 import { planChanges } from "./changes";
 import { choicesOf, parseDocument, toDocument } from "./document";
 import { calendarFile, dayGpx, tripGpx } from "./exports";
@@ -306,6 +307,16 @@ describe("makePlan", () => {
     expect(gap.days.reduce((a, d) => a + d.km, 0)).toBeCloseTo(320, 0);
     const ferry = makePlan(data({ gapAtKm: 155, gapType: "ferry" }), inputs());
     expect(ferry.items.some((i) => i.id === "ferry:155000" && i.kind === "todo")).toBe(true);
+    // Several on a day: one line, counted (the Dutch delta has four in a day).
+    const two = data({ gapAtKm: 155, gapType: "ferry" });
+    two.effort.gaps[0] = { ...two.effort.gaps[0]!, straight_distance_m: 1000 };
+    two.effort.gaps.push({ ...two.effort.gaps[0]!, at_m: 158_000 });
+    const p2 = makePlan(two, inputs());
+    const lines = p2.items.filter((i) => i.id.startsWith("ferry:"));
+    expect(lines.map((i) => i.id)).toEqual(["ferry:155000+158000"]);
+    expect(lines[0]!.title).toMatch(/^2 ferries on day \d: check their seasons and times$/);
+    const day = p2.days.find((d) => d.number === lines[0]!.day)!;
+    expect(dayStory(two, day, p2.items)).toContain("; 2 ferry crossings.");
   });
 
   it("flags a day that ends after sunset at the rider's pace", () => {
