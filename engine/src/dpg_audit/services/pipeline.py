@@ -181,6 +181,10 @@ def build_places(
     raw = [r for r, keep in zip(raw, near, strict=True) if keep]
     log(f"{n_osm:,} OSM + {n_overture:,} Overture places; {len(raw):,} near the route; conflating …")
     merged = cf.conflate(raw)
+    floor = profile.overture_meta_stay_min_confidence
+    weak = sum(cf.weak_meta_stay(m, floor) for m in merged)
+    merged = [m for m in merged if not cf.weak_meta_stay(m, floor)]
+    log(f"left out {weak:,} places to stay only Meta lists, below confidence {floor}")
 
     lon = np.array([m.primary.lon for m in merged])
     lat = np.array([m.primary.lat for m in merged])

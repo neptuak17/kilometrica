@@ -161,6 +161,16 @@ def conflate(places: list[RawPlace]) -> list[Merged]:
     return out
 
 
+def weak_meta_stay(m: Merged, floor: float) -> bool:
+    """A place to stay only Overture's Meta data knows, below `floor` (D73): often a Facebook page that outlived its
+    hotel or pins it in the wrong town ("Rock Creek Hotel" in Beaverdell, 41 km from Rock Creek), so it's left out."""
+    return (
+        m.primary.service == "accommodation"
+        and all(r.source == "overture" and r.datasets == ["meta"] for r in m.members)
+        and max((r.confidence or 0.0) for r in m.members) < floor
+    )
+
+
 def confidence(m: Merged) -> str:
     if m.has("official") or (m.has("osm") and m.has("overture")):
         return "high"

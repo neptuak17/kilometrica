@@ -9,7 +9,7 @@ from dpg_audit.rules.profile import load_rules
 from dpg_audit.services import coverage
 from dpg_audit.services.access import AccessJob, _batches
 from dpg_audit.services.catalog import classify_osm, classify_overture
-from dpg_audit.services.conflate import confidence, conflate
+from dpg_audit.services.conflate import confidence, conflate, weak_meta_stay
 from dpg_audit.services.osm_places import RawPlace
 from dpg_audit.services.policy import BikePolicy
 from dpg_audit.services.profile import load_services
@@ -88,6 +88,22 @@ def test_conflate_merges_same_place_across_sources():
     assert by_primary["n1"].sources == ["osm:n1", "overture:x"]
     assert confidence(by_primary["n1"]) == "high"
     assert confidence(by_primary["z"]) == "medium"
+
+
+def test_weak_meta_only_places_to_stay_are_left_out():
+    # D73: a place to stay only Overture's Meta data knows needs confidence 0.8; OSM or another dataset vouches for it.
+    def stay(source, rid, lon, conf=None, datasets=()):
+        return RawPlace(source, rid, "accommodation", "hotel", f"Hotel {rid}", lon, 43.0, {}, conf, list(datasets))
+
+    weak = stay("overture", "w", 3.0, 0.62, ["meta"])
+    strong = stay("overture", "s", 3.1, 0.85, ["meta"])
+    other = stay("overture", "f", 3.2, 0.62, ["meta", "Foursquare"])
+    osm = stay("osm", "o", 3.3)
+    backed = stay("overture", "o", 3.3001, 0.62, ["meta"])  # the same hotel as OSM's
+    food = RawPlace("overture", "c", "food", "cafe", "Café", 3.4, 43.0, {}, 0.62, ["meta"])
+    merged = conflate([weak, strong, other, osm, backed, food])
+    kept = sorted(m.primary.id for m in merged if not weak_meta_stay(m, 0.8))
+    assert kept == ["c", "f", "o", "s"]
 
 
 def test_unnamed_places_merge_only_when_very_close():

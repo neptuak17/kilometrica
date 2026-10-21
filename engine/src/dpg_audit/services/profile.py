@@ -61,6 +61,7 @@ class ServicesProfile:
     route_sample_m: float
     max_sources: int
     overture_min_confidence: float
+    overture_meta_stay_min_confidence: float
     types: dict[str, ServiceCfg]
 
     def minutes(self, access_m: float, climb_m: float | None) -> float:
@@ -101,5 +102,6 @@ def load_services(name: str = "services-v0", folder: Path = PROFILES_DIR) -> Ser
         route_sample_m=float(raw["route_sample_m"]),
         max_sources=int(raw["max_sources"]),
         overture_min_confidence=float(raw["overture_min_confidence"]),
+        overture_meta_stay_min_confidence=float(raw["overture_meta_stay_min_confidence"]),
         types=ordered,
     )

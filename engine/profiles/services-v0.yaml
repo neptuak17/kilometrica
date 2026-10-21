@@ -15,6 +15,9 @@ skip_routing_m: 75         # closer than this to the route: no routing, the stra
 route_sample_m: 250        # spacing of the route points used as access candidates
 max_sources: 48            # route points tried per place (nearest first)
 overture_min_confidence: 0.6
+# A place to stay that only Overture's Meta data knows (a Facebook page) needs more (D73): such pages outlive their
+# hotels and often pin them in the wrong town. Riders have the booking searches when we list fewer places.
+overture_meta_stay_min_confidence: 0.8
 
 types:
   water:
