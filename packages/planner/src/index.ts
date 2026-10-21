@@ -8,6 +8,7 @@ export * from "./geometry";
 export * from "./items";
 export * from "./pace";
 export * from "./plan";
+export * from "./rest";
 export * from "./share";
 export * from "./stages";
 export * from "./sun";

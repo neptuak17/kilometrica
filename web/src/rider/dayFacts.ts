@@ -4,8 +4,22 @@
  * options nearby (D72), never ranked by quality (we have no prices or reviews). Where places didn't load, nothing is
  * "none" (D37).
  */
-import type { Place } from "@dpg/contracts";
-import { type DayPlan, km, MONTHS_LONG, monthOf, type NightOptions, nightOptions, type NightPlan, type PlanData, type PlanResult, placeKind, placesMissing } from "@dpg/planner";
+import type { Highlight, Place, Stop } from "@dpg/contracts";
+import {
+  type DayPlan,
+  dayIndex,
+  km,
+  MONTHS_LONG,
+  monthOf,
+  type NightOptions,
+  nightOptions,
+  type NightPlan,
+  type PlanData,
+  type PlanResult,
+  placeKind,
+  placesMissing,
+  restPlace,
+} from "@dpg/planner";
 
 export interface DayFacts {
   /** The night after this day; none on a rest day or the last day. */
@@ -69,4 +83,52 @@ export function dayFacts(plan: PlanResult, data: PlanData, d: DayPlan, free: boo
       ].join(" · ")
     : "";
   return { night, kmOf, unloaded, waterFood, thinned, longest, stations, beds, options, bedsUnloaded, month, others };
+}
+
+export interface RestFacts {
+  /** The rest day follows this riding day (1-based). */
+  afterRide: number;
+  stop: Stop;
+  /** Sights within 5 km, best first (D74). */
+  sights: Highlight[];
+  /** Places to eat within 3 km: open that day first (from their published hours), then nearest. */
+  food: { p: Place; open: boolean | null }[];
+  /** What else is in town: "12 places to eat", "a bike shop", "Station: Avignon Centre". */
+  services: string[];
+  /** Other nights within 3 riding days either way, best for a rest day first, the current one included. */
+  moves: { afterRide: number; stop: Stop; text: string; score: number; current: boolean }[];
+}
+
+/** What a rest day's card says (D74): what to see and eat in town, what else is there, and where it could move. */
+export function restFacts(plan: PlanResult, data: PlanData, d: DayPlan): RestFacts | null {
+  const before = plan.days.filter((x) => x.number < d.number && x.kind === "ride").pop();
+  const stop = d.stop;
+  if (!before?.ride || !stop) return null;
+  const afterRide = before.ride;
+  const month = monthOf(d.date);
+  const near = (m: number, r: number) => Math.abs(m - stop.at_m) <= r;
+  const di = dayIndex(d.date);
+  const food = (data.full?.places ?? [])
+    .filter((p) => p.service === "food" && p.counts && near(p.access_at_m, 3000))
+    .map((p) => ({ p, open: typeof p.detail.days === "string" ? (p.detail.days as string)[di] === "o" : null }))
+    .filter((x) => x.open !== false)
+    .sort((a, b) => Number(b.open === true) - Number(a.open === true) || (a.p.access_m ?? 0) - (b.p.access_m ?? 0))
+    .slice(0, 6);
+  const s = stop.services;
+  const services = [
+    s.food ? `${s.food} places to eat` : null,
+    s.bike_shop ? `${s.bike_shop === 1 ? "a bike shop" : `${s.bike_shop} bike shops`}` : null,
+    s.pharmacy ? `${s.pharmacy === 1 ? "a pharmacy" : `${s.pharmacy} pharmacies`}` : null,
+    s.atm ? `${s.atm === 1 ? "a cash machine" : `${s.atm} cash machines`}` : null,
+    stop.station ? `Station: ${stop.station}` : null,
+  ].filter((x): x is string => !!x);
+  const rides = plan.days.filter((x) => x.kind === "ride").length;
+  const moves = plan.nights
+    .filter((n) => Math.abs(n.afterRide - afterRide) <= 3 && n.afterRide < rides && (n.afterRide === afterRide || !plan.restAfter.includes(n.afterRide)))
+    .map((n) => {
+      const p = restPlace(data, n.stop, plan.inputs.sleep, month);
+      return { afterRide: n.afterRide, stop: n.stop, text: p.text, score: p.score, current: n.afterRide === afterRide };
+    })
+    .sort((a, b) => b.score - a.score);
+  return { afterRide, stop, sights: restPlace(data, stop, plan.inputs.sleep, month).sights.slice(0, 6), food, services, moves };
 }

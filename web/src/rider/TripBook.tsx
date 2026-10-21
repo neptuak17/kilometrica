@@ -750,7 +750,7 @@ function RestDayPage({ plan, data, d, page, pages, pageOf }: { plan: PlanResult;
           Day {d.number} · {dayText(d.date)}
         </Kicker>
         <h1 className="text-[26px] leading-tight font-bold tracking-tight">Rest day at {d.endName}</h1>
-        <span className="text-[15px]">A day off the bike, and another night in the same place.</span>
+        <span className="text-[15px]">{d.rest?.why ? `${d.rest.why} ` : ""}A day off the bike, and another night in the same place.</span>
       </header>
       <dl className="grid grid-cols-3 rounded-lg border">
         {[

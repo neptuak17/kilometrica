@@ -119,7 +119,9 @@ function readStart(): { start: Start | null; itinerary: Itinerary | null; error:
         first: num("first"),
         last: num("last"),
         direction: q.get("way") === "reverse" ? "reverse" : "forward",
-        days: num("days"),
+        // From Dream (D74): days in all and the rest days among them; riding days are the difference.
+        days: num("days") === undefined ? undefined : Math.max(1, num("days")! - (num("rest") ?? 0)),
+        restDays: num("rest"),
         month: num("month") ?? null,
         level: num("level"),
         avoidGravel: q.get("gravel") === "avoid",
@@ -157,6 +159,7 @@ function initialInputs(files: RouteFiles, s: Start["inputs"]): { inputs: PlanInp
       startMinutes: s.startMinutes ?? 9 * 60,
       stopStyle: s.stopStyle ?? "normal",
       restAfter: s.restAfter ?? [],
+      ...(s.restDays !== undefined ? { restDays: s.restDays } : {}),
       avoidGravel: s.avoidGravel ?? false,
       avoidBusy: s.avoidBusy ?? false,
     },
@@ -768,6 +771,19 @@ function PlanPage({ start }: { start: Start }) {
                     suggestedMonth={suggested}
                     datesConfirmed={datesConfirmed}
                     ownNights={ownNights(data, inputs.fromM, inputs.toM).length}
+                    towns={data.stops.stops
+                      .filter((s) => s.name && s.at_m > Math.min(inputs.fromM, inputs.toM) && s.at_m < Math.max(inputs.fromM, inputs.toM))
+                      .sort((a, b) => (inputs.direction === "reverse" ? b.at_m - a.at_m : a.at_m - b.at_m))
+                      .map((s) => ({ id: s.id, name: s.name! }))}
+                    onRestIn={
+                      plan
+                        ? (id) => {
+                            const at = data.stops.stops.find((s) => s.id === id)?.at_m ?? 0;
+                            const night = plan.nights.reduce((b, n, i) => (Math.abs(n.stop.at_m - at) < Math.abs(plan.nights[b]!.stop.at_m - at) ? i : b), 0);
+                            if (plan.nights.length) apply({ type: "rest-in", night, stop: id, add: true, current: plan.restAfter });
+                          }
+                        : undefined
+                    }
                     readOnly={readOnly}
                     onChange={edit}
                   />
@@ -866,11 +882,15 @@ function PlanPage({ start }: { start: Start }) {
                 onLockNight={lockNight}
                 onToggleBooked={(k) => {
                   const stop = plan.nights[k]?.stop.id;
-                  if (stop) apply({ type: "booked", night: k, stop, on: !choices.booked.includes(k) });
+                  if (stop) apply({ type: "booked", night: k, stop, on: !choices.booked.includes(k), date: plan.nights[k]?.date });
                 }}
                 onChooseBed={(k, id) => apply({ type: "bed", night: k, place: id })}
                 onStay={(k, stop, place) => apply({ type: "stay", night: k, stop, place })}
-                onToggleRest={(r) => apply({ type: "rest", afterRide: r, on: !inputs.restAfter.includes(r) })}
+                onToggleRest={(r) =>
+                  apply({ type: "rest", afterRide: r, on: !plan.restAfter.includes(r), current: plan.restAfter, night: r - 1, stop: plan.nights[r - 1]?.stop.id })
+                }
+                onMoveRest={(from, to) => apply({ type: "rest-move", from, to, current: plan.restAfter, nights: plan.nights.map((n) => n.stop.id) })}
+                onRemoveRest={(r) => apply({ type: "rest", afterRide: r, on: false, current: plan.restAfter })}
                 onDone={toggleDone}
                 onGpx={onGpx}
                 onClose={() => setSelected(null)}

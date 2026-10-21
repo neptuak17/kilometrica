@@ -24,6 +24,7 @@ import {
   placeLinks,
   railLinks,
   WILD_CAMP,
+  wikiLinks,
   type DayPlan,
   type Handoff,
   type PlanData,
@@ -35,7 +36,7 @@ import {
 } from "@dpg/planner";
 import { Badge, Button, Card, CardContent, Checkbox, cn, Icons, Label, LinkButton } from "@dpg/ui";
 import { type ReactNode, useId, useState } from "react";
-import { dayFacts } from "./dayFacts";
+import { dayFacts, restFacts } from "./dayFacts";
 import { looksUp, openPhoto } from "./photos";
 
 const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
@@ -145,6 +146,9 @@ interface Props {
   onChooseBed: (night: number, placeId: string | null) => void;
   /** Sleep at one of the night's other options: the night moves to its stop (D72). */
   onStay: (night: number, stopId: string, placeId: string) => void;
+  /** Move a rest day to after another riding day, or remove it (D74). */
+  onMoveRest: (from: number, to: number) => void;
+  onRemoveRest: (afterRide: number) => void;
   onToggleRest: (ride: number) => void;
   onDone: (id: string) => void;
   onGpx: (day: DayPlan) => void;
@@ -152,7 +156,7 @@ interface Props {
   onNext?: () => void;
 }
 
-export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNight, onToggleBooked, onChooseBed, onStay, onToggleRest, onDone, onGpx, onClose, onNext }: Props) {
+export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNight, onToggleBooked, onChooseBed, onStay, onMoveRest, onRemoveRest, onToggleRest, onDone, onGpx, onClose, onNext }: Props) {
   const ids = useId();
   const mine = dayItems(plan.items, d.number);
   // The night's own line is settled in Sleep below, so the day's to-dos leave it out (D64).
@@ -161,15 +165,16 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   const { night, unloaded, waterFood, thinned, longest, stations, beds, options, bedsUnloaded, month } = dayFacts(plan, data, d, free);
   const range = d.hoursFast !== d.hoursSlow && Math.abs(d.hoursSlow - d.hoursFast) > 0.05;
   const ride = d.kind === "ride";
-  const isLastRide = d.ride === plan.inputs.days;
+  const isLastRide = d.ride === plan.days.filter((x) => x.kind === "ride").length;
+  const rest = d.kind === "rest" && !free ? restFacts(plan, data, d) : null;
   const next = plan.days.find((x) => x.number === d.number + 1);
   const unloadedText = unloaded.map(([a, b]) => `km ${a}–${b}`).join(", ");
   // The place chosen for the night, while it is still one of this town's (D64).
   const chosen = night ? chosenBed(data, night, choices, plan.inputs.sleep)?.id : undefined;
   const wild = !!night && choices.beds[night.index] === WILD_CAMP;
   // When none of our places suit: the big booking sites, searched for the stop and its nights (D60).
-  const search = night ? bookingSearches(night, plan.inputs) : [];
-  const stay = night ? nightStay(night, plan.inputs.restAfter) : undefined;
+  const search = night ? bookingSearches(night, { ...plan.inputs, restAfter: plan.restAfter }) : [];
+  const stay = night ? nightStay(night, plan.restAfter) : undefined;
   const headsups = all("headsup");
   const highlights = all("highlight");
 
@@ -233,7 +238,8 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
           </p>
         )}
 
-        <p className="text-base leading-relaxed">{dayStory(data, d, plan.items)}</p>
+        {/* A rest day's card says why it's there instead (D74). */}
+        {!rest && <p className="text-base leading-relaxed">{dayStory(data, d, plan.items)}</p>}
 
         {free ? (
           <div className="flex items-start gap-2 rounded-2xl border border-dashed px-4 py-3 text-muted-foreground">
@@ -242,6 +248,69 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
           </div>
         ) : (
           <div className="grid gap-4">
+            {rest && (
+              <>
+                <Part icon={<Icons.Bed />} label="Rest day">
+                  <span>{d.rest?.why ?? `A day off the bike at ${d.endName}.`} Another night in the same place.</span>
+                </Part>
+                {rest.sights.length > 0 && (
+                  <Part icon={<Icons.Check />} label="What to see">
+                    <ul className="grid gap-2">
+                      {rest.sights.map((h) => (
+                        <li key={h.id} className="grid gap-1">
+                          <span>
+                            <b>{h.name}</b> <span className="text-muted-foreground">{h.kind.replace("_", " ")}</span>
+                          </span>
+                          <Links links={wikiLinks(h, plan.languages)} />
+                        </li>
+                      ))}
+                    </ul>
+                  </Part>
+                )}
+                {rest.food.length > 0 && (
+                  <Part icon={<Icons.Utensils />} label="Food">
+                    <ul className="grid gap-1.5">
+                      {rest.food.map(({ p, open }) => (
+                        <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span>
+                            <b>{p.name ?? "Unnamed"}</b> <span className="text-muted-foreground">{p.kind.replace("_", " ")}</span>
+                          </span>
+                          {open && <Badge variant="secondary">Open that day</Badge>}
+                          <Links links={placeLinks(p)} />
+                        </li>
+                      ))}
+                    </ul>
+                    <span className="text-xs text-muted-foreground">Open that day from their published hours; check the others.</span>
+                  </Part>
+                )}
+                {rest.services.length > 0 && (
+                  <Part icon={<Icons.MapPin />} label="In town">
+                    <span>{rest.services.join(" · ")}</span>
+                  </Part>
+                )}
+                {!readOnly && (
+                  <Part icon={<Icons.Calendar />} label="Move it">
+                    <ul className="grid gap-1.5">
+                      {rest.moves.map((m) => (
+                        <li key={m.afterRide} className="flex flex-wrap items-center gap-2">
+                          <Button variant={m.current ? "secondary" : "outline"} size="xs" isDisabled={m.current} onPress={() => onMoveRest(rest.afterRide, m.afterRide)}>
+                            {m.current && <Icons.Check data-icon="inline-start" />}
+                            After day {plan.days.find((x) => x.ride === m.afterRide)?.number}: {stopName(m.stop)}
+                          </Button>
+                          <span className="text-xs text-muted-foreground">{m.text || "little to see"}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Button variant="ghost" size="xs" onPress={() => onRemoveRest(rest.afterRide)}>
+                        Remove this rest day
+                      </Button>
+                      <span className="text-xs text-muted-foreground">Moving it changes only dates; a booking whose night moves goes back on the to-do.</span>
+                    </span>
+                  </Part>
+                )}
+              </>
+            )}
             {ride && (
               <Part icon={<Icons.Droplet />} label="Water, food">
                 {unloaded.length ? (
@@ -434,7 +503,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t pt-4 print:hidden">
             {ride && !readOnly && !isLastRide && !free && (
               <div className="flex items-center gap-2">
-                <Checkbox id={`${ids}-rest`} isSelected={plan.inputs.restAfter.includes(d.ride!)} onChange={() => onToggleRest(d.ride!)} />
+                <Checkbox id={`${ids}-rest`} isSelected={plan.restAfter.includes(d.ride!)} onChange={() => onToggleRest(d.ride!)} />
                 <Label htmlFor={`${ids}-rest`} className="font-normal">
                   Rest day after this day
                 </Label>
