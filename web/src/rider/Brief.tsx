@@ -4,7 +4,7 @@
  */
 import { dayItems, hours, km, type PlanResult } from "@dpg/planner";
 import { Card, CardContent, CardHeader, CardTitle, cn, DayRow, EffortChart as KitEffortChart, Icons } from "@dpg/ui";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 /** Riding hours per day against the rider's usual day: the kit's chart (D53), fed from the plan. A bar opens its day. */
 export function EffortChart({ plan, selected, onPick, changed }: { plan: PlanResult; selected: number | null; onPick: (n: number) => void; changed?: number[] }) {
@@ -29,9 +29,10 @@ export const TOPIC: Record<string, { icon: ReactNode; tone: string }> = {
   like: { icon: <Icons.Sun className="size-[18px]" />, tone: "text-highlight-foreground" },
 };
 
-/** The five key lines, and how well we know these days. */
-export function Brief({ plan, onLine, free = false }: { plan: PlanResult; onLine: (topic: string) => void; free?: boolean }) {
+/** The five key lines, each opening the items behind its "+N more" in place, and the things to be aware of. */
+export function Brief({ plan, onShowDay, free = false }: { plan: PlanResult; onShowDay: (day: number) => void; free?: boolean }) {
   const b = plan.brief;
+  const [open, setOpen] = useState<string | null>(null);
   return (
     <Card>
       <CardHeader>
@@ -48,11 +49,34 @@ export function Brief({ plan, onLine, free = false }: { plan: PlanResult; onLine
                 <span>
                   {l.answer}
                   {l.more > 0 && !free && (
-                    <button type="button" className="ml-1.5 cursor-pointer text-primary hover:underline" onClick={() => onLine(l.topic)}>
-                      +{l.more} more
+                    <button
+                      type="button"
+                      aria-expanded={open === l.topic}
+                      className="ml-1.5 cursor-pointer text-primary hover:underline"
+                      onClick={() => setOpen(open === l.topic ? null : l.topic)}
+                    >
+                      {open === l.topic ? "Show less" : `+${l.more} more`}
                     </button>
                   )}
                 </span>
+                {open === l.topic && (
+                  <ul className="mt-2 grid gap-1 border-l-2 pl-3">
+                    {l.moreIds.map((id) => {
+                      const i = plan.items.find((x) => x.id === id);
+                      if (!i) return null;
+                      return (
+                        <li key={id} className="flex items-start justify-between gap-3 text-sm">
+                          <span className="min-w-0">{i.title}</span>
+                          {i.day !== null && (
+                            <button type="button" className="shrink-0 cursor-pointer text-primary hover:underline" onClick={() => onShowDay(i.day!)}>
+                              Day {i.day}
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
             </div>
           );

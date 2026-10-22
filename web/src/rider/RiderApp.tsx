@@ -797,7 +797,7 @@ function PlanPage({ start }: { start: Start }) {
                 </CardContent>
               </Card>
             )}
-            <Brief plan={shown} free={free} onLine={() => setSelected(null)} />
+            <Brief plan={shown} free={free} onShowDay={showDay} />
             <Calls
               calls={calls}
               free={free}

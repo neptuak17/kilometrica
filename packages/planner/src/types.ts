@@ -250,6 +250,8 @@ export interface BriefLine {
   question: string;
   answer: string;
   more: number;
+  /** The items behind "+N more", in the order to list them. */
+  moreIds: string[];
 }
 
 export interface Brief {

@@ -116,6 +116,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
       ` Day ${hardest.number} is the hardest: ${km(hardest.km)} km, about ${hours(hardest.hoursSlow)} riding.` +
       (core.restAfter.length ? ` ${plural(core.restAfter.length, "rest day")}, after riding ${core.restAfter.length === 1 ? "day" : "days"} ${numberList(core.restAfter)}.` : ""),
     more: ableCalls.length,
+    moreIds: ableCalls.map((i) => i.id),
   });
 
   const month = MONTHS_LONG[monthOf(inputs.startDate)]!;
@@ -132,9 +133,11 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
       : (noBed ? `No known ${sleepNoun(inputs.sleep)} on ${plural(noBed, "night")}.` : "A stop every night.") +
         (unknown ? ` ${unknown} of ${nights.length} rely on places with no ${month} dates.` : ""),
     more: sleepItems.length,
+    moreIds: sleepItems.map((i) => i.id),
   });
 
-  const risks = byTopic("risk").filter((i) => i.kind !== "highlight");
+  // Heads-ups and calls only: things to be aware of that need no action are in the note (D75).
+  const risks = byTopic("risk").filter((i) => i.kind === "headsup" || i.kind === "call");
   const audit = data.full
     ? 0
     : [...new Set(rides.flatMap((d) => d.sections))].reduce(
@@ -156,6 +159,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
         ""
       : "Nothing stands out in our data for these days.",
     more: Math.max(0, risks.length - 1),
+    moreIds: risks.slice(1).map((i) => i.id),
   });
 
   const calls = open.filter((i) => i.kind === "call").length;
@@ -178,20 +182,19 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
           .replace(/^./, (c) => c.toUpperCase()) + "."
       : "Nothing: everything is taken care of.",
     more: open.length,
+    moreIds: open.map((i) => i.id),
   });
 
   const highlights = items.filter((i) => i.kind === "highlight" && i.id.startsWith("highlight:")).slice(0, 3);
+  const moreLike = rides.flatMap((d) => items.filter((i) => i.kind === "highlight" && i.day === d.number).slice(0, 3)).filter((i) => !highlights.includes(i));
   const like = highlights.length ? highlights.map((h) => h.title).join(", ") : themes(data, core).join(", ");
   lines.push({
     topic: "like",
     question: "What will it be like?",
     answer: `${weather(data, core)}${like ? ` ${like}.` : ""}`,
     // Highlights shown on the day cards (3 a day), beyond the three named here.
-    more: Math.max(
-      0,
-      rides.reduce((a, d) => a + Math.min(3, items.filter((i) => i.kind === "highlight" && i.day === d.number).length), 0) -
-        highlights.length,
-    ),
+    more: moreLike.length,
+    moreIds: moreLike.map((i) => i.id),
   });
 
   const readiness = calls
