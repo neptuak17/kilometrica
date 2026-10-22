@@ -22,6 +22,7 @@ import {
   opening,
   placeKind,
   placeLinks,
+  placeTitle,
   railLinks,
   STEEP,
   WILD_CAMP,
@@ -276,7 +277,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                       {rest.food.map(({ p, open }) => (
                         <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                           <span>
-                            <b>{p.name ?? "Unnamed"}</b> <span className="text-muted-foreground">{p.kind.replace("_", " ")}</span>
+                            <b>{placeTitle(p, d.endName)}</b> <span className="text-muted-foreground">{p.kind.replace("_", " ")}</span>
                           </span>
                           {open && <Badge variant="secondary">Open that day</Badge>}
                           <Links links={placeLinks(p)} />
@@ -370,7 +371,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                         <li key={p.id} className={cn("flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-3.5 py-2.5 last:border-b-0", chosen === p.id && "bg-primary/8")}>
                           <div className="grid min-w-0 flex-[1_1_200px]">
                             <span className="font-semibold">
-                              {p.name ?? "Unnamed"}
+                              {placeTitle(p, stopName(night.stop))}
                               {p.detail.stars ? <span className="font-normal text-muted-foreground"> {String(p.detail.stars)}★</span> : null}
                             </span>
                             <span className="text-xs text-muted-foreground">
@@ -415,7 +416,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                       {options.others.map(({ place: p, km: k, stop }) => (
                         <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-3.5 py-2.5 last:border-b-0">
                           <div className="grid min-w-0 flex-[1_1_200px]">
-                            <span className="font-semibold">{p.name ?? "Unnamed"}</span>
+                            <span className="font-semibold">{placeTitle(p, stop ? stopName(stop) : null)}</span>
                             <span className="text-xs text-muted-foreground tabular-nums">
                               {placeKind(p)} · {km(Math.abs(k))} km {k >= 0 ? "on" : "back"} · this day {km(d.km + k)} km
                             </span>
@@ -492,7 +493,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                 <span className="tabular-nums">
                   {stations
                     .slice(0, 6)
-                    .map((s) => `${s.p.name ?? "Station"} (km ${Math.round(s.at)})`)
+                    .map((s) => `${s.p.name} (km ${Math.round(s.at)})`)
                     .join(" · ")}
                 </span>
                 {/* The operator and its bike rules (D63): no site takes the station and date in a link. */}

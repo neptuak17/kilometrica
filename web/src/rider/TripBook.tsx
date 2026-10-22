@@ -28,6 +28,7 @@ import {
   oneIn,
   placeKind,
   placeLinks,
+  placeTitle,
   type PlanData,
   type PlanItem,
   type PlanResult,
@@ -685,7 +686,7 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
               <span>
                 {f.stations
                   .slice(0, 6)
-                  .map((s) => `${s.p.name ?? "Station"} (km ${Math.round(s.at)})`)
+                  .map((s) => `${s.p.name} (km ${Math.round(s.at)})`)
                   .join(" · ")}
               </span>
             </Part>
@@ -706,7 +707,7 @@ function BedCell({ p, month, code, chosen, right, bottom }: { p: Place; month: s
       <span className="flex items-center gap-1.5">
         <Tick on={chosen} />
         <span className="truncate font-semibold">
-          {p.name ?? "Unnamed"}
+          {placeTitle(p)}
           {p.detail.stars ? <span className="font-normal"> {String(p.detail.stars)}★</span> : null}
         </span>
       </span>
@@ -794,7 +795,7 @@ function RestDayPage({ plan, data, d, page, pages, pageOf }: { plan: PlanResult;
               <div className="grid grid-cols-2 overflow-hidden rounded-lg border">
                 {shown.map(({ p, open }, i, all) => (
                   <div key={p.id} className={cn("grid px-2.5 py-1.5", i % 2 === 0 && "border-r", i < all.length - (all.length % 2 === 0 ? 2 : 1) && "border-b")}>
-                    <span className="truncate font-semibold">{p.name ?? "Unnamed"}</span>
+                    <span className="truncate font-semibold">{placeTitle(p, d.endName)}</span>
                     <span className="text-[12.5px]">
                       {cap(p.kind.replace("_", " "))} · <b>{open ? `Open on ${day}s` : `${day} unknown: check`}</b>
                     </span>

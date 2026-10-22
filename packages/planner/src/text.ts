@@ -65,6 +65,21 @@ const KIND_WORDS: Record<string, [string, string]> = {
 /** A place's kind in a word: "guest house"; null for "other". */
 export const kindWord = (kind: string) => (kind === "other" ? null : (KIND_WORDS[kind]?.[0] ?? null));
 
+/**
+ * What a place is called on screen: its name, or for one with no name in our data, what it is and where ("2★ hotel near
+ * Santomera"). Riders never see "Unnamed".
+ */
+export function placeTitle(p: { name: string | null; kind: string; detail: Record<string, unknown> }, near?: string | null): string {
+  if (p.name) return p.name;
+  const stars = p.detail.stars ? `${String(p.detail.stars)}★ ` : "";
+  const word = KIND_WORDS[p.kind]?.[0] ?? p.kind.replaceAll("_", " ");
+  const what = `${stars}${word}${near ? ` near ${near}` : ""}`;
+  return what.charAt(0).toUpperCase() + what.slice(1);
+}
+
+/** A place worth listing to a rider: one with a name, or a way to reach it (a website or phone). */
+export const listable = (p: { name: string | null; detail: Record<string, unknown> }) => !!p.name || !!p.detail.website || !!p.detail.phone;
+
 /** Places by kind, campsites first (D62): "1 campsite and 2 hotels". */
 export function bedKinds(kinds: { kind: string; count: number }[]): string {
   const rank = (k: string) => (KIND_ORDER.includes(k) ? KIND_ORDER.indexOf(k) : KIND_ORDER.length);

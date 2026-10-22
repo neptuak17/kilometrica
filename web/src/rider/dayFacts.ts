@@ -17,8 +17,11 @@ import {
   type PlanData,
   type PlanResult,
   placeKind,
+  listable,
   placesMissing,
+  placeTitle,
   restPlace,
+  stopName,
 } from "@dpg/planner";
 
 export interface DayFacts {
@@ -71,14 +74,14 @@ export function dayFacts(plan: PlanResult, data: PlanData, d: DayPlan, free: boo
         .filter((p) => p.kind !== "ferry_terminal" && ["yes", "reservation", "limited"].includes(String(p.detail.bikes)) && (p.access_m ?? 1e9) <= 10_000)
         .map((p) => ({ p, at: kmOf(p.access_at_m) }))
         .sort((a, b) => a.at - b.at)
-        .filter((s, i, all) => !s.p.name || all.findIndex((x) => x.p.name === s.p.name) === i);
+        .filter((s, i, all) => !!s.p.name && all.findIndex((x) => x.p.name === s.p.name) === i);
   const options = !free && night ? nightOptions(data, plan, night) : null;
   const beds = options?.here ?? [];
   const bedsUnloaded = !!night && !!data.full && placesMissing(data.full, night.stop.at_m - 5000, night.stop.at_m + 5000).length > 0;
   const month = night ? MONTHS_LONG[monthOf(night.date)]! : "";
   const others = options
     ? [
-        ...options.others.map((o) => `${o.place.name ?? "Unnamed"} (${placeKind(o.place)}), ${km(Math.abs(o.km))} km ${o.km >= 0 ? "on" : "back"}`),
+        ...options.others.map((o) => `${placeTitle(o.place, o.stop ? stopName(o.stop) : null)} (${placeKind(o.place)}), ${km(Math.abs(o.km))} km ${o.km >= 0 ? "on" : "back"}`),
         ...(options.wildCamp ? ["a wild camp, if it's allowed and feasible"] : []),
       ].join(" · ")
     : "";
@@ -109,7 +112,7 @@ export function restFacts(plan: PlanResult, data: PlanData, d: DayPlan): RestFac
   const near = (m: number, r: number) => Math.abs(m - stop.at_m) <= r;
   const di = dayIndex(d.date);
   const food = (data.full?.places ?? [])
-    .filter((p) => p.service === "food" && p.counts && near(p.access_at_m, 3000))
+    .filter((p) => p.service === "food" && p.counts && listable(p) && near(p.access_at_m, 3000))
     .map((p) => ({ p, open: typeof p.detail.days === "string" ? (p.detail.days as string)[di] === "o" : null }))
     .filter((x) => x.open !== false)
     .sort((a, b) => Number(b.open === true) - Number(a.open === true) || (a.p.access_m ?? 0) - (b.p.access_m ?? 0))

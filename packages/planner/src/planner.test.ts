@@ -14,7 +14,7 @@ import { suggestedRestDays } from "./rest";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
 import { addDays, clock, sunTimes, weekday } from "./sun";
-import { bedKinds, bedsKnown, placeKind, stayDates } from "./text";
+import { bedKinds, bedsKnown, listable, placeKind, placeTitle, stayDates } from "./text";
 import { NO_CHOICES, type NightPlan, type PlanData, type PlanInputs } from "./types";
 
 const LEVELS = [
@@ -782,5 +782,15 @@ describe("what riders are told (D75)", () => {
     expect(gap.items.some((i) => i.id === "gap:155000" && i.kind === "headsup")).toBe(false);
     expect(gap.brief.confidence.some((c) => /the route has a 20 km gap at km \d+, counted as ridden/.test(c))).toBe(true);
     expect(gap.brief.lines.map((l) => l.question)).toContain("What should I look out for?");
+  });
+});
+
+describe("places without a name", () => {
+  it("are never shown as Unnamed: what they are and where, and only when there's a way to reach them", () => {
+    expect(placeTitle({ name: null, kind: "hotel", detail: { stars: 2 } }, "Santomera")).toBe("2★ hotel near Santomera");
+    expect(placeTitle({ name: null, kind: "guest_house", detail: {} })).toBe("Guest house");
+    expect(placeTitle({ name: "Hotel Santos", kind: "hotel", detail: {} }, "Santomera")).toBe("Hotel Santos");
+    expect(listable({ name: null, detail: { phone: "+34 968 850022" } })).toBe(true);
+    expect(listable({ name: null, detail: {} })).toBe(false);
   });
 });

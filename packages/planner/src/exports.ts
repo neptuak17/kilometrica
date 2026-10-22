@@ -70,7 +70,7 @@ function placeWaypoints(day: DayPlaces | undefined): Waypoint[] {
   return [
     ...thin(day.water, 3).map((p) => ({ lon: p.lon, lat: p.lat, name: short(p.name ?? "Water"), sym: "Drinking Water" })),
     ...thin(day.food, 8).map((p) => ({ lon: p.lon, lat: p.lat, name: short(p.name ?? "Food"), sym: "Restaurant" })),
-    ...day.stations.map((p) => ({ lon: p.lon, lat: p.lat, name: short(p.name ?? "Station"), sym: "Ground Transportation" })),
+    ...day.stations.filter((p) => p.name).map((p) => ({ lon: p.lon, lat: p.lat, name: short(p.name!), sym: "Ground Transportation" })),
   ];
 }
 

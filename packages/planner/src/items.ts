@@ -11,7 +11,7 @@ import { bearing, type Geometry, locate } from "./geometry";
 import type { PlanCore } from "./plan";
 import { bedsFor } from "./stages";
 import { addDays, clock, dayIndex, monthOf, weekday } from "./sun";
-import { country, day as dayText, hours, KNOWN_ENOUGH, km, plural, sleepNoun, stopName, WEEKDAYS_LONG } from "./text";
+import { country, day as dayText, hours, KNOWN_ENOUGH, km, listable, placeTitle, plural, sleepNoun, stopName, WEEKDAYS_LONG } from "./text";
 import { type DayPlan, type Handoff, type NightPlan, type PlanChoices, type PlanData, type PlanItem, placesMissing, type Sleep } from "./types";
 
 export const CAPS = { headsup: 3, highlight: 3, brief: 5 };
@@ -308,7 +308,7 @@ export function nightOptions(data: PlanData, core: Pick<PlanCore, "inputs" | "ax
   const at = night.stop.at_m;
   const month = monthOf(night.date);
   const all = data.full.places.filter(
-    (p) => p.service === "accommodation" && p.counts && p.months[month] !== "c" && Math.abs(p.access_at_m - at) <= OPTIONS_M,
+    (p) => p.service === "accommodation" && p.counts && listable(p) && p.months[month] !== "c" && Math.abs(p.access_at_m - at) <= OPTIONS_M,
   );
   const known = (p: Place) => (["o", "p", "a"].includes(p.months[month] ?? "?") ? 0 : 1);
   const here = all
@@ -635,7 +635,7 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
         : booked
           ? "Booked"
         : chosen
-          ? `Chosen: ${chosen.name ?? "a place without a name"}`
+          ? `Chosen: ${placeTitle(chosen, name)}`
           : core.choices.beds[n.index] === WILD_CAMP && inputs.sleep !== "rooms"
             ? "Wild camp"
             : undefined,
