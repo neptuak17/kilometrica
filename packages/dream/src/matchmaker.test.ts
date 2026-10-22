@@ -184,8 +184,16 @@ describe("findStretches", () => {
 
   it("evaluates the reverse direction with the reverse climbing", () => {
     const hilly = ten.map((s) => section(s.number, { ascent_fwd_m: 1500, ascent_rev_m: 200 }));
-    expect(findStretches(dream(hilly), { ...base, days: 4, direction: "forward" })).toHaveLength(0);
-    expect(findStretches(dream(hilly), { ...base, days: 4, direction: "reverse" }).length).toBeGreaterThan(0);
+    // Forward, only stretches short enough for the climbing are within the level: easier days (D76).
+    const fwd = findStretches(dream(hilly), { ...base, days: 4, direction: "forward" });
+    expect(fwd.every((r) => r.easier)).toBe(true);
+    expect(findStretches(dream(hilly), { ...base, days: 4, direction: "reverse" }).some((r) => !r.easier)).toBe(true);
+  });
+
+  it("treats the level as a ceiling: a route shorter than the days fits, as an easier trip (D76)", () => {
+    const short = Array.from({ length: 4 }, (_, i) => section(i + 1)); // 200 km
+    const r = findStretches(dream(short), { ...base, days: 8 });
+    expect(r[0]).toMatchObject({ first: 1, last: 4, easier: true, kmPerDay: 25 });
   });
 });
 

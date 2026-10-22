@@ -168,7 +168,8 @@ export const climbText = (r: StretchResult) =>
 
 export const gradeText = (r: StretchResult, levels: Level[]) => `${r.gradeAtLeast ? "at least " : ""}${levels.find((l) => l.level === r.grade)?.name ?? `level ${r.grade}`}`;
 
-export const factsText = (r: StretchResult, levels: Level[], a: Ask) => `${daysText(r, a)} · ${km(r.km)} km · ${r.kmPerDay} km a day · ${climbText(r)} · ${gradeText(r, levels)}`;
+export const factsText = (r: StretchResult, levels: Level[], a: Ask) =>
+  `${daysText(r, a)} · ${km(r.km)} km · ${r.kmPerDay} km a day${r.easier ? ", easier than your usual" : ""} · ${climbText(r)} · ${gradeText(r, levels)}`;
 
 export function whenText(r: StretchResult, a: Ask): string | undefined {
   if (r.month === null) return undefined;

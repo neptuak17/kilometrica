@@ -45,6 +45,8 @@ export interface StretchResult {
   grade: number;
   /** The grade is a minimum, because climbing is partly unknown. */
   gradeAtLeast: boolean;
+  /** Fewer km a day than the rider's usual: an easier, more relaxed trip (D76). */
+  easier: boolean;
   month: number | null;
   comfort: number | null;
   bestTime: number | null;
@@ -188,7 +190,9 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
     if (strict) return null;
     beyond.push(`${Math.round(kmPerDay)} km a day: more than ${level.name}'s ${level.km_max} km`);
   }
-  if (strict && kmPerDay < level.km_min * (1 - 3 * TOLERANCE)) return null;
+  // The level is a ceiling, never a floor (D76): fewer km a day only makes the trip easier, so it never rules a stretch
+  // out; it ranks lower, so stretches that use the rider's days well come first.
+  const easier = kmPerDay < level.km_min * (1 - TOLERANCE);
   const climb = climbOf(secs, way);
   climb.unknownM += run.gapM; // nothing is known of the terrain across an unfilled gap (D37)
   const partly = climb.unknownM > 0;
@@ -223,7 +227,7 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
   // Fit to the rider's level: best in the middle of the band; climbing above the band costs.
   const mid = (level.km_min + level.km_max) / 2;
   const half = (level.km_max - level.km_min) / 2 || 1;
-  let fit = Math.max(0, 1 - Math.abs(kmPerDay - mid) / (half * 2));
+  let fit = kmPerDay < level.km_min ? 0.5 * (kmPerDay / level.km_min) : Math.max(0, 1 - Math.abs(kmPerDay - mid) / (half * 2));
   if (climbKnown !== null && climbKnown > level.climb_max_m) fit *= 0.6;
   parts.push([WEIGHTS.fit, fit]);
   const grade = gradeFor(dream.levels, kmPerDay, climbKnown);
@@ -330,6 +334,7 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
     climbUnknownKm: Math.round(climb.unknownM / 100) / 10,
     grade,
     gradeAtLeast: partly,
+    easier,
     month,
     comfort: comfort === null ? null : Math.round(comfort),
     bestTime: bestTime === null ? null : Math.round(bestTime),

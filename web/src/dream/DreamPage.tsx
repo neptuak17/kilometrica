@@ -303,11 +303,19 @@ function DreamRoute({ route }: { route: string }) {
   const points = useMemo(() => pointsOf(sections, daily), [sections, daily]);
   const countries = useMemo(() => countryRows(sections).length, [sections]);
   const examples = useMemo(() => examplesFor(sections), [sections]);
+  // A rider's own file is the trip (D76): the whole route, ready once the level is set, with the days of a usual
+  // day at that level until the rider sets theirs.
+  const ownRoute = files?.manifest.visibility === "private";
   // Every stretch that fits is counted; the list shows the best few (the search's own cap is lifted).
-  const results = useMemo(
-    () => (files && a.level !== null && a.days !== null ? findStretches(files.dream, { ...a, level: a.level, days: ridingDays(a.days, a.pace), limit: 1000 }) : []),
-    [files, a],
-  );
+  const results = useMemo(() => {
+    if (!files || a.level === null || !sections.length) return [];
+    if (ownRoute) {
+      const days = a.days === null ? null : ridingDays(a.days, a.pace);
+      const whole = describeStretch(files.dream, sections[0]!.number, sections[sections.length - 1]!.number, { ...a, level: a.level, days });
+      return whole ? [whole] : [];
+    }
+    return a.days === null ? [] : findStretches(files.dream, { ...a, level: a.level, days: ridingDays(a.days, a.pace), limit: 1000 });
+  }, [files, a, ownRoute, sections]);
   const shown = useMemo(() => results.slice(0, count), [results, count]);
   const ownResult = useMemo(() => {
     if (!files || a.level === null || own.from === null || own.to === null || own.from === own.to) return null;
@@ -354,7 +362,7 @@ function DreamRoute({ route }: { route: string }) {
   const levels = files.dream.levels;
   const titles = Object.fromEntries(files.dream.themes.map((t) => [t.id, t.title]));
   const total = sections.reduce((s, x) => s + x.length_m, 0);
-  const asked = a.level !== null && a.days !== null;
+  const asked = a.level !== null && (a.days !== null || ownRoute);
   const change = (patch: Partial<Ask>) => {
     setA((x) => ({ ...x, ...patch }));
     setPicked(null);
@@ -491,10 +499,17 @@ function DreamRoute({ route }: { route: string }) {
         {asked ? (
           <section aria-labelledby="results-title" className="flex max-w-[600px] min-w-0 flex-[1_1_480px] flex-col gap-3.5">
             <h2 id="results-title" className="text-lg font-semibold">
-              {results.length === 0 ? "Nothing fits" : results.length === 1 ? "One stretch fits" : `${results.length} stretches fit`}
+              {ownRoute ? "Your route" : results.length === 0 ? "Nothing fits" : results.length === 1 ? "One stretch fits" : `${results.length} stretches fit`}
               {results.length > shown.length && <span className="font-normal text-muted-foreground"> · the best {shown.length} shown</span>}
             </h2>
-            {results.length === 0 && <p className="text-muted-foreground">Try more days, another level or fewer needs, or pick your own stretch below.</p>}
+            {results.length === 0 && (
+              <p className="text-muted-foreground">
+                Every stretch is more than your level can do in these days, or misses something you asked for (trains at both ends, avoiding busy roads). Try more days, a higher level or fewer needs, or pick your own stretch below.
+              </p>
+            )}
+            {ownRoute && a.days === null && results.length > 0 && (
+              <p className="text-xs text-muted-foreground">The days are those of a usual day at your level; set your days above to change them.</p>
+            )}
             {shown.map((r, i) => (
               <StretchCard
                 key={keyOf(r)}
