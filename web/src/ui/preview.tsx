@@ -92,12 +92,13 @@ const DAYS: { number: number; date: string; to: string; km?: string; hours?: str
 ]
 
 // Made-up figures, for the look only: hours per day, and a rolling coast with one climb and an unknown stretch.
-const EFFORT_DAYS: { day: number; hours: number; label: string; effort: Effort }[] = [
+const EFFORT_DAYS: { day: number; hours: number; label: string; effort: Effort; rest?: boolean }[] = [
   { day: 1, hours: 4.08, label: "4 h 05", effort: "within" },
   { day: 2, hours: 4.67, label: "4 h 40", effort: "within" },
   { day: 3, hours: 5.17, label: "5 h 10", effort: "harder" },
-  { day: 4, hours: 3.3, label: "3 h 20", effort: "within" },
-  { day: 5, hours: 7.42, label: "7 h 25", effort: "beyond" },
+  { day: 4, hours: 0, label: "Rest", effort: "within", rest: true },
+  { day: 5, hours: 3.3, label: "3 h 20", effort: "within" },
+  { day: 6, hours: 7.42, label: "7 h 25", effort: "beyond" },
 ]
 const PROFILE = Array.from({ length: 301 }, (_, i) => {
   const km = i

@@ -260,7 +260,7 @@ export interface Brief {
   km: number;
   climbM: number;
   direction: Direction;
-  effort: { day: number; hours: number; usual: number; effort: Effort }[];
+  effort: { day: number; hours: number; usual: number; effort: Effort; rest: boolean }[];
   lines: BriefLine[];
   readiness: string;
   confidence: string[];

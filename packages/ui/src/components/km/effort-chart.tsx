@@ -1,8 +1,9 @@
 /**
  * The trip's effort, day by day (11.6), in the new UI kit (D53, D54): riding hours per day as bars against the
  * rider's usual day (the dashed line), coloured by effort against their level, with each day's hours above its bar.
- * A bar opens its day. The words come from the app (the hours, the usual day's line); the kit only draws. Meant for a
- * card: the hours sit on the card's colour, so the dashed line passes behind them.
+ * A bar opens its day. A rest day keeps its place in the row, with no bar, so the trip reads as it is lived. The words
+ * come from the app (the hours, the usual day's line); the kit only draws. Meant for a card: the hours sit on the
+ * card's colour, so the dashed line passes behind them.
  */
 import { cn } from "cn"
 
@@ -21,6 +22,8 @@ export interface EffortChartDay {
   /** The hours as the rider reads them, e.g. "4 h 30". */
   label: string
   effort: Effort
+  /** A rest day: no riding, no bar; `label` is said in its place (e.g. "Rest"). */
+  rest?: boolean
 }
 
 export interface EffortChartProps {
@@ -56,7 +59,12 @@ export function EffortChart({ days, usual, usualLabel, title = "Effort, day by d
         {days.map((d) => {
           const on = selected === d.day
           const e = EFFORT[d.effort]
-          const bar = (
+          const bar = d.rest ? (
+            <>
+              <span className="mb-1 self-center text-xs text-muted-foreground">{d.label}</span>
+              <span className={cn("h-1 w-full rounded-full bg-muted-foreground/30", on && "ring-2 ring-route-chosen ring-offset-2 ring-offset-card")} />
+            </>
+          ) : (
             <>
               {labels && (
                 <span className={cn("relative mb-1 max-w-full self-center truncate rounded bg-card px-1 text-center text-xs tabular-nums", e.strong ? "font-bold text-headsup-foreground" : "text-foreground")}>{d.label}</span>
@@ -73,7 +81,7 @@ export function EffortChart({ days, usual, usualLabel, title = "Effort, day by d
               />
             </>
           )
-          const title = `Day ${d.day}: ${d.label} riding, ${e.label}`
+          const title = d.rest ? `Day ${d.day}: ${d.label}` : `Day ${d.day}: ${d.label} riding, ${e.label}`
           return onPick ? (
             <button
               key={d.day}
@@ -95,7 +103,7 @@ export function EffortChart({ days, usual, usualLabel, title = "Effort, day by d
       {names !== "none" && (
         <div className="flex gap-1.5 text-center text-xs text-muted-foreground tabular-nums">
           {days.map((d) => (
-            <span key={d.day} className={cn("min-w-0 flex-1 truncate", (selected === d.day || EFFORT[d.effort].strong) && "font-semibold text-foreground")}>
+            <span key={d.day} className={cn("min-w-0 flex-1 truncate", (selected === d.day || (!d.rest && EFFORT[d.effort].strong)) && "font-semibold text-foreground")}>
               {names === "long" ? `Day ${d.day}` : d.day}
             </span>
           ))}

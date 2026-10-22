@@ -253,7 +253,8 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
     km: total,
     climbM: climb,
     direction: inputs.direction,
-    effort: rides.map((d) => ({ day: d.number, hours: d.hoursSlow, usual: usual.hours, effort: d.effort })),
+    // Every day, rest days too (no riding), so the chart reads as the trip is lived (D74).
+    effort: days.map((d) => ({ day: d.number, hours: d.kind === "rest" ? 0 : d.hoursSlow, usual: usual.hours, effort: d.effort, rest: d.kind === "rest" })),
     lines,
     readiness,
     confidence,

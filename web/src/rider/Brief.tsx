@@ -10,7 +10,7 @@ import { type ReactNode, useState } from "react";
 export function EffortChart({ plan, selected, onPick, changed }: { plan: PlanResult; selected: number | null; onPick: (n: number) => void; changed?: number[] }) {
   return (
     <KitEffortChart
-      days={plan.brief.effort.map((e) => ({ day: e.day, hours: e.hours, label: hours(e.hours), effort: e.effort }))}
+      days={plan.brief.effort.map((e) => ({ day: e.day, hours: e.hours, label: e.rest ? "Rest" : hours(e.hours), effort: e.effort, rest: e.rest }))}
       usual={plan.usual.hours}
       usualLabel={`Your usual day at ${plan.level.name}, about ${hours(plan.usual.hours)}`}
       selected={selected}
