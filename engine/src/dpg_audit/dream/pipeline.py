@@ -42,6 +42,21 @@ PATHS = {"cycleway", "shared_path", "separated_track"}
 NOT_KNOWN = {"unmatched", "unknown"}
 ACCOMMODATION_KIND = {"campsite": "campsite", "hostel": "hostel", "hut": "hostel"}
 GAP_SERVICES = ("water", "food", "accommodation", "bike_shop")
+RIDER_FINDINGS = {"audit.busy_road": 5000.0, "audit.steps": 0.0, "eurovelo.undeveloped": 5000.0}
+"""Findings a rider is told about whatever their answers (D75), with the length they need inside a section: the
+`rider` count Dream and the free plan give in place of the audit's own warnings."""
+
+
+def rider_findings(findings: list[Finding], lo: float, hi: float) -> int:
+    """How many findings over [lo, hi] a rider would be shown (D75)."""
+    n = 0
+    for f in findings:
+        need = RIDER_FINDINGS.get(f.rule_id)
+        if need is None or f.to_m < lo or f.from_m > hi:
+            continue
+        if min(f.to_m, hi) - max(f.from_m, lo) >= need:
+            n += 1
+    return n
 
 
 @dataclass
@@ -281,6 +296,7 @@ def build_dream(
 
         svc = svc_by_number.get(d.number)
         fcount = Counter(f.severity.value for f in findings if f.from_m < d.to_m and f.to_m > d.from_m)
+        fcount["rider"] = rider_findings(findings, d.from_m, d.to_m)
         km = d.length_m / 1000
         sections.append(
             DreamSection(

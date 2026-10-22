@@ -316,8 +316,9 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
   if (steep >= 8) watch.push(`steepest 500 m at ${steep.toFixed(0)}%`);
   for (const c of run.crossings) watch.push(c);
   if (!stationStart || !stationEnd) watch.push("no bike-carrying station found at one end");
-  const findings = secs.reduce((a, s) => a + (s.findings.warning ?? 0), 0);
-  if (findings) watch.push(`${findings} audit warning(s): details with a Trip Pass`);
+  // What a rider would be told about (D75); an older audit has only its own warnings.
+  const findings = secs.reduce((a, s) => a + (s.findings.rider ?? s.findings.warning ?? 0), 0);
+  if (findings) watch.push(`${findings} ${findings === 1 ? "thing" : "things"} to look out for: details with a Trip Pass`);
   for (const s of secs) for (const c of s.check) check.add(c);
 
   const total = parts.reduce((a, [w]) => a + w, 0);

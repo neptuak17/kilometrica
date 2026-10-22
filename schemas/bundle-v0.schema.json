@@ -1087,7 +1087,7 @@
           "additionalProperties": {
             "type": "integer"
           },
-          "description": "Findings overlapping the section, per severity",
+          "description": "Findings overlapping the section, per severity; `rider`: the ones a rider is told about (D75)",
           "type": "object"
         },
         "comfort": {

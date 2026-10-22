@@ -141,7 +141,11 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
   const audit = data.full
     ? 0
     : [...new Set(rides.flatMap((d) => d.sections))].reduce(
-        (a, n) => a + (data.dream.sections.find((s) => s.number === n)?.findings.warning ?? 0),
+        (a, n) => {
+          // What a rider would be told about (D75); an older audit has only its own warnings.
+          const f = data.dream.sections.find((s) => s.number === n)?.findings;
+          return a + (f?.rider ?? f?.warning ?? 0);
+        },
         0,
       );
   lines.push({
@@ -150,9 +154,9 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
     // The teaser gives counts in place of detail (D45).
     answer: !data.full
       ? risks.length
-        ? `${plural(risks.length + audit, "thing")} to know on these days${audit ? `, ${audit} of them from the audit` : ""}: the details come with a Trip Pass.`
+        ? `${plural(risks.length + audit, "thing")} to look out for on these days: the details come with a Trip Pass.`
         : audit
-          ? `${plural(audit, "warning")} from the audit on these days: the details come with a Trip Pass.`
+          ? `${plural(audit, "thing")} to look out for on these days: the details come with a Trip Pass.`
           : "Nothing stands out in the outline."
       : risks[0]
       ? `${risks[0].day ? `Day ${risks[0].day}: ` : ""}${risks[0].title}${risks[0].kind === "call" ? ": your call" : ""}.` +

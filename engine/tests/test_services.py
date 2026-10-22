@@ -385,6 +385,24 @@ def test_shared_front_pages_are_not_a_places_own_site():
     assert shared_homepages(sites) == {"http://www.gcu.asso.fr", "https://www.gcu.asso.fr/", "http://gcu.asso.fr"}
 
 
+def test_dream_counts_only_what_a_rider_is_told_about():
+    # D75: busy roads from 5 km, steps, undeveloped EuroVelo from 5 km; never "partially developed" or the audit's own.
+    from dpg_audit.dream.pipeline import rider_findings
+    from dpg_audit.models import Finding
+
+    def f(rule, a, b):
+        return Finding.model_construct(rule_id=rule, from_m=a, to_m=b)
+
+    found = [
+        f("audit.busy_road", 0, 6000),
+        f("audit.busy_road", 10_000, 12_000),
+        f("audit.steps", 20_000, 20_000),
+        f("eurovelo.partially_developed", 0, 30_000),
+        f("audit.unmatched", 0, 30_000),
+    ]
+    assert rider_findings(found, 0, 30_000) == 2
+
+
 def test_a_ferry_landing_is_never_a_bail_out_station():
     # D63, D66: bail-outs are trains, so a stop never names a ferry as its station ("Train to the start: Hullo").
     places = [

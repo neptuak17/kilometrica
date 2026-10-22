@@ -692,7 +692,7 @@ export interface DreamSection {
   station_start: string | null;
   station_end: string | null;
   /**
-   * Findings overlapping the section, per severity
+   * Findings overlapping the section, per severity; `rider`: the ones a rider is told about (D75)
    */
   findings: {
     [k: string]: number;

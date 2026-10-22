@@ -547,7 +547,9 @@ class DreamSection(Model):
     longest_gap_m: dict[str, float] = Field(description="Worst-month longest gap inside the section, per service")
     station_start: str | None = Field(description="A bike-carrying station near the section start (name)")
     station_end: str | None
-    findings: dict[str, int] = Field(description="Findings overlapping the section, per severity")
+    findings: dict[str, int] = Field(
+        description="Findings overlapping the section, per severity; `rider`: the ones a rider is told about (D75)"
+    )
     comfort: MonthValues
     best_time: MonthValues
     partial: list[list[str]] = Field(description="Per month: which best-time inputs had no data (D37)")
