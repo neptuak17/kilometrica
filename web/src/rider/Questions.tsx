@@ -282,6 +282,7 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
           <div className="grid gap-2.5">
             <Check label="Rather avoid busy roads" checked={inputs.avoidBusy} disabled={readOnly} onChange={(on) => set("avoidBusy", on)} />
             <Check label="Rather avoid gravel" checked={inputs.avoidGravel} disabled={readOnly} onChange={(on) => set("avoidGravel", on)} />
+            <Check label="Show each day's stations for taking a train home" checked={!!inputs.bailouts} disabled={readOnly} onChange={(on) => set("bailouts", on)} />
           </div>
         </div>
       </details>

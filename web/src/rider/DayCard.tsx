@@ -23,6 +23,7 @@ import {
   placeKind,
   placeLinks,
   railLinks,
+  STEEP,
   WILD_CAMP,
   wikiLinks,
   type DayPlan,
@@ -166,6 +167,8 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   const range = d.hoursFast !== d.hoursSlow && Math.abs(d.hoursSlow - d.hoursFast) > 0.05;
   const ride = d.kind === "ride";
   const isLastRide = d.ride === plan.days.filter((x) => x.kind === "ride").length;
+  // Only a long steep stretch is worth a line (D75).
+  const steepShown = !!d.steepest && d.steepest.grade > STEEP(plan.level.level).grade;
   const rest = d.kind === "rest" && !free ? restFacts(plan, data, d) : null;
   const next = plan.days.find((x) => x.number === d.number + 1);
   const unloadedText = unloaded.map(([a, b]) => `km ${a}–${b}`).join(", ");
@@ -231,10 +234,10 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
             </div>
           </dl>
         )}
-        {ride && (range || d.steepest) && (
+        {ride && (range || steepShown) && (
           <p className="-mt-2 text-xs text-muted-foreground">
             {range && "A range, since the surface is unknown on part of the day. "}
-            {d.steepest && `Steepest 500 m: ${Math.round(d.steepest.grade)}% at km ${Math.round(d.steepest.atKm)}.`}
+            {steepShown && `Steepest ${d.steepest!.lengthKm} km: ${Math.round(d.steepest!.grade)}% at km ${Math.round(d.steepest!.atKm)}.`}
           </p>
         )}
 
@@ -484,7 +487,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                 )}
               </Part>
             )}
-            {ride && stations.length > 0 && (
+            {ride && plan.inputs.bailouts && stations.length > 0 && (
               <Part icon={<Icons.Train />} label="Bail-out">
                 <span className="tabular-nums">
                   {stations

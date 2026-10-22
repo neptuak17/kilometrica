@@ -16,6 +16,9 @@ import { type DayPlan, type Handoff, type NightPlan, type PlanChoices, type Plan
 
 export const CAPS = { headsup: 3, highlight: 3, brief: 5 };
 
+/** A steep stretch worth raising (D75): this long and steeper than this on average, by level. */
+export const STEEP = (level: number) => (level <= 3 ? { km: 2, grade: 6 } : { km: 5, grade: 8 });
+
 /** Schengen members (2025); crossing out of or into the area needs documents checked. Source: European Commission. */
 export const SCHENGEN = new Set([
   "AT", "BE", "BG", "CH", "CZ", "DE", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IS", "IT", "LI", "LT", "LU",
@@ -358,20 +361,25 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
         day: d.number,
         fromM: d.fromM,
         toM: d.toM,
-        title: `Day ${d.number} is beyond ${level.name}: ${km(d.km)} km, ${Math.round(d.climbM)} m`,
+        title: `Day ${d.number} is beyond your specified level (${level.name}): ${km(d.km)} km, ${Math.round(d.climbM)} m`,
         why: `About ${hours(d.hoursSlow)} riding, against your usual ${hours(usual.hours)}.`,
         rank: 36,
         topic: "able",
         evidence: { source: "pace model (level presets, D36)" },
         handoffs: [],
         options: [
-          { id: "add-day", label: "Add a day", effect: "one more riding day; the others re-plan around it" },
+          {
+            id: "add-day",
+            label: "Add a day",
+            effect: core.restAfter.length ? "one of your rest days becomes a riding day" : "your trip ends a day later: check your return arrangements",
+          },
           { id: `move:${d.number}`, label: "Move this stop", effect: "pick another night's stop on the day" },
           { id: "keep", label: "Keep it", effect: "a long day, ridden as it is" },
         ],
       });
     }
-    if (d.sunset !== null && d.endMinutes > d.sunset) {
+    // Only well after sunset (D75): arriving in the dusk isn't worth a call.
+    if (d.sunset !== null && d.endMinutes > d.sunset + 30) {
       const early = Math.ceil((d.endMinutes - d.sunset + 15) / 15) * 15;
       add({
         id: `sunset:${d.number}`,
@@ -395,7 +403,8 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
   }
   for (let i = 0; i + 2 < rides.length; i++) {
     const run = rides.slice(i, i + 3);
-    if (run.every((d) => d.effort !== "within") && !items.some((x) => x.id.startsWith("effort:run:"))) {
+    // Not when a rest day already breaks or follows the run (D74, D75).
+    if (run.every((d) => d.effort !== "within") && !run.some((d) => core.restAfter.includes(d.ride!)) && !items.some((x) => x.id.startsWith("effort:run:"))) {
       add({
         id: `effort:run:${run[0]!.number}`,
         kind: "call",
@@ -447,31 +456,31 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
       fromM: null,
       toM: null,
       title: o.why,
-      why: `You chose ${plural(inputs.days, "riding day")}; this is the planner's suggestion, not a change.`,
+      // A rest day becomes the riding day when there is one; otherwise the trip ends a day later (D75).
+      why: core.restAfter.length ? "One of your rest days becomes a riding day; your end date stays." : "Your trip ends a day later: check your return arrangements.",
       rank: 34,
       topic: "able",
       evidence: { source: "stage planner" },
       handoffs: [],
       options: [
-        { id: `days:${o.days}`, label: `${o.days} days`, effect: o.days > inputs.days ? "one more riding day" : "one riding day fewer" },
-        { id: "keep", label: `Keep ${inputs.days}`, effect: "as you chose" },
+        { id: `days:${o.days}`, label: core.restAfter.length ? "Use a rest day" : "Add a day", effect: core.restAfter.length ? "same end date" : "ends a day later" },
+        { id: "keep", label: "Keep it", effect: "as it is" },
       ],
     });
   }
-  // The steepest 500 m of each day, from the effort profile: a heads-up when it is steep for the rider's level.
-  const steepFor: Record<number, number> = { 1: 6, 2: 8, 3: 10, 4: 12, 5: 14 };
+  // A long steep stretch (D75): 2 km over 6% at levels 1-3, 5 km over 8% at 4-5; short ramps aren't worth raising.
+  const steep = STEEP(level.level);
   for (const d of rides) {
-    const limit = steepFor[level.level] ?? 10;
-    if (d.steepest && d.steepest.grade >= limit) {
+    if (d.steepest && d.steepest.grade > steep.grade) {
       add({
         id: `steep:${d.number}`,
         kind: "headsup",
         day: d.number,
         fromM: core.axis.mOf(d.fromT + d.steepest.atKm * 1000),
-        toM: core.axis.mOf(d.fromT + d.steepest.atKm * 1000 + 500),
-        title: `km ${Math.round(d.steepest.atKm)}: 500 m at ${Math.round(d.steepest.grade)}%`,
+        toM: core.axis.mOf(d.fromT + (d.steepest.atKm + steep.km) * 1000),
+        title: `km ${Math.round(d.steepest.atKm)}: ${steep.km} km at ${Math.round(d.steepest.grade)}%`,
         short: `Steep ${Math.round(d.steepest.grade)}%`,
-        why: `The steepest part of the day, steep for ${level.name} riders; from a 30 m terrain model, so short ramps can be steeper.`,
+        why: `A long steep climb for ${level.name} riders.`,
         rank: 35,
         topic: "able",
         evidence: { source: "Copernicus DEM GLO-30 (effort.json)" },
@@ -483,11 +492,11 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
     if (d.unknownKm >= 1) {
       add({
         id: `terrain:${d.number}`,
-        kind: "headsup",
+        kind: "note",
         day: d.number,
         fromM: d.fromM,
         toM: d.toM,
-        title: `Terrain unknown for ${km(d.unknownKm)} km: climbing and time are minimums`,
+        title: `terrain unknown for ${km(d.unknownKm)} km, so climbing and time there are minimums`,
         short: "Terrain unknown",
         why: "The official track is a straight line or a gap there, so nobody has measured the real road (D37).",
         rank: 29,
@@ -547,11 +556,11 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
       } else if (g.type === "missing" || g.type === "unclassified") {
         add({
           id: `gap:${Math.round(g.atM)}`,
-          kind: "headsup",
+          kind: "note",
           day: d.number,
           fromM: g.atM,
           toM: g.atM,
-          title: `The route has a ${km(g.km)} km gap here, counted as ridden`,
+          title: `the route has a ${km(g.km)} km gap at km ${at}, counted as ridden: draw your own line across it in your route tool`,
           short: `Route gap ${km(g.km)} km`,
           why: `At km ${at} of the day the official track stops: no track, ferry or published link. Draw your own line across it in your route tool.`,
           rank: 52,
@@ -689,28 +698,12 @@ export function planItems(data: PlanData, core: PlanCore, geo?: Geometry): PlanI
   for (const cc of countries) {
     const cal = data.calendar?.countries.find((c) => c.country === cc);
     if (!cal || cal.public_year === null) {
-      add({ id: `data:holidays:${cc}`, kind: "todo", day: null, fromM: null, toM: null, title: `Public holidays in ${country(cc)}: no data`, why: "Shops and some places close on public holidays: check the local calendar.", rank: 15, topic: "prepare", evidence: { source: "OpenHolidays" }, handoffs: [] });
+      add({ id: `data:holidays:${cc}`, kind: "note", day: null, fromM: null, toM: null, title: `We have no public holidays for ${country(cc)}: check the local calendar`, why: "", rank: 15, topic: "prepare", evidence: { source: "OpenHolidays" }, handoffs: [] });
     } else if (cal.public_year !== year) {
-      add({ id: `data:holidays:${cc}`, kind: "todo", day: null, fromM: null, toM: null, title: `Public holidays in ${country(cc)} for ${year} aren't published yet`, why: "Check the local calendar before you go.", rank: 15, topic: "prepare", evidence: { source: "OpenHolidays" }, handoffs: [] });
+      add({ id: `data:holidays:${cc}`, kind: "note", day: null, fromM: null, toM: null, title: `Public holidays in ${country(cc)} for ${year} aren't published yet: check the local calendar`, why: "", rank: 15, topic: "prepare", evidence: { source: "OpenHolidays" }, handoffs: [] });
     }
   }
-  const unknownSurface = rides.reduce((a, d) => a + d.surfaces.u * d.km, 0);
-  const total = rides.reduce((a, d) => a + d.km, 0);
-  if (total > 0 && unknownSurface / total > 0.1) {
-    add({
-      id: "data:surface",
-      kind: "todo",
-      day: null,
-      fromM: null,
-      toM: null,
-      title: `Surface unknown for ${km(unknownSurface)} km of the way`,
-      why: "Times there are ranges; look at the line in your route tool or street-level imagery.",
-      rank: 14,
-      topic: "prepare",
-      evidence: { source: "OSM surface tags (M1)" },
-      handoffs: [],
-    });
-  }
+  // An unknown surface is said in the brief's note, never as a to-do (D75).
 
   if (data.full) fullRules(data, core, add);
 
@@ -758,7 +751,8 @@ const FINDING_RULES: Record<string, FindingRule> = {
     },
     short: (len) => `Busy road ${km(len)} km`,
     why: "Fast or heavy traffic and no cycle lane, estimated from the road's class and speed limit.",
-    relevant: (core, _f, len) => len >= 1 || core.inputs.avoidBusy,
+    // From 5 km, or 1 km when the rider asked to avoid busy roads (D75).
+    relevant: (core, _f, len) => len >= 5 || (core.inputs.avoidBusy && len >= 1),
   },
   "audit.steps": { rank: 36, title: () => "steps", short: () => "Steps", why: "You'll need to carry or push the bike." },
   "audit.unpaved": {
@@ -766,33 +760,25 @@ const FINDING_RULES: Record<string, FindingRule> = {
     title: (_f, len) => `${km(len)} km unpaved`,
     short: (len) => `Unpaved ${km(len)} km`,
     why: "Loose gravel, dirt or sand: slow with a loaded bike, and harder when wet.",
-    relevant: (core) => core.inputs.avoidGravel || core.inputs.bike === "road",
+    // Never under 1 km; from 2 km on a road bike, from 1 km when the rider asked to avoid gravel (D75).
+    relevant: (core, _f, len) => len >= 1 && (core.inputs.avoidGravel || (core.inputs.bike === "road" && len >= 2)),
   },
   "services.bail_out": {
     rank: 46,
     title: (_f, len) => `${km(len)} km without a station that carries bikes`,
     short: (len) => `No bike station ${km(len)} km`,
     why: "No station within 10 km of the route where bikes are known to be carried.",
+    // Only when the rider asked for daily bail-outs, from 10 km (D75).
+    relevant: (core, _f, len) => !!core.inputs.bailouts && len >= 10,
   },
   "eurovelo.undeveloped": {
     rank: 30,
     title: () => "the route is undeveloped here",
     short: () => "Undeveloped route",
     why: "EuroVelo has no reliable information here, or it isn't developed for cycling: expect no signs, and possibly busy roads.",
+    relevant: (_core, _f, len) => len >= 5,
   },
-  "eurovelo.partially_developed": {
-    rank: 20,
-    title: () => "the route is partially developed here",
-    short: () => "Partly developed",
-    why: "EuroVelo rates it partially developed: expect parts without cycle infrastructure or signs.",
-  },
-  "audit.unmatched": {
-    rank: 31,
-    title: (_f, len) => `${km(len)} km where the official track follows no mapped way`,
-    short: (len) => `Off-map track ${km(len)} km`,
-    why: "Check the line in your route tool.",
-    relevant: (_core, _f, len) => len >= 1,
-  },
+  // "Partially developed" and a track that follows no mapped way stay in the audit for the network (D75).
 };
 
 function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
@@ -896,7 +882,8 @@ function fullRules(data: PlanData, core: PlanCore, add: (i: PlanItem) => void) {
     // The day's biggest climb.
     const climbs = full.climbs.filter((c) => c.direction === core.inputs.direction && inDay(core, d, c.from_m, c.to_m));
     const big = climbs.sort((a, b) => b.fiets - a.fiets)[0];
-    if (big && big.gain_m >= 150) {
+    // Big climbs (D75): from 200 m at levels 1-2, from 400 m above that.
+    if (big && big.gain_m >= (core.level.level <= 2 ? 200 : 400)) {
       const at = Math.round(dayKm(core, d, core.inputs.direction === "forward" ? big.from_m : big.to_m));
       const tough = core.level.level <= 2 && (big.avg_grade >= 5 || big.length_m >= 5000);
       add({

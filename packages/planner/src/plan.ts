@@ -8,7 +8,7 @@ import type { RiderLevel, Stop, UserPlace } from "@dpg/contracts";
 import { TripAxis } from "./axis";
 import type { Geometry } from "./geometry";
 import { makeBrief } from "./brief";
-import { planItems } from "./items";
+import { planItems, STEEP } from "./items";
 import { placeRests, restWhy } from "./rest";
 import { type Rider, riderFor, usualDay } from "./pace";
 import {
@@ -23,7 +23,7 @@ import {
   usable,
 } from "./stages";
 import { addDays, monthOf, sunTimes } from "./sun";
-import { bedsKnown, km as kmText, MONTHS_LONG, stopName } from "./text";
+import { bedsKnown, km as kmText, MONTHS_LONG, plural, stopName } from "./text";
 import {
   type Brief,
   type DayPlan,
@@ -295,27 +295,19 @@ export function makePlan(
     }),
   );
 
-  // A day more or fewer, when it makes the plan clearly better (D48: Dream's number by default).
+  // One more riding day, only when days are beyond the rider's level and it makes fewer of them so (D75): nothing is
+  // said when every day is within it.
   const offers: DaysOffer[] = [];
-  if (!choices.nights && !own.length) {
-    const score = (p: StagePlan) => ({
-      beyond: p.days.filter((d) => d.effort === "beyond").length,
-      dark: p.days.filter((d) => d.afterSunset).length,
-      cost: p.cost,
-    });
-    const now = score(stage);
-    for (const n of [rides + 1, rides - 1]) {
-      if (n < 1 || n > rides * 2) continue;
-      const alt = planStages(ctx, n, new Map());
-      if (!alt) continue;
-      const s = score(alt);
-      const fewerHard = s.beyond < now.beyond || (s.beyond === now.beyond && s.dark < now.dark);
-      if (n > rides && fewerHard) {
-        const what = s.beyond < now.beyond ? "no day beyond your level" : "no day ending after sunset";
-        offers.push({ days: n, why: `${n} riding days instead of ${rides}: ${what}`, plan: alt });
-      } else if (n < rides && s.beyond <= now.beyond && s.dark <= now.dark && s.cost < now.cost * 0.75) {
-        offers.push({ days: n, why: `${n} riding days instead of ${rides}: days closer to your usual`, plan: alt });
-      }
+  const beyondNow = stage.days.filter((d) => d.effort === "beyond").length;
+  if (!choices.nights && !own.length && beyondNow) {
+    const alt = planStages(ctx, rides + 1, new Map());
+    const left = alt ? alt.days.filter((d) => d.effort === "beyond").length : beyondNow;
+    if (alt && left < beyondNow) {
+      offers.push({
+        days: rides + 1,
+        why: left ? `One more riding day: ${plural(beyondNow - left, "day")} fewer beyond your level` : "One more riding day keeps every day within your level",
+        plan: alt,
+      });
     }
   }
 
@@ -363,8 +355,9 @@ export function makePlan(
       gaps: stats.gaps,
       tailwindMs: stats.tailwindMs,
       steepest: (() => {
-        const s = axis.steepest(t0, t1);
-        return s ? { grade: s.grade, atKm: (s.t - t0) / 1000 } : null;
+        const lengthKm = STEEP(level.level).km;
+        const s = axis.steepest(t0, t1, lengthKm * 1000);
+        return s ? { grade: s.grade, atKm: (s.t - t0) / 1000, lengthKm } : null;
       })(),
       sections: stats.sections,
     });

@@ -221,7 +221,7 @@ describe("makePlan", () => {
     expect(p.brief.lines.map((l) => l.question)).toEqual([
       "Can I do it?",
       "Where will I sleep?",
-      "What could go wrong?",
+      "What should I look out for?",
       "What do I sort out before I go?",
       "What will it be like?",
     ]);
@@ -304,7 +304,7 @@ describe("makePlan", () => {
 
   it("highlights an unfilled gap and counts it as ridden; a ferry becomes a check (D50)", () => {
     const gap = makePlan(data({ gapAtKm: 155 }), inputs({ toM: 300_000 }));
-    expect(gap.items.some((i) => i.id === "gap:155000" && i.kind === "headsup")).toBe(true);
+    expect(gap.items.some((i) => i.id === "gap:155000" && i.kind === "note")).toBe(true);
     expect(gap.days.reduce((a, d) => a + d.km, 0)).toBeCloseTo(320, 0);
     const ferry = makePlan(data({ gapAtKm: 155, gapType: "ferry" }), inputs());
     expect(ferry.items.some((i) => i.id === "ferry:155000" && i.kind === "todo")).toBe(true);
@@ -398,7 +398,7 @@ describe("plan actions and what changed (11.7)", () => {
     const call = { id: "effort:beyond:2" } as never;
     expect(optionOutcome(call, "keep")).toEqual({ action: { type: "dismiss", item: "effort:beyond:2" } });
     expect(optionOutcome(call, "add-day")).toEqual({ action: { type: "add-day" } });
-    expect(optionOutcome(call, "days:6")).toEqual({ action: { type: "set", inputs: { days: 6 } } });
+    expect(optionOutcome(call, "days:6")).toEqual({ action: { type: "ride-days", days: 6 } });
     expect(optionOutcome(call, "earlier:30")).toEqual({ action: { type: "start-earlier", minutes: 30 } });
     expect(optionOutcome(call, "rest:2")).toEqual({ action: { type: "rest", afterRide: 2, on: true } });
     expect(optionOutcome(call, "move:3")).toEqual({ showDay: 3 });
@@ -671,7 +671,7 @@ describe("sparse country and the rider's own stops (D69, D70)", () => {
     expect(p.items.find((i) => i.id.startsWith("travel:end:"))?.why).toBe("No trains that carry bikes along most of this route: you organise your own way there and back.");
     expect(p.items.some((i) => i.id.startsWith("finding:f1:"))).toBe(false);
     const short = { ...noTrains, to_m: 80_000 } as Finding;
-    expect(makePlan(withFull([short]), inputs()).items.some((i) => i.id.startsWith("finding:f1:"))).toBe(true);
+    expect(makePlan(withFull([short]), inputs({ bailouts: true })).items.some((i) => i.id.startsWith("finding:f1:"))).toBe(true);
   });
 
   it("plans a bikepacking bike slower than a touring bike on tarmac and faster on gravel", () => {
@@ -763,5 +763,24 @@ describe("rest days: placed where they help, moved as life happens (D74)", () =>
     const p1 = makePlan(data(), inputs({ restAfter: [1] }), choices);
     expect(line(p1).settled).toBeUndefined();
     expect(line(p1).why).toMatch(/^Your booking was for .+; this night is now .+: change it with them\.$/);
+  });
+});
+
+describe("what riders are told (D75)", () => {
+  it("adds a riding day from a rest day when there is one, else a day to the trip; one fewer becomes a rest day", () => {
+    const at = (restDays: number) => ({ inputs: inputs({ days: 10, restDays }), choices: NO_CHOICES }) as PlanState;
+    expect(applyAction(at(2), { type: "ride-days", days: 11 }).inputs).toMatchObject({ days: 11, restDays: 1 });
+    expect(applyAction(at(0), { type: "ride-days", days: 11 }).inputs).toMatchObject({ days: 11, restDays: 0 });
+    expect(applyAction(at(1), { type: "ride-days", days: 9 }).inputs).toMatchObject({ days: 9, restDays: 2 });
+  });
+
+  it("says nothing about more days when every day is within the rider's level, and moves data gaps to the note", () => {
+    const easy = makePlan(data(), inputs({ days: 6 }));
+    expect(easy.days.every((d) => d.effort !== "beyond")).toBe(true);
+    expect(easy.offers).toEqual([]);
+    const gap = makePlan(data({ gapAtKm: 155 }), inputs());
+    expect(gap.items.some((i) => i.id === "gap:155000" && i.kind === "headsup")).toBe(false);
+    expect(gap.brief.confidence.some((c) => /the route has a 20 km gap at km \d+, counted as ridden/.test(c))).toBe(true);
+    expect(gap.brief.lines.map((l) => l.question)).toContain("What should I look out for?");
   });
 });

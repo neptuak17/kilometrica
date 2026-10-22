@@ -14,6 +14,11 @@ export type PlanAction =
   /** Any of the rider's answers: dates, days, level, bike, sleep, start time, stops, stretch, direction. */
   | { type: "set"; inputs: Partial<PlanInputs> }
   | { type: "add-day" }
+  /**
+   * Riding days (D75): one more uses up a rest day when there is one (the end date holds), else the trip ends a day
+   * later; one fewer becomes a rest day, placed where it helps.
+   */
+  | { type: "ride-days"; days: number }
   | { type: "start-earlier"; minutes: number }
   /**
    * A rest day after this riding day (1-based), or none (D74). The end date holds, so a rest day takes a riding day
@@ -63,7 +68,13 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
       return replan(next);
     }
     case "add-day":
-      return replan({ days: inputs.days + 1, stops: "ours" });
+    case "ride-days": {
+      const n = action.type === "add-day" ? inputs.days + 1 : Math.max(1, Math.round(action.days));
+      const count = Math.max(inputs.restDays ?? 0, inputs.restAfter.length);
+      if (n > inputs.days && count > 0) return replan({ days: n, restDays: count - 1, restAfter: inputs.restAfter.slice(0, count - 1), stops: "ours" });
+      if (n < inputs.days) return replan({ days: n, restDays: count + 1, stops: "ours" });
+      return replan({ days: n, stops: "ours" });
+    }
     case "start-earlier":
       return replan({ startMinutes: Math.max(EARLIEST_START, inputs.startMinutes - action.minutes) });
     case "rest": {
@@ -133,7 +144,7 @@ export function optionOutcome(item: PlanItem, optionId: string): OptionOutcome |
     case "add-day":
       return { action: { type: "add-day" } };
     case "days":
-      return Number.isFinite(n) ? { action: { type: "set", inputs: { days: n } } } : null;
+      return Number.isFinite(n) ? { action: { type: "ride-days", days: n } } : null;
     case "earlier":
       return Number.isFinite(n) ? { action: { type: "start-earlier", minutes: n } } : null;
     case "rest":

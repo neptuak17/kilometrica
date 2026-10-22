@@ -60,14 +60,14 @@ export function Brief({ plan, onLine, free = false }: { plan: PlanResult; onLine
         <details className="group mt-1 rounded-2xl bg-muted px-4 py-3 text-sm">
           <summary className="flex cursor-pointer list-none items-center gap-2 font-medium text-unknown-foreground">
             <Icons.CircleHelp className="size-4 shrink-0" />
-            How well we know these days
+            Things to be aware of on your trip
             <Icons.ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" />
           </summary>
           <div className="mt-2 grid gap-2">
             <p>{b.confidence.map((c) => c.charAt(0).toUpperCase() + c.slice(1)).join(". ")}.</p>
             <p className="text-muted-foreground">
               From the audit of {plan.route.name}: OpenStreetMap, Overture, Copernicus terrain and climate, holidays and our bike-carriage table, each with
-              its source and date. Where we have no data we say so, and it becomes a check for you.
+              its source and date. Where we have no data, we say so here.
             </p>
           </div>
         </details>

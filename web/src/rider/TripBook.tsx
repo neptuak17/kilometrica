@@ -33,6 +33,7 @@ import {
   type PlanResult,
   sleepNoun,
   slice,
+  STEEP,
   stopName,
   toDo,
   WEEKDAYS_LONG,
@@ -460,7 +461,7 @@ function TripPage({ plan, geometry, routeName, levelName, link, pages, pageOf }:
           <div className="grid gap-1">
             <h2 className="flex items-center gap-2 text-[15px] font-semibold">
               <Icons.CircleHelp className="size-4" />
-              How well we know these days
+              Things to be aware of on your trip
             </h2>
             <p>{b.confidence.map((c) => cap(c)).join(". ")}.</p>
           </div>
@@ -569,7 +570,12 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
       </dl>
       <p className="text-[15px]">
         {dayStory(data, d, plan.items)}
-        {d.steepest && <span className="text-[12.5px] text-muted-foreground"> Steepest 500 m: {Math.round(d.steepest.grade)}% at km {Math.round(d.steepest.atKm)}.</span>}
+        {d.steepest && d.steepest.grade > STEEP(plan.level.level).grade && (
+          <span className="text-[12.5px] text-muted-foreground">
+            {" "}
+            Steepest {d.steepest.lengthKm} km: {Math.round(d.steepest.grade)}% at km {Math.round(d.steepest.atKm)}.
+          </span>
+        )}
       </p>
 
       <figure className="m-0 overflow-hidden rounded-lg border break-inside-avoid">
@@ -674,7 +680,7 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
               </span>
             </Part>
           )}
-          {f.stations.length > 0 && (
+          {plan.inputs.bailouts && f.stations.length > 0 && (
             <Part icon={<Icons.Train />} label="Bail-out">
               <span>
                 {f.stations

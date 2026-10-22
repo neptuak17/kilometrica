@@ -1,6 +1,6 @@
 /**
  * The trip brief (11.6): one screen saying what the rider is taking on, in five fixed lines, one per question:
- * Can I do it? Where will I sleep? What could go wrong? What do I sort out before I go? What will it be like?
+ * Can I do it? Where will I sleep? What should I look out for? What do I sort out before I go? What will it be like?
  * Each shows the most important item for its question, plus how many more there are.
  */
 import type { PlanCore } from "./plan";
@@ -143,7 +143,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
       );
   lines.push({
     topic: "risk",
-    question: "What could go wrong?",
+    question: "What should I look out for?",
     // The teaser gives counts in place of detail (D45).
     answer: !data.full
       ? risks.length
@@ -200,7 +200,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
       ? "Ready to go: everything is taken care of"
       : `Ready to go${noBed ? "" : ": a bed every night"}${beyond.length ? "" : `${noBed ? ": " : ", "}every day within your level`}, ${plural(open.length, "thing")} to sort out before you leave`;
 
-  // How well we know these days: what it means for the rider, in words, never a percentage (D57).
+  // Things to be aware of on the trip (D75; was "how well we know these days"): in words, never a percentage (D57).
   const confidence: string[] = [];
   const unknownDays = rides.filter((d) => d.surfaces.u * d.km >= 1);
   const unknownSurface = unknownDays.reduce((a, d) => a + d.surfaces.u * d.km, 0);
@@ -232,6 +232,15 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
       );
     }
   }
+
+  // Things to be aware of that need no action (D75): route gaps, unknown terrain, missing holiday data.
+  // Unknown terrain is said once for the trip, the rest one line each.
+  const terrain = rides.filter((d) => d.unknownKm >= 1);
+  if (terrain.length) {
+    const unknownKm = terrain.reduce((a, d) => a + d.unknownKm, 0);
+    confidence.push(`The terrain is unknown for ${km(unknownKm)} km, on ${dayList(terrain.map((d) => d.number))}: climbing and time there are minimums`);
+  }
+  for (const n of items.filter((i) => i.kind === "note" && !i.id.startsWith("terrain:"))) confidence.push(n.day ? `Day ${n.day}: ${n.title}` : n.title);
 
   const start = rides[0]!;
   const end = rides[rides.length - 1]!;

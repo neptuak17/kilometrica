@@ -45,6 +45,8 @@ export interface PlanInputs {
   /** From Dream: avoid gravel, avoid busy roads. */
   avoidGravel: boolean;
   avoidBusy: boolean;
+  /** Show each day's stations for taking a train home, and the long stretches without one (D75). Off by default. */
+  bailouts?: boolean;
   /**
    * Whose nights (D70): "own" takes the nights the rider's route file marks, and the days follow from them; "ours"
    * plans the stops. Unset means the file's when it marks any.
@@ -160,15 +162,17 @@ export interface DayPlan {
   /** Gaps crossed: ferries and published links (not ridden) and unfilled gaps (counted as ridden). */
   gaps: { type: string; km: number; atM: number }[];
   tailwindMs: number | null;
-  /** The steepest 500 m on known terrain, in the direction of travel: grade (%) and km of the day. */
-  steepest: { grade: number; atKm: number } | null;
+  /** The steepest stretch of `lengthKm` (2 km at levels 1-3, 5 km at 4-5, D75) on known terrain, in the direction of
+   * travel: grade (%) and km of the day. */
+  steepest: { grade: number; atKm: number; lengthKm: number } | null;
   /** Dream sections the day touches. */
   sections: number[];
   /** A rest day's reason, and whether the rider placed it (D74). */
   rest?: { why: string; own: boolean };
 }
 
-export type ItemKind = "call" | "todo" | "headsup" | "highlight";
+/** `note`: something to be aware of on the trip that needs no action, shown once in the brief's note (D75). */
+export type ItemKind = "call" | "todo" | "headsup" | "highlight" | "note";
 
 export interface Handoff {
   kind: "website" | "phone" | "maps" | "rail" | "wiki" | "photos" | "ferry" | "street" | "booking";
