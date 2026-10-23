@@ -98,8 +98,14 @@ function nearestStop(stops: Stop[], m: number): Stop | null {
   return best;
 }
 
-/** A name for a place on the route: a named stop within 5 km, a daily section's end, else its km. */
-export function placeName(data: PlanData, m: number): string {
+/**
+ * A name for an end of the trip: the daily section on the trip's side of it that starts or ends there, as Dream names
+ * a stretch, so the two agree; else a named stop within 5 km, a daily section's end within 3 km, else its km. `side`
+ * says where the trip lies: at greater route measures than `m` ("after") or smaller ("before").
+ */
+export function placeName(data: PlanData, m: number, side?: "after" | "before"): string {
+  const edge = data.daily.find((d) => (side === "after" ? Math.abs(d.from_m - m) < 1000 && d.start_name : side === "before" && Math.abs(d.to_m - m) < 1000 && d.end_name));
+  if (edge) return (side === "after" ? edge.start_name : edge.end_name)!;
   let best: Stop | null = null;
   for (const s of data.stops.stops) {
     if (!s.name || Math.abs(s.at_m - m) > 5000) continue;
@@ -123,7 +129,7 @@ function fromName(data: FreeData, m: number): string {
 }
 
 /** The nights the rider's file marks on the stretch (D70), in route order, one per place. */
-export function ownNights(data: FreeData, fromM: number, toM: number): UserPlace[] {
+export function ownNights(data: Pick<FreeData, "userPlaces">, fromM: number, toM: number): UserPlace[] {
   const lo = Math.min(fromM, toM) + END_MARGIN_M;
   const hi = Math.max(fromM, toM) - END_MARGIN_M;
   const out: UserPlace[] = [];
@@ -336,9 +342,9 @@ export function makePlan(
       toT: t1,
       fromM: k === 0 ? axis.startM : fromM,
       toM: k === rides - 1 ? axis.endM : toM,
-      startName: k === 0 ? placeName(data, axis.startM) : stopName(candidates[stage.nights[k - 1]!]!.stop),
+      startName: k === 0 ? placeName(data, axis.startM, axis.startM <= axis.endM ? "after" : "before") : stopName(candidates[stage.nights[k - 1]!]!.stop),
       stop,
-      endName: stop ? stopName(stop) : placeName(data, axis.endM),
+      endName: stop ? stopName(stop) : placeName(data, axis.endM, axis.endM >= axis.startM ? "before" : "after"),
       km: stats.km,
       climbM: stats.climbM,
       unknownKm: stats.unknownKm,

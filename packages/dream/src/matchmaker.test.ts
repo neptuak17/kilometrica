@@ -1,6 +1,7 @@
 import type { DreamFile, DreamSection } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
-import { describeStretch, type DreamQuery, findStretches, gradeFor } from "./matchmaker";
+import { watchLines } from "./ask";
+import { describeStretch, type DreamQuery, findStretches, gradeFor, type StretchResult } from "./matchmaker";
 
 const LEVELS = [
   { level: 1, name: "Leisurely", km_min: 20, km_max: 40, climb_max_m: 300 },
@@ -233,5 +234,15 @@ describe("mergeChecks", () => {
         "School holidays: no data.",
       ]),
     ).toEqual(["7 of 9 places to stay publish no opening season: check dates ahead.", "School holidays: no data."]);
+  });
+});
+
+describe("a stretch's card", () => {
+  it("keeps the count of things to look out for when the lines run over", () => {
+    const count = "6 things to look out for: details with a Trip Pass";
+    const r = { watch: ["104 km on busy roads", "up to 53 km between places to stay", "steepest 500 m at 18%", "no bike-carrying station found at one end", count], lookOut: 6 };
+    expect(watchLines(r as StretchResult)).toEqual(["104 km on busy roads", "up to 53 km between places to stay", "steepest 500 m at 18%", count]);
+    expect(watchLines({ watch: ["a", "b", "c", "d", "e"], lookOut: 0 } as StretchResult)).toEqual(["a", "b", "c", "d"]);
+    expect(watchLines({ watch: ["a", count], lookOut: 6 } as StretchResult)).toEqual(["a", count]);
   });
 });

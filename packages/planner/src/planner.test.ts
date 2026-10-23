@@ -1,4 +1,4 @@
-import type { DreamSection, EffortFile, Finding, Highlight, Place, ServiceType, Stop, UserPlace } from "@dpg/contracts";
+import type { DailySection, DreamSection, EffortFile, Finding, Highlight, Place, ServiceType, Stop, UserPlace } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
 import { applyAction, optionOutcome, type PlanState } from "./actions";
 import { TripAxis } from "./axis";
@@ -10,7 +10,7 @@ import { bearing, type Geometry } from "./geometry";
 import { bookingSearches, dayItems, isNightLine, mapsSearch, nightOptions, nightStay, railLinks, streetPhotos, toDo, WILD_CAMP, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan } from "./plan";
-import { suggestedRestDays } from "./rest";
+import { ridingDays, suggestedRest, suggestedRestDays } from "./rest";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
 import { addDays, clock, sunTimes, weekday } from "./sun";
@@ -792,5 +792,41 @@ describe("places without a name", () => {
     expect(placeTitle({ name: "Hotel Santos", kind: "hotel", detail: {} }, "Santomera")).toBe("Hotel Santos");
     expect(listable({ name: null, detail: { phone: "+34 968 850022" } })).toBe(true);
     expect(listable({ name: null, detail: {} })).toBe(false);
+  });
+});
+
+describe("Dream and Plan agree (2026-10-23)", () => {
+  const daily = (n: number, from: number, to: number, start: string, end: string): DailySection => ({
+    id: `d${n}`,
+    number: n,
+    title: `${start} – ${end}`,
+    start_name: start,
+    end_name: end,
+    from_m: from,
+    to_m: to,
+    length_m: to - from,
+    status: { development: "developed", signage: "signed", label: "" },
+    reversed_in_source: false,
+    point_count: 2,
+    start: [0, LAT],
+    end: [0, LAT],
+  });
+
+  it("names the trip's ends by the daily sections, as Dream names the stretch, either way round", () => {
+    const d = { ...data(), daily: [daily(1, 0, 150_000, "Alpha", "Bravo"), daily(2, 150_000, 300_000, "Bravo Sud", "Charlie")] };
+    expect(makePlan(d, inputs({ fromM: 150_000 })).brief.title).toBe("Bravo Sud → Charlie");
+    expect(makePlan(d, inputs({ toM: 150_000, days: 3 })).brief.title).toBe("Alpha → Bravo");
+    expect(makePlan(d, inputs({ fromM: 150_000, direction: "reverse", days: 3 })).brief.title).toBe("Charlie → Bravo Sud");
+    // Not at a section's end: the nearest named stop, as before.
+    expect(makePlan(d, inputs({ fromM: 60_000 })).days[0]!.startName).toBe("Town 60");
+  });
+
+  it("suggests rest days as Dream splits the days at its default pace", () => {
+    expect(ridingDays(7, "steady")).toBe(6);
+    expect(suggestedRest(7)).toBe(1);
+    expect(suggestedRest(14)).toBe(2);
+    expect(suggestedRest(6)).toBe(0);
+    // The rider's file sets the riding days (D70): by those.
+    expect(suggestedRest(13, 11)).toBe(1);
   });
 });

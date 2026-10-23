@@ -58,7 +58,10 @@ export interface StretchResult {
   crossings: string[];
   score: number;
   why: string[];
+  /** To look out for; the count of things a rider is told about (D75), when there are any, comes last. */
   watch: string[];
+  /** Things a rider would be told about on the stretch (D75): the audit's own warnings on an older audit. */
+  lookOut: number;
   check: string[];
 }
 
@@ -348,6 +351,7 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
     score: Math.round(score * 1000) / 1000,
     why,
     watch,
+    lookOut: findings,
     check: mergeChecks(check),
   };
 }

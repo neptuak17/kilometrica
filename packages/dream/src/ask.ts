@@ -4,24 +4,12 @@
  */
 import type { DailySection, DreamFile, DreamSection } from "@dpg/contracts";
 import type { DreamQuery, Pref, StretchResult, SurfaceKind } from "./matchmaker";
-import { km, MONTHS_LONG } from "@dpg/planner";
+import { km, MONTHS_LONG, type Pace, restFor, ridingDays } from "@dpg/planner";
 
 export type Level = DreamFile["levels"][number];
 
-/** How the rider likes to travel (D74): it sets how many of their days are rest days. */
-export type Pace = "relaxed" | "steady" | "moving";
+/** How the rider likes to travel (D74), in Dream's words; the rest days it gives are the planner's (`restFor`). */
 export const PACE: Record<Pace, string> = { relaxed: "Relaxed", steady: "Steady", moving: "Keep moving" };
-
-/** Rest days for so many riding days (D74): about one per 4 riding days relaxed, one per 6 steady, none moving. */
-export const restFor = (riding: number, pace: Pace) =>
-  pace === "moving" ? 0 : pace === "relaxed" ? (riding >= 4 ? Math.floor(riding / 4) : 0) : riding >= 7 ? Math.floor(riding / 6) : 0;
-
-/** The riding days in so many days in all (D74): the days left over are rest days, so the total always holds. */
-export function ridingDays(total: number, pace: Pace): number {
-  let r = total;
-  while (r > 1 && r + restFor(r, pace) > total) r--;
-  return r;
-}
 
 /** The rider's answers. Level and days start unset: no stretch is shown until the rider gives them. `days` is the
  * whole trip, rest days included (D74). */
@@ -163,6 +151,15 @@ export const keyOf = (r: StretchResult) => `${r.first}-${r.last}-${r.way}`;
 /** The matchmaker's why lines, less the two the card already shows as facts: the grade and the month's scores. */
 export const whyLines = (r: StretchResult) => r.why.filter((w) => !/: grade (at least )?\d/.test(w) && !/best-time \d+$/.test(w));
 
+/**
+ * A card's lines to look out for, at most `max`. The count of things to look out for always stays, since it is the
+ * one that leads to the detail (the matchmaker adds it last).
+ */
+export function watchLines(r: StretchResult, max = 4): string[] {
+  if (r.watch.length <= max) return r.watch;
+  return r.lookOut ? [...r.watch.slice(0, max - 1), r.watch[r.watch.length - 1]!] : r.watch.slice(0, max);
+}
+
 export const climbText = (r: StretchResult) =>
   r.climbPerDay !== null ? `↑ ${r.climbPerDay} m a day` : r.climbMinPerDay !== null ? `↑ at least ${r.climbMinPerDay} m a day` : "climbing unknown";
 
@@ -177,8 +174,11 @@ export function whenText(r: StretchResult, a: Ask): string | undefined {
   return a.month === null ? `Best in ${MONTHS_LONG[r.month]}${score}` : `In ${MONTHS_LONG[r.month]}${score}`;
 }
 
-/** Plan opens the stretch with the rider's answers (D48): the days in all and the rest days among them (D74). */
-export function planHref(route: string, r: StretchResult, a: Ask, level: number): string {
+/**
+ * Plan opens the stretch with the rider's answers (D48): the days in all and the rest days among them (D74). `ours`
+ * when the rider set days on a route whose file marks nights: choosing a number of days means our stops (D70).
+ */
+export function planHref(route: string, r: StretchResult, a: Ask, level: number, ours = false): string {
   const rest = restIn(r, a);
   return `/plan?${new URLSearchParams({
     route,
@@ -192,6 +192,7 @@ export function planHref(route: string, r: StretchResult, a: Ask, level: number)
     gravel: a.surfaces.gravel,
     busy: a.avoidBusy ? "1" : "0",
     stay: a.stay,
+    ...(ours ? { stops: "ours" } : {}),
   })}`;
 }
 

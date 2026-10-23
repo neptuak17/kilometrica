@@ -127,6 +127,8 @@ function readStart(): { start: Start | null; itinerary: Itinerary | null; error:
         avoidGravel: q.get("gravel") === "avoid",
         avoidBusy: q.get("busy") === "1",
         sleep: stay === "camping" ? "camping" : stay === "rooms" ? "rooms" : "mix",
+        // Days chosen in Dream on a route whose file marks nights: our stops (D70).
+        ...(q.get("stops") === "ours" ? { stops: "ours" as const } : {}),
       },
       doc: null,
       readOnly: false,
@@ -162,6 +164,7 @@ function initialInputs(files: RouteFiles, s: Start["inputs"]): { inputs: PlanInp
       ...(s.restDays !== undefined ? { restDays: s.restDays } : {}),
       avoidGravel: s.avoidGravel ?? false,
       avoidBusy: s.avoidBusy ?? false,
+      ...(s.stops ? { stops: s.stops } : {}),
     },
   };
 }

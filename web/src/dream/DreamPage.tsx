@@ -8,7 +8,7 @@
  */
 import type { DreamSection } from "@dpg/contracts";
 import { describeStretch, findStretches, type StretchResult } from "@dpg/dream";
-import { km } from "@dpg/planner";
+import { km, ownNights, ridingDays } from "@dpg/planner";
 import {
   Button,
   Card,
@@ -45,13 +45,13 @@ import {
   type Level,
   planHref,
   daysText,
-  ridingDays,
   type Point,
   pointsOf,
   readAsk,
   stretchName,
   whenText,
   whole,
+  watchLines,
   whyLines,
 } from "@dpg/dream";
 import { type ChipId, Chips } from "./Chips";
@@ -123,13 +123,14 @@ function BackTo({ label, onPress }: { label: string; onPress: () => void }) {
 }
 
 /** Two stretches side by side, with the rows where they differ shaded. */
-function Comparison({ pair, names, a, levels, titles, route }: {
+function Comparison({ pair, names, a, levels, titles, planOf }: {
   pair: StretchResult[];
   names: string[];
   a: Ask;
   levels: Level[];
   titles: Record<string, string>;
-  route: string;
+  /** Plan's address for a stretch. */
+  planOf: (r: StretchResult) => string;
 }) {
   // Shares of the stretch in words and km, never percentages (D57).
   const surfacesOf = (r: StretchResult) => {
@@ -182,7 +183,7 @@ function Comparison({ pair, names, a, levels, titles, route }: {
                       {names[i]}
                     </span>
                     <div>
-                      <LinkButton href={planHref(route, r, a, a.level!)} variant={i === 0 ? "default" : "outline"} size="sm">
+                      <LinkButton href={planOf(r)} variant={i === 0 ? "default" : "outline"} size="sm">
                         Plan this
                         <Icons.ArrowRight data-icon="inline-end" />
                       </LinkButton>
@@ -270,6 +271,12 @@ function TownPicker({ points, from, to, onChange }: { points: Point[]; from: num
   );
 }
 
+/** Where a stretch's days come from until the rider sets theirs. */
+const daysNote = (fileNights: boolean) =>
+  fileNights
+    ? "The days follow the nights your route file marks; set your days above and we find the stops instead."
+    : "The days are those of a usual day at your level; set your days above to change them.";
+
 function DreamRoute({ route }: { route: string }) {
   const [network = "", ref = ""] = route.split("/");
   const [files, setFiles] = useState<DreamFiles | null>(null);
@@ -304,14 +311,21 @@ function DreamRoute({ route }: { route: string }) {
   const points = useMemo(() => pointsOf(sections, daily), [sections, daily]);
   const countries = useMemo(() => countryRows(sections).length, [sections]);
   const examples = useMemo(() => examplesFor(sections), [sections]);
-  // A rider's own file is the trip (D76): the whole route, ready once the level is set, with the days of a usual
-  // day at that level until the rider sets theirs.
+  // A rider's own file is the trip (D76): the whole route, ready once the level is set. Until the rider sets their
+  // days, the nights the file marks set them, as they do in Plan (D70); with none, a usual day at the level does.
   const ownRoute = files?.manifest.visibility === "private";
+  const nightsIn = (fromM: number, toM: number) => (ownRoute && files ? ownNights(files, fromM, toM).length : 0);
+  const ridesFor = (fromM: number, toM: number) => {
+    if (a.days !== null) return ridingDays(a.days, a.pace);
+    const nights = nightsIn(fromM, toM);
+    return nights ? nights + 1 : null;
+  };
+  const fileNights = sections.length > 0 && nightsIn(sections[0]!.from_m, sections[sections.length - 1]!.to_m) > 0;
   // Every stretch that fits is counted; the list shows the best few (the search's own cap is lifted).
   const results = useMemo(() => {
     if (!files || a.level === null || !sections.length) return [];
     if (ownRoute) {
-      const days = a.days === null ? null : ridingDays(a.days, a.pace);
+      const days = ridesFor(sections[0]!.from_m, sections[sections.length - 1]!.to_m);
       const whole = describeStretch(files.dream, sections[0]!.number, sections[sections.length - 1]!.number, { ...a, level: a.level, days });
       return whole ? [whole] : [];
     }
@@ -324,10 +338,16 @@ function DreamRoute({ route }: { route: string }) {
     const [i, j] = [own.from, own.to];
     const from = i < j ? sections[i]!.number : sections[i - 1]!.number;
     const to = i < j ? sections[j - 1]!.number : sections[j]!.number;
-    return describeStretch(files.dream, from, to, { ...a, level: a.level });
+    const days = ridesFor(sections[Math.min(i, j)]!.from_m, sections[Math.max(i, j) - 1]!.to_m);
+    return describeStretch(files.dream, from, to, { ...a, level: a.level, days });
   }, [files, a, own, sections]);
   const byNumber = useMemo(() => new Map(sections.map((s: DreamSection) => [s.number, s])), [sections]);
   const span = (r: StretchResult) => ({ fromM: byNumber.get(r.first)?.from_m ?? 0, toM: byNumber.get(r.last)?.to_m ?? 0 });
+  // Days the rider chose on a stretch their file marks nights on: Plan finds our stops for those days (D70).
+  const planOf = (r: StretchResult) => {
+    const { fromM, toM } = span(r);
+    return planHref(route, r, a, a.level!, a.days !== null && nightsIn(fromM, toM) > 0);
+  };
   const pair = compare.map((k) => results.find((r) => keyOf(r) === k)).filter((r): r is StretchResult => !!r);
 
   const resultStretches: MapStretch[] = useMemo(
@@ -388,7 +408,7 @@ function DreamRoute({ route }: { route: string }) {
           <h1 className="text-3xl font-bold tracking-tight">Compare 2 stretches</h1>
           <p className="text-base text-muted-foreground">{names.join(" and ")}, side by side.</p>
         </div>
-        <Comparison pair={pair} names={names} a={a} levels={levels} titles={titles} route={route} />
+        <Comparison pair={pair} names={names} a={a} levels={levels} titles={titles} planOf={planOf} />
         <MapCard
           files={files}
           stretches={pairStretches}
@@ -443,14 +463,14 @@ function DreamRoute({ route }: { route: string }) {
                 facts={factsText(ownResult, levels, a)}
                 when={whenText(ownResult, a)}
                 why={whyLines(ownResult).slice(0, 4)}
-                watch={ownResult.watch.slice(0, 4)}
+                watch={watchLines(ownResult)}
                 checks={ownResult.check}
                 chosen
-                planHref={planHref(route, ownResult, a, a.level!)}
+                planHref={planOf(ownResult)}
               />
             )}
             {ownResult && a.days === null && (
-              <p className="text-xs text-muted-foreground">The days are those of a middling day at your level; set your days above to change them.</p>
+              <p className="text-xs text-muted-foreground">{daysNote(fileNights)}</p>
             )}
           </section>
           <section aria-label="Map of your stretch" className="min-w-0 flex-[999_1_560px] lg:sticky lg:top-6">
@@ -509,7 +529,7 @@ function DreamRoute({ route }: { route: string }) {
               </p>
             )}
             {ownRoute && a.days === null && results.length > 0 && (
-              <p className="text-xs text-muted-foreground">The days are those of a usual day at your level; set your days above to change them.</p>
+              <p className="text-xs text-muted-foreground">{daysNote(fileNights)}</p>
             )}
             {shown.map((r, i) => (
               <StretchCard
@@ -519,11 +539,11 @@ function DreamRoute({ route }: { route: string }) {
                 facts={factsText(r, levels, a)}
                 when={whenText(r, a)}
                 why={whyLines(r).slice(0, 4)}
-                watch={r.watch.slice(0, 4)}
+                watch={watchLines(r)}
                 checks={r.check}
                 chosen={picked === keyOf(r)}
                 comparing={compare.includes(keyOf(r))}
-                planHref={planHref(route, r, a, a.level!)}
+                planHref={planOf(r)}
                 onPick={() => setPicked(picked === keyOf(r) ? null : keyOf(r))}
                 onCompare={() => toggleCompare(r)}
               />

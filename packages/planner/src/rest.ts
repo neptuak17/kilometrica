@@ -17,8 +17,29 @@ const BETTER_M = 25_000;
 const BETTER_BY = 0.25;
 const TOWN: Record<string, number> = { city: 1, town: 0.7, village: 0.35 };
 
+/** How the rider likes to travel (D74): it sets how many of their days are rest days. */
+export type Pace = "relaxed" | "steady" | "moving";
+
+/** Rest days for so many riding days (D74): about one per 4 riding days relaxed, one per 6 steady, none moving. */
+export const restFor = (riding: number, pace: Pace) =>
+  pace === "moving" ? 0 : pace === "relaxed" ? (riding >= 4 ? Math.floor(riding / 4) : 0) : riding >= 7 ? Math.floor(riding / 6) : 0;
+
+/** The riding days in so many days in all (D74): the days left over are rest days, so the total always holds. */
+export function ridingDays(total: number, pace: Pace): number {
+  let r = total;
+  while (r > 1 && r + restFor(r, pace) > total) r--;
+  return r;
+}
+
 /** Rest days by default (D74): about one per 6 riding days, from 7 riding days. */
-export const suggestedRestDays = (rides: number) => (rides >= 7 ? Math.floor(rides / 6) : 0);
+export const suggestedRestDays = (rides: number) => restFor(rides, "steady");
+
+/**
+ * The rest days Plan suggests for so many days in all, as Dream splits them at its default pace, so the two agree:
+ * 7 days are 6 riding and 1 rest. When the rider's file sets the riding days (D70), by those instead.
+ */
+export const suggestedRest = (total: number, ownRides?: number) =>
+  ownRides !== undefined ? suggestedRestDays(ownRides) : total - ridingDays(total, "steady");
 
 export interface RestPlace {
   /** 0-1: how good a place it is to spend a day; 0 for a spot with no name (never in the middle of nowhere). */

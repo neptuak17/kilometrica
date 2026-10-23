@@ -4,7 +4,7 @@
  * the level and the bike, never from fitness data (D35).
  */
 import type { DailySection, RiderLevel } from "@dpg/contracts";
-import { clock, MONTHS_LONG, type PlanInputs, plural, suggestedRestDays } from "@dpg/planner";
+import { clock, MONTHS_LONG, type PlanInputs, plural, suggestedRest } from "@dpg/planner";
 import {
   Checkbox,
   cn,
@@ -120,7 +120,7 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
   const restCount = Math.max(inputs.restDays ?? 0, inputs.restAfter.length);
   const riding = own ? ownNights + 1 : inputs.days;
   const total = riding + restCount;
-  const suggest = suggestedRestDays(riding);
+  const suggest = suggestedRest(total, own ? riding : undefined);
   const setRest = (r: number) =>
     onChange(
       own

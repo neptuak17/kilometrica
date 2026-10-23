@@ -17,6 +17,7 @@ import type {
   SectionsFile,
   ServicesFile,
   StopsFile,
+  UserPlace,
   UserPlacesFile,
 } from "@dpg/contracts";
 import type { FreeData, FullData, Geometry, MRange } from "@dpg/planner";
@@ -118,6 +119,8 @@ export interface DreamFiles {
   dream: DreamFile;
   daily: DailySection[];
   geometry: Geometry;
+  /** Waypoints from the rider's own file, for the nights it marks (D70); none on a network route. */
+  userPlaces: UserPlace[];
 }
 
 /** What Dream needs: all free files (D35). */
@@ -126,12 +129,13 @@ export async function loadDreamFiles(network: string, ref: string, options: Load
   const { base, run } = where(network, ref, options);
   const manifest = await get<BundleManifest>(`${base}${run}`);
   if (!("dream" in manifest.files)) throw new Error("This route's audit has no Dream data yet: re-run its audit.");
-  const [dream, sections, path] = await Promise.all([
+  const [dream, sections, path, user] = await Promise.all([
     get<DreamFile>(`${base}/dream${run}`),
     get<SectionsFile>(`${base}/sections${run}`),
     get<PathLike>(`${base}/path${run}`),
+    "user_places" in manifest.files ? get<UserPlacesFile>(`${base}/user_places${run}`) : Promise.resolve(null),
   ]);
-  return { manifest, dream, daily: sections.daily, geometry: geometryOf(path) };
+  return { manifest, dream, daily: sections.daily, geometry: geometryOf(path), userPlaces: user?.places ?? [] };
 }
 
 export interface FullFiles {
