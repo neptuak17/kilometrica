@@ -7,8 +7,8 @@
  * for us (D43). The question lives in the address, so a search can be shared or reopened.
  */
 import type { DreamSection } from "@dpg/contracts";
-import { describeStretch, findStretches, type StretchResult } from "@dpg/dream";
-import { km, ownNights, ridingDays } from "@dpg/planner";
+import { type DreamRoute, fileNights, pickedStretch, planLink, stretchesFor, type StretchResult } from "@dpg/dream";
+import { km } from "@dpg/planner";
 import {
   Button,
   Card,
@@ -36,6 +36,7 @@ import {
   and,
   type Ask,
   climbText,
+  compareRows,
   countryRows,
   EMPTY,
   examplesFor,
@@ -43,12 +44,12 @@ import {
   gradeText,
   keyOf,
   type Level,
-  planHref,
   daysText,
   type Point,
   pointsOf,
   readAsk,
   stretchName,
+  stretchSurfaces,
   whenText,
   whole,
   watchLines,
@@ -133,39 +134,7 @@ function Comparison({ pair, names, a, levels, titles, planOf }: {
   planOf: (r: StretchResult) => string;
 }) {
   // Shares of the stretch in words and km, never percentages (D57).
-  const surfacesOf = (r: StretchResult) => {
-    const kinds = (
-      [
-        ["cycle paths", r.surfaces.cycle_path],
-        ["roads", r.surfaces.road],
-        ["gravel", r.surfaces.gravel],
-      ] as const
-    )
-      .slice()
-      .sort((x, y) => y[1] - x[1]);
-    const main = kinds.filter(([, v]) => v >= 0.25);
-    const mainShare = main.reduce((a, [, v]) => a + v, 0);
-    const lead = main.length ? `${main.length < 3 && mainShare >= 0.7 ? "mostly " : ""}${and(main.map(([n]) => n))}` : "";
-    const rest = kinds.filter(([, v]) => v < 0.25 && v * r.km >= 1).map(([n, v]) => `${whole(v * r.km)} km of ${n}`);
-    const unknown = r.surfaces.unknown * r.km >= 1 ? [`${whole(r.surfaces.unknown * r.km)} km unknown`] : [];
-    const text = [lead, ...rest, ...unknown].filter(Boolean).join(" · ");
-    return text.charAt(0).toUpperCase() + text.slice(1);
-  };
-  const rows: { label: string; f: (r: StretchResult) => string; tone?: "watch" | "unknown" }[] = [
-    { label: "Days", f: (r) => `${daysText(r, a)} · ${km(r.km)} km · ${r.kmPerDay} km a day` },
-    { label: "Climbing", f: climbText },
-    { label: "Grade", f: (r) => gradeText(r, levels) },
-    { label: "When", f: (r) => whenText(r, a) ?? "–" },
-    {
-      label: "Surfaces",
-      f: surfacesOf,
-    },
-    { label: "Busy roads", f: (r) => (r.busyShare * r.km >= 1 ? `${whole(r.busyShare * r.km)} km` : "None found") },
-    { label: "Scenery", f: (r) => r.topThemes.map((t) => titles[t.id] ?? t.id).join(", ") || "–" },
-    { label: "Trains", f: (r) => `start: ${r.stationStart ?? "none found"} · end: ${r.stationEnd ?? "none found"}` },
-    { label: "To watch", f: (r) => (r.watch.length ? r.watch.join("; ") : "Nothing stands out"), tone: "watch" },
-    { label: "To check yourself", f: (r) => (r.check.length ? `${r.check.length} ${r.check.length === 1 ? "thing" : "things"}` : "Nothing"), tone: "unknown" },
-  ];
+  const rows = compareRows(a, levels, titles);
   return (
     <Card className="gap-0 py-0">
       <div className="overflow-x-auto">
@@ -311,43 +280,21 @@ function DreamRoute({ route }: { route: string }) {
   const points = useMemo(() => pointsOf(sections, daily), [sections, daily]);
   const countries = useMemo(() => countryRows(sections).length, [sections]);
   const examples = useMemo(() => examplesFor(sections), [sections]);
-  // A rider's own file is the trip (D76): the whole route, ready once the level is set. Until the rider sets their
-  // days, the nights the file marks set them, as they do in Plan (D70); with none, a usual day at the level does.
-  const ownRoute = files?.manifest.visibility === "private";
-  const nightsIn = (fromM: number, toM: number) => (ownRoute && files ? ownNights(files, fromM, toM).length : 0);
-  const ridesFor = (fromM: number, toM: number) => {
-    if (a.days !== null) return ridingDays(a.days, a.pace);
-    const nights = nightsIn(fromM, toM);
-    return nights ? nights + 1 : null;
-  };
-  const fileNights = sections.length > 0 && nightsIn(sections[0]!.from_m, sections[sections.length - 1]!.to_m) > 0;
-  // Every stretch that fits is counted; the list shows the best few (the search's own cap is lifted).
-  const results = useMemo(() => {
-    if (!files || a.level === null || !sections.length) return [];
-    if (ownRoute) {
-      const days = ridesFor(sections[0]!.from_m, sections[sections.length - 1]!.to_m);
-      const whole = describeStretch(files.dream, sections[0]!.number, sections[sections.length - 1]!.number, { ...a, level: a.level, days });
-      return whole ? [whole] : [];
-    }
-    return a.days === null ? [] : findStretches(files.dream, { ...a, level: a.level, days: ridingDays(a.days, a.pace), limit: 1000 });
-  }, [files, a, ownRoute, sections]);
+  // The route as Dream's tools see it (D77): the page and the assistant work from the same functions.
+  const dr: DreamRoute | null = useMemo(
+    () => (files ? { id: route, name: files.manifest.route.name, dream: files.dream, daily: files.daily, userPlaces: files.userPlaces, own: files.manifest.visibility === "private" } : null),
+    [files, route],
+  );
+  // A rider's own file is the trip (D76); until the rider sets their days, the nights it marks set them (D70, D78).
+  const ownRoute = !!dr?.own;
+  const fileNightsMarked = useMemo(() => (dr ? fileNights(dr) : false), [dr]);
+  // Every stretch that fits is counted; the list shows the best few.
+  const results = useMemo(() => (dr ? stretchesFor(dr, a) : []), [dr, a]);
   const shown = useMemo(() => results.slice(0, count), [results, count]);
-  const ownResult = useMemo(() => {
-    if (!files || a.level === null || own.from === null || own.to === null || own.from === own.to) return null;
-    // Point i is the start of sections[i] (the last point is the end of the last section).
-    const [i, j] = [own.from, own.to];
-    const from = i < j ? sections[i]!.number : sections[i - 1]!.number;
-    const to = i < j ? sections[j - 1]!.number : sections[j]!.number;
-    const days = ridesFor(sections[Math.min(i, j)]!.from_m, sections[Math.max(i, j) - 1]!.to_m);
-    return describeStretch(files.dream, from, to, { ...a, level: a.level, days });
-  }, [files, a, own, sections]);
+  const ownResult = useMemo(() => (dr && own.from !== null && own.to !== null ? pickedStretch(dr, a, own.from, own.to) : null), [dr, a, own]);
   const byNumber = useMemo(() => new Map(sections.map((s: DreamSection) => [s.number, s])), [sections]);
   const span = (r: StretchResult) => ({ fromM: byNumber.get(r.first)?.from_m ?? 0, toM: byNumber.get(r.last)?.to_m ?? 0 });
-  // Days the rider chose on a stretch their file marks nights on: Plan finds our stops for those days (D70).
-  const planOf = (r: StretchResult) => {
-    const { fromM, toM } = span(r);
-    return planHref(route, r, a, a.level!, a.days !== null && nightsIn(fromM, toM) > 0);
-  };
+  const planOf = (r: StretchResult) => (dr ? planLink(dr, r, a) : "");
   const pair = compare.map((k) => results.find((r) => keyOf(r) === k)).filter((r): r is StretchResult => !!r);
 
   const resultStretches: MapStretch[] = useMemo(
@@ -470,7 +417,7 @@ function DreamRoute({ route }: { route: string }) {
               />
             )}
             {ownResult && a.days === null && (
-              <p className="text-xs text-muted-foreground">{daysNote(fileNights)}</p>
+              <p className="text-xs text-muted-foreground">{daysNote(fileNightsMarked)}</p>
             )}
           </section>
           <section aria-label="Map of your stretch" className="min-w-0 flex-[999_1_560px] lg:sticky lg:top-6">
@@ -529,7 +476,7 @@ function DreamRoute({ route }: { route: string }) {
               </p>
             )}
             {ownRoute && a.days === null && results.length > 0 && (
-              <p className="text-xs text-muted-foreground">{daysNote(fileNights)}</p>
+              <p className="text-xs text-muted-foreground">{daysNote(fileNightsMarked)}</p>
             )}
             {shown.map((r, i) => (
               <StretchCard

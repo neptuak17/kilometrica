@@ -151,6 +151,26 @@ export const keyOf = (r: StretchResult) => `${r.first}-${r.last}-${r.way}`;
 /** The matchmaker's why lines, less the two the card already shows as facts: the grade and the month's scores. */
 export const whyLines = (r: StretchResult) => r.why.filter((w) => !/: grade (at least )?\d/.test(w) && !/best-time \d+$/.test(w));
 
+/** A stretch's surfaces in words and km, never percentages (D57): "Mostly cycle paths and roads · 35 km of gravel". */
+export function stretchSurfaces(r: StretchResult): string {
+  const kinds = (
+    [
+      ["cycle paths", r.surfaces.cycle_path],
+      ["roads", r.surfaces.road],
+      ["gravel", r.surfaces.gravel],
+    ] as const
+  )
+    .slice()
+    .sort((x, y) => y[1] - x[1]);
+  const main = kinds.filter(([, v]) => v >= 0.25);
+  const mainShare = main.reduce((a, [, v]) => a + v, 0);
+  const lead = main.length ? `${main.length < 3 && mainShare >= 0.7 ? "mostly " : ""}${and(main.map(([n]) => n))}` : "";
+  const rest = kinds.filter(([, v]) => v < 0.25 && v * r.km >= 1).map(([n, v]) => `${whole(v * r.km)} km of ${n}`);
+  const unknown = r.surfaces.unknown * r.km >= 1 ? [`${whole(r.surfaces.unknown * r.km)} km unknown`] : [];
+  const text = [lead, ...rest, ...unknown].filter(Boolean).join(" · ");
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 /**
  * A card's lines to look out for, at most `max`. The count of things to look out for always stays, since it is the
  * one that leads to the detail (the matchmaker adds it last).
@@ -174,6 +194,22 @@ export function whenText(r: StretchResult, a: Ask): string | undefined {
   // The usual weather that month, as the plan's brief and day cards say it (D77).
   const weather = r.weather ? ` · ${r.weather}` : "";
   return a.month === null ? `Best in ${MONTHS_LONG[r.month]}${score}${weather}` : `In ${MONTHS_LONG[r.month]}${score}${weather}`;
+}
+
+/** Compare's rows (11.7): the same facts for two stretches side by side; `tone` marks what to look out for or check. */
+export function compareRows(a: Ask, levels: Level[], titles: Record<string, string>): { label: string; f: (r: StretchResult) => string; tone?: "watch" | "unknown" }[] {
+  return [
+    { label: "Days", f: (r) => `${daysText(r, a)} · ${km(r.km)} km · ${r.kmPerDay} km a day` },
+    { label: "Climbing", f: climbText },
+    { label: "Grade", f: (r) => gradeText(r, levels) },
+    { label: "When", f: (r) => whenText(r, a) ?? "–" },
+    { label: "Surfaces", f: stretchSurfaces },
+    { label: "Busy roads", f: (r) => (r.busyShare * r.km >= 1 ? `${whole(r.busyShare * r.km)} km` : "None found") },
+    { label: "Scenery", f: (r) => r.topThemes.map((t) => titles[t.id] ?? t.id).join(", ") || "–" },
+    { label: "Trains", f: (r) => `start: ${r.stationStart ?? "none found"} · end: ${r.stationEnd ?? "none found"}` },
+    { label: "To watch", f: (r) => (r.watch.length ? r.watch.join("; ") : "Nothing stands out"), tone: "watch" },
+    { label: "To check yourself", f: (r) => (r.check.length ? `${r.check.length} ${r.check.length === 1 ? "thing" : "things"}` : "Nothing"), tone: "unknown" },
+  ];
 }
 
 /**

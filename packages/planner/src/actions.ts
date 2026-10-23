@@ -3,6 +3,7 @@
  * the assistant. `applyAction` is pure; the planner re-plans from the new state and `planChanges` says what changed.
  * Actions say what they set rather than toggle, so the same action twice changes nothing more.
  */
+import type { PlanResult } from "./plan";
 import type { PlanChoices, PlanInputs, PlanItem } from "./types";
 
 export interface PlanState {
@@ -161,3 +162,55 @@ export function optionOutcome(item: PlanItem, optionId: string): OptionOutcome |
       return null;
   }
 }
+
+// --- the screen's ways in, shared with the assistant (D77) -------------------------------------------------------
+// Each builds the action a control on the screen takes, so a change from the chat is the very same change.
+
+/** The days answers (D74): the end date holds, so rest days are taken from the total and riding days are the rest. */
+export function daysAnswer(inputs: PlanInputs, ownNights: number) {
+  const own = ownNights > 0 && inputs.stops !== "ours";
+  const rest = Math.max(inputs.restDays ?? 0, inputs.restAfter.length);
+  const riding = own ? ownNights + 1 : inputs.days;
+  return { own, rest, riding, total: riding + rest };
+}
+
+/** "Rest days": so many in all, taken from the total (the file's nights set the riding days when they're the rider's). */
+export function withRestDays(inputs: PlanInputs, r: number, ownNights: number): PlanInputs {
+  const { own, total } = daysAnswer(inputs, ownNights);
+  return own
+    ? { ...inputs, restDays: r, restAfter: inputs.restAfter.slice(0, r) }
+    : { ...inputs, restDays: r, days: Math.max(1, total - r), restAfter: inputs.restAfter.filter((x) => x < total - r).slice(0, r) };
+}
+
+/** "Total days": the rest days stay, the riding days are what's left. */
+export function withTotalDays(inputs: PlanInputs, total: number, ownNights: number): PlanInputs {
+  return { ...inputs, days: Math.max(1, Math.min(60, Math.round(total)) - daysAnswer(inputs, ownNights).rest) };
+}
+
+/** A day card's "Rest day after this day", or taking it away. */
+export const restAfterAction = (plan: PlanResult, afterRide: number, on: boolean): PlanAction =>
+  on
+    ? { type: "rest", afterRide, on: true, current: plan.restAfter, night: afterRide - 1, stop: plan.nights[afterRide - 1]?.stop.id }
+    : { type: "rest", afterRide, on: false, current: plan.restAfter };
+
+/** A rest day's "Move it": after another riding day; the riding days stay as they are. */
+export const restMoveAction = (plan: PlanResult, from: number, to: number): PlanAction => ({
+  type: "rest-move",
+  from,
+  to,
+  current: plan.restAfter,
+  nights: plan.nights.map((n) => n.stop.id),
+});
+
+/** "Rest in…" a town (D74): the night nearest it moves there and a rest day follows. Null with no nights to move. */
+export function restInAction(plan: PlanResult, stop: { id: string; at_m: number }): PlanAction | null {
+  if (!plan.nights.length) return null;
+  const night = plan.nights.reduce((b, n, i) => (Math.abs(n.stop.at_m - stop.at_m) < Math.abs(plan.nights[b]!.stop.at_m - stop.at_m) ? i : b), 0);
+  return { type: "rest-in", night, stop: stop.id, add: true, current: plan.restAfter };
+}
+
+/** A night's Booked: it keeps the night where it is, and the date it was booked for (D74). */
+export const bookedAction = (plan: PlanResult, night: number, on: boolean): PlanAction | null => {
+  const n = plan.nights[night];
+  return n ? { type: "booked", night, stop: n.stop.id, on, date: n.date } : null;
+};

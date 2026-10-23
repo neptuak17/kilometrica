@@ -1,6 +1,6 @@
 import type { DailySection, DreamSection, EffortFile, Finding, Highlight, Place, ServiceType, Stop, UserPlace } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
-import { applyAction, optionOutcome, type PlanState } from "./actions";
+import { applyAction, bookedAction, daysAnswer, optionOutcome, type PlanState, restAfterAction, restInAction, restMoveAction, withRestDays, withTotalDays } from "./actions";
 import { TripAxis } from "./axis";
 import { dayStory } from "./brief";
 import { planChanges } from "./changes";
@@ -908,5 +908,25 @@ describe("trains are the rider's choice (D79)", () => {
     expect(planChanges(off, makePlan(d, inputs({ travel: false, bailouts: true }))).lines).toContain("Each day's stations for going home early are shown");
     const doc = parseDocument(JSON.parse(JSON.stringify(toDocument(off))));
     expect(typeof doc === "string" ? doc : doc.inputs.travel).toBe(false);
+  });
+});
+
+describe("the screen's ways in, shared with the assistant (D77)", () => {
+  it("take rest days from the total, and keep them when the total changes, as the questions always did", () => {
+    expect(daysAnswer(inputs({ days: 12, restDays: 2 }), 0)).toEqual({ own: false, rest: 2, riding: 12, total: 14 });
+    expect(withRestDays(inputs({ days: 12, restDays: 2 }), 3, 0)).toMatchObject({ days: 11, restDays: 3 });
+    expect(withTotalDays(inputs({ days: 12, restDays: 2 }), 10, 0).days).toBe(8);
+    // A file that marks nights sets the riding days (D70): rest days add to them.
+    expect(daysAnswer(inputs({ days: 5 }), 9)).toEqual({ own: true, rest: 0, riding: 10, total: 10 });
+    expect(withRestDays(inputs({ days: 5, restAfter: [3, 6] }), 1, 9)).toMatchObject({ days: 5, restDays: 1, restAfter: [3] });
+  });
+
+  it("build the day card's and the questions' actions", () => {
+    const p = makePlan(data({ lengthKm: 900 }), inputs({ toM: 900_000, days: 12 }));
+    expect(restAfterAction(p, 4, true)).toEqual({ type: "rest", afterRide: 4, on: true, current: p.restAfter, night: 3, stop: p.nights[3]!.stop.id });
+    expect(restMoveAction(p, 4, 7)).toMatchObject({ type: "rest-move", from: 4, to: 7, nights: p.nights.map((n) => n.stop.id) });
+    const target = p.nights[5]!.stop;
+    expect(restInAction(p, target)).toEqual({ type: "rest-in", night: 5, stop: target.id, add: true, current: p.restAfter });
+    expect(bookedAction(p, 2, true)).toEqual({ type: "booked", night: 2, stop: p.nights[2]!.stop.id, on: true, date: p.nights[2]!.date });
   });
 });

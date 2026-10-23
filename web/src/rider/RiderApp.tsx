@@ -9,6 +9,7 @@
  */
 import {
   applyAction,
+  bookedAction,
   calendarFile,
   choicesOf,
   clock,
@@ -35,6 +36,9 @@ import {
   type PlanState,
   placesMissing,
   readFragment,
+  restAfterAction,
+  restInAction,
+  restMoveAction,
   secondThoughts,
   shareFragment,
   type Itinerary,
@@ -789,9 +793,9 @@ function PlanPage({ start }: { start: Start }) {
                     onRestIn={
                       plan
                         ? (id) => {
-                            const at = data.stops.stops.find((s) => s.id === id)?.at_m ?? 0;
-                            const night = plan.nights.reduce((b, n, i) => (Math.abs(n.stop.at_m - at) < Math.abs(plan.nights[b]!.stop.at_m - at) ? i : b), 0);
-                            if (plan.nights.length) apply({ type: "rest-in", night, stop: id, add: true, current: plan.restAfter });
+                            const stop = data.stops.stops.find((s) => s.id === id);
+                            const action = stop && restInAction(plan, stop);
+                            if (action) apply(action);
                           }
                         : undefined
                     }
@@ -892,16 +896,14 @@ function PlanPage({ start }: { start: Start }) {
                 choices={shown.choices}
                 onLockNight={lockNight}
                 onToggleBooked={(k) => {
-                  const stop = plan.nights[k]?.stop.id;
-                  if (stop) apply({ type: "booked", night: k, stop, on: !choices.booked.includes(k), date: plan.nights[k]?.date });
+                  const action = bookedAction(plan, k, !choices.booked.includes(k));
+                  if (action) apply(action);
                 }}
                 onChooseBed={(k, id) => apply({ type: "bed", night: k, place: id })}
                 onStay={(k, stop, place) => apply({ type: "stay", night: k, stop, place })}
-                onToggleRest={(r) =>
-                  apply({ type: "rest", afterRide: r, on: !plan.restAfter.includes(r), current: plan.restAfter, night: r - 1, stop: plan.nights[r - 1]?.stop.id })
-                }
-                onMoveRest={(from, to) => apply({ type: "rest-move", from, to, current: plan.restAfter, nights: plan.nights.map((n) => n.stop.id) })}
-                onRemoveRest={(r) => apply({ type: "rest", afterRide: r, on: false, current: plan.restAfter })}
+                onToggleRest={(r) => apply(restAfterAction(plan, r, !plan.restAfter.includes(r)))}
+                onMoveRest={(from, to) => apply(restMoveAction(plan, from, to))}
+                onRemoveRest={(r) => apply(restAfterAction(plan, r, false))}
                 onDone={toggleDone}
                 onGpx={onGpx}
                 onClose={() => setSelected(null)}

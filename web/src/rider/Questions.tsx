@@ -4,7 +4,7 @@
  * the level and the bike, never from fitness data (D35).
  */
 import type { DailySection, RiderLevel } from "@dpg/contracts";
-import { clock, MONTHS_LONG, type PlanInputs, plural, suggestedRest } from "@dpg/planner";
+import { clock, daysAnswer, MONTHS_LONG, type PlanInputs, plural, suggestedRest, withRestDays, withTotalDays } from "@dpg/planner";
 import {
   Checkbox,
   cn,
@@ -115,18 +115,10 @@ function Check({ label, checked, disabled, onChange }: { label: string; checked:
 }
 
 export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirmed, ownNights, towns, onRestIn, readOnly, onChange }: Props) {
-  const own = ownNights > 0 && inputs.stops !== "ours";
   // The end date holds (D74): total days come from Dream; rest days are taken from them, riding days are the rest.
-  const restCount = Math.max(inputs.restDays ?? 0, inputs.restAfter.length);
-  const riding = own ? ownNights + 1 : inputs.days;
-  const total = riding + restCount;
+  const { own, rest: restCount, riding, total } = daysAnswer(inputs, ownNights);
   const suggest = suggestedRest(total, own ? riding : undefined);
-  const setRest = (r: number) =>
-    onChange(
-      own
-        ? { ...inputs, restDays: r, restAfter: inputs.restAfter.slice(0, r) }
-        : { ...inputs, restDays: r, days: Math.max(1, total - r), restAfter: inputs.restAfter.filter((x) => x < total - r).slice(0, r) },
-    );
+  const setRest = (r: number) => onChange(withRestDays(inputs, r, ownNights));
   const set = <K extends keyof PlanInputs>(k: K, v: PlanInputs[K]) => onChange({ ...inputs, [k]: v });
   const sections = [...daily].sort((a, b) => a.from_m - b.from_m);
   const first = sections.find((s) => Math.abs(s.from_m - inputs.fromM) < 1) ?? sections[0];
@@ -178,7 +170,7 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
             aria-label="Total days"
             value={String(total)}
             isDisabled={readOnly || own}
-            onChange={(v) => set("days", Math.max(1, Math.min(60, Math.round(Number(v)) || 1) - restCount))}
+            onChange={(v) => onChange(withTotalDays(inputs, Math.round(Number(v)) || 1, ownNights))}
           >
             <Input type="number" min={1} max={60} />
           </TextField>

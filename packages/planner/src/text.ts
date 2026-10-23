@@ -179,6 +179,7 @@ export const COUNTRY_NAMES: Record<string, string> = {
   BA: "Bosnia and Herzegovina",
   BE: "Belgium",
   BG: "Bulgaria",
+  CA: "Canada",
   CH: "Switzerland",
   CY: "Cyprus",
   CZ: "Czechia",
@@ -192,6 +193,8 @@ export const COUNTRY_NAMES: Record<string, string> = {
   HU: "Hungary",
   IE: "Ireland",
   IT: "Italy",
+  LI: "Liechtenstein",
+  LU: "Luxembourg",
   MC: "Monaco",
   ME: "Montenegro",
   MK: "North Macedonia",
@@ -205,6 +208,7 @@ export const COUNTRY_NAMES: Record<string, string> = {
   SI: "Slovenia",
   SK: "Slovakia",
   TR: "Türkiye",
+  US: "the United States",
 };
 
 export const country = (cc: string | null | undefined) => (cc ? (COUNTRY_NAMES[cc] ?? cc) : "this country");
