@@ -273,7 +273,8 @@ const items: Tool<PlanContext> = {
       // A day's items within its attention budget, as its card shows them (11.6).
       const di = dayItems(p.items, n);
       list = [...di.calls, ...di.todos, ...di.headsups.shown, ...di.highlights.shown, ...p.items.filter((i) => i.day === n && i.kind === "note")];
-      more = di.headsups.more + di.highlights.more;
+      // Only the hidden ones of the kind asked for.
+      more = (!kind || kind === "headsup" ? di.headsups.more : 0) + (!kind || kind === "highlight" ? di.highlights.more : 0);
     } else list = p.items.filter((i) => !p.choices.dismissed.includes(i.id));
     if (kind) list = list.filter((i) => i.kind === kind);
     if (n !== undefined && arg.bool(args, "left")) list = list.filter((i) => i.day === n);
@@ -481,7 +482,7 @@ function build(ctx: PlanContext, state: PlanState, c: Record<string, unknown>): 
       const stop = stopOf(ctx, town).stops[0];
       if (!stop || !stop.name) return { error: `"${town}" isn't a town on this stretch.` };
       // A longer stay: 2 or 3 rest days in a row (D80).
-      const action = restInAction(p, stop, Math.min(MAX_REST_LENGTH, Math.max(1, arg.int(c, "days") ?? 1)));
+      const action = restInAction(p, stop, Math.min(MAX_REST_LENGTH, Math.max(1, arg.int(c, "days") ?? 1)), arg.bool(c, "longer") ?? false);
       return action ? { action } : { error: "A one-day trip has no night to rest." };
     }
     case "rest_length": {
@@ -491,7 +492,7 @@ function build(ctx: PlanContext, state: PlanState, c: Record<string, unknown>): 
       const before = r && p.days.filter((x) => x.number < r.number && x.kind === "ride").pop();
       const n = arg.int(c, "days");
       if (!before || n === undefined) return { error: "Which rest day, and how many days in a row?" };
-      return { action: restLengthAction(p, before.ride!, Math.min(MAX_REST_LENGTH, Math.max(1, n))) };
+      return { action: restLengthAction(p, before.ride!, Math.min(MAX_REST_LENGTH, Math.max(1, n)), arg.bool(c, "longer") ?? false) };
     }
     case "be_in_by": {
       // The planner works out the start (D80); the model never does.
@@ -583,6 +584,7 @@ const CHANGE = schema(
   {
     do: { type: "string", enum: ["set", "rest_days", "rest_in", "rest_length", "add_rest", "remove_rest", "move_rest", "be_in_by", "stop_at", "stay_at", "booked", "answer_call", "tick", "i_know"] },
     days: { type: "integer", minimum: 1, maximum: 3, description: "Rest days in a row in one town." },
+    longer: { type: "boolean", description: "rest_in, rest_length: the trip ends later instead of riding days giving way." },
     time: { type: "string", description: "HH:MM" },
     start_date: { type: "string", description: "YYYY-MM-DD" },
     total_days: { type: "integer", minimum: 1, maximum: 60 },
@@ -651,7 +653,13 @@ const offerOptions: Tool<PlanContext, PlanApply> = {
       // What it adds to the to-do (getting there and back, a booking to change): the to-do's own lines.
       const was = new Set(before.items.map((i) => i.id));
       const added = after.items.filter((i) => i.kind === "todo" && !was.has(i.id) && !i.id.startsWith("bed:")).map((i) => `New on the to-do: ${i.title}`);
-      const lines = [...(what.lines.length ? what.lines : actions.map((x) => settles(after, x))), ...added, ...notes];
+      // A night the rider moved comes first: it's what they asked for, whatever else moves with it.
+      const kept = actions.flatMap((x) => {
+        const n = x.type === "lock-night" ? after.nights[x.night] : undefined;
+        const d = n && after.days.find((y) => y.kind === "ride" && y.ride === n.afterRide);
+        return n && d ? [`Night after day ${d.number} at ${stopName(n.stop)}`] : [];
+      });
+      const lines = [...(what.lines.length ? [...kept, ...what.lines] : actions.map((x) => settles(after, x))), ...added, ...notes];
       const label = arg.str(o as Record<string, unknown>, "label") ?? lines[0] ?? "A change";
       options.push({ id: `plan:${options.length + 1}`, label, changes: lines, apply: { state, actions } });
     }

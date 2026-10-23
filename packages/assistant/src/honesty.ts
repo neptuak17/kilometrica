@@ -59,7 +59,7 @@ leave start add move book bring carry take make get come consider expect enjoy w
 does do did is are was were be been has have had there's that's here's what's it'll i'm i'd i'll i've you've they're day days night
 nights trip route stretch stretches option options water food morning afternoon evening today tomorrow typically usually mostly roughly
 about nothing everything something anything search find call visit cycle head follow use set switch turn open tell remember allow
-whether although though besides beyond within except`
+whether although though besides beyond within except done sorry certainly absolutely right local`
     .split(/\s+/)
     .map(fold),
 );
@@ -127,8 +127,8 @@ function names(answer: string): { text: string; start: boolean }[] {
     const ends = /[.!?:;]$/.test(raw);
     const breaks = ends || /,$/.test(raw);
     const word = raw.replace(/^[^\p{L}\d]+|[^\p{L}\d.'’-]+$/gu, "").replace(/\.$/, "");
-    // "l'Ampolla", "d'Arrossa": the capital comes after the apostrophe.
-    const capital = /^\p{Lu}/u.test(word) || /^[ld]['’]\p{Lu}/u.test(word);
+    // "l'Ampolla", "d'Arrossa": the capital comes after the apostrophe. "°C" is a unit.
+    const capital = (/^\p{Lu}/u.test(word) || /^[ld]['’]\p{Lu}/u.test(word)) && !raw.startsWith("°");
     if (capital && !/^\d/.test(word)) {
       if (!run.length) runStart = sentenceStart;
       run.push(word);
@@ -161,7 +161,14 @@ function nameAllowed(text: string, words: string, extra: string[]): boolean {
   if (!f) return true;
   if (words.includes(` ${f} `)) return true;
   if ([...ALLOWED, ...extra].includes(f)) return true;
-  return f.split(" ").every((w) => ALLOWED.includes(w) || JOINERS.has(w) || WORDS[w] !== undefined || w === "one");
+  const ws = f.split(" ");
+  if (ws.every((w) => ALLOWED.includes(w) || JOINERS.has(w) || WORDS[w] !== undefined || w === "one")) return true;
+  // "Bad Honnef on Sun": a name, then a joiner and our own words.
+  for (let i = ws.length - 1; i > 0; i--) {
+    const tail = ws.slice(i + 1);
+    if (JOINERS.has(ws[i]!) && tail.length && tail.every((w) => ALLOWED.includes(w))) return nameAllowed(ws.slice(0, i).join(" "), words, extra);
+  }
+  return false;
 }
 
 /**

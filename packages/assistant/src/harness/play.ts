@@ -48,6 +48,8 @@ export interface TurnScore {
   decline: boolean | null;
   /** After a change on screen: the second thought the planner raised is the one expected, or none. */
   thought: boolean | null;
+  /** The change made on screen, as the change bar says it, and the second thought it raised (none: empty). */
+  onScreen: { change: string[]; thought: string[] } | null;
   pass: boolean;
   unsupported: Unsupported[];
   missing: string[];
@@ -80,6 +82,7 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
 
   for (const [k, turn] of c.turns.entries()) {
     let thought: boolean | null = null;
+    let onScreen: TurnScore["onScreen"] = null;
     // A change made on screen (D77): it applies at once; the planner says whether it's worth a second thought.
     if (turn.change && plan) {
       const offer = PLAN_TOOLS.find((t) => t.name === "offer_options")!.run(plan, { options: [{ changes: [turn.change] }] });
@@ -87,9 +90,14 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
       if (next) {
         const raised = secondThoughts(plan.data, plan.planFor(plan.state), plan.planFor(next))[0] ?? null;
         thought = (raised?.question ?? null) === (turn.thought ?? null);
-        if (raised) results.push({ lines: [raised.question, raised.why, ...raised.options.map((o) => o.label), raised.keep], facts: {} });
+        const lines = raised ? [raised.question, raised.why, ...raised.options.map((o) => o.label), raised.keep] : [];
+        if (raised) results.push({ lines, facts: {} });
+        onScreen = { change: offer.options?.[0]?.changes ?? [], thought: lines };
         plan = { ...plan, state: next };
-      } else thought = false;
+      } else {
+        thought = false;
+        onScreen = { change: offer.lines, thought: [] };
+      }
     }
     const rider = turn.rider ? ([turn.rider, ...(turn.phrasings ?? [])][phrasing] ?? turn.rider) : "";
     if (rider) said.push(rider);
@@ -121,7 +129,7 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
     const missing = [...(turn.mustSay ?? []).filter((p) => !has(answer.text, p)), ...(turn.mustNotSay ?? []).filter((p) => has(answer.text, p)).map((p) => `not: ${p}`)];
     const decline = c.kind === "decline" ? !offered.length && !missing.length : null;
     const pass = toolsRight && option !== false && check.ok && !missing.length && decline !== false && thought !== false;
-    out.push({ turn: k + 1, rider, tools: toolsRight, option, honest: check.ok, mustSay: !missing.length, decline, thought, pass, unsupported: check.unsupported, missing, calls, results: made, answer: answer.text });
+    out.push({ turn: k + 1, rider, tools: toolsRight, option, honest: check.ok, mustSay: !missing.length, decline, thought, onScreen, pass, unsupported: check.unsupported, missing, calls, results: made, answer: answer.text });
   }
   return out;
 }

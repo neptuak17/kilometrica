@@ -136,7 +136,9 @@ export const and = (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? "") : `${xs.sli
 export function surfacesText(a: Ask): string {
   const of = (p: Pref) => SURFACES.filter((s) => a.surfaces[s.key] === p).map((s) => s.label);
   const parts = [of("prefer").length ? `Prefer ${and(of("prefer"))}` : "", of("avoid").length ? `avoid ${and(of("avoid"))}` : ""].filter(Boolean);
-  return parts.length ? parts.join(", ") : "Any surface";
+  const text = parts.join(", ");
+  // "Avoid gravel" on its own starts with a capital, as "Prefer cycle paths" does.
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "Any surface";
 }
 
 /** The countries chip (D80): "Only Italy", "Avoid Greece", "Only Spain and France, avoid Andorra", or "Any country". */

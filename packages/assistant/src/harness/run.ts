@@ -85,6 +85,8 @@ for (const c of chosen) {
     console.log(`\n=== ${c.id} (${c.kind}, ${c.route})`);
     for (const s of scores) {
       console.log(`  rider: ${s.rider || "(a change on screen)"}`);
+      if (s.onScreen) console.log(`  on screen: ${s.onScreen.change.join("; ")}
+  second thought: ${s.onScreen.thought.join(" / ") || "none"}`);
       s.calls.forEach((k, i) => {
         console.log(`  > ${k.tool} ${JSON.stringify(k.args)}`);
         for (const l of s.results[i]!.lines) console.log(`      ${l}`);

@@ -32,11 +32,15 @@ export type PlanAction =
   | { type: "rest-move"; from: number; to: number; current: number[]; nights: string[] }
   /**
    * Rest at this stop: the night (0-based) is kept there and a rest day follows; `add` makes it one more (D74). `days`
-   * makes it a longer stay of 2 or 3 rest days in a row (D80).
+   * makes it a longer stay of 2 or 3 rest days in a row (D80). `longer`: the riding days stay and the trip ends later,
+   * as the assistant may offer (D77).
    */
-  | { type: "rest-in"; night: number; stop: string; add: boolean; current?: number[]; days?: number }
-  /** So many rest days in a row after this riding day (D80): "Stay another day", "One day fewer". The end date holds. */
-  | { type: "rest-length"; afterRide: number; days: number; current?: number[]; night?: number; stop?: string }
+  | { type: "rest-in"; night: number; stop: string; add: boolean; current?: number[]; days?: number; longer?: boolean }
+  /**
+   * So many rest days in a row after this riding day (D80): "Stay another day", "One day fewer". The end date holds,
+   * unless `longer`.
+   */
+  | { type: "rest-length"; afterRide: number; days: number; current?: number[]; night?: number; stop?: string; longer?: boolean }
   /** Keep this night (0-based) at this stop, whatever else changes. */
   | { type: "lock-night"; night: number; stop: string }
   | { type: "release-night"; night: number }
@@ -113,21 +117,28 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
     }
     case "rest-in":
     case "rest-length": {
-      const r = action.type === "rest-in" ? action.night + 1 : action.afterRide;
+      const asked = action.type === "rest-in" ? action.night + 1 : action.afterRide;
       const current = action.current ?? inputs.restAfter;
       const count = Math.max(inputs.restDays ?? 0, ownRestDays({ restAfter: current, restLength: inputs.restLength }));
       // A rest day already there counts: one the planner placed is a single day, and becomes the rider's.
-      const had = current.includes(r) ? restLengthOf(inputs, r) : 0;
+      const had = current.includes(asked) ? restLengthOf(inputs, asked) : 0;
       const len = Math.min(MAX_REST_LENGTH, Math.max(1, Math.round(action.days ?? 1)));
-      const restAfter = withOne(current, r).sort((a, b) => a - b);
+      const extra = len - had;
+      const keepEnd = !action.longer && (action.type === "rest-length" || action.add);
+      // The end date holds, so there are fewer riding days: a stay that would come after the last of them comes as late
+      // as it can, its night still kept at the town.
+      const rides = keepEnd ? Math.max(1, inputs.days - extra) : inputs.days;
+      const r = Math.max(1, Math.min(asked, rides - 1));
+      const restAfter = withOne(current.filter((x) => x < rides), r).sort((a, b) => a - b);
       const restLength = { ...inputs.restLength };
+      if (r !== asked) delete restLength[asked];
       if (len > 1) restLength[r] = len;
       else delete restLength[r];
-      const locked = action.night !== undefined && action.stop ? { ...choices.locked, [action.night]: action.stop } : choices.locked;
-      const extra = len - had;
+      const night = action.night === undefined ? undefined : action.night - (asked - r);
+      const locked = night !== undefined && action.stop ? { ...choices.locked, [night]: action.stop } : choices.locked;
       return replan(
-        action.type === "rest-length" || action.add
-          ? { restAfter, restLength, restDays: Math.max(0, count + extra), days: Math.max(1, inputs.days - extra) }
+        keepEnd || action.longer
+          ? { restAfter, restLength, restDays: Math.max(0, count + extra), days: rides }
           : { restAfter, restLength, restDays: Math.max(count, ownRestDays({ restAfter, restLength })) },
         { ...choices, locked },
       );
@@ -224,10 +235,11 @@ export const restAfterAction = (plan: PlanResult, afterRide: number, on: boolean
     : { type: "rest", afterRide, on: false, current: plan.restAfter };
 
 /** A rest day's "Stay another day" or "One day fewer" (D80): so many rest days in a row, in the same town. */
-export const restLengthAction = (plan: PlanResult, afterRide: number, days: number): PlanAction => ({
+export const restLengthAction = (plan: PlanResult, afterRide: number, days: number, longer = false): PlanAction => ({
   type: "rest-length",
   afterRide,
   days,
+  ...(longer ? { longer } : {}),
   current: plan.restAfter,
   night: afterRide - 1,
   stop: plan.nights[afterRide - 1]?.stop.id,
@@ -243,10 +255,10 @@ export const restMoveAction = (plan: PlanResult, from: number, to: number): Plan
 });
 
 /** "Rest in…" a town (D74): the night nearest it moves there and rest days follow, one or a longer stay (D80). */
-export function restInAction(plan: PlanResult, stop: { id: string; at_m: number }, days = 1): PlanAction | null {
+export function restInAction(plan: PlanResult, stop: { id: string; at_m: number }, days = 1, longer = false): PlanAction | null {
   if (!plan.nights.length) return null;
   const night = plan.nights.reduce((b, n, i) => (Math.abs(n.stop.at_m - stop.at_m) < Math.abs(plan.nights[b]!.stop.at_m - stop.at_m) ? i : b), 0);
-  return { type: "rest-in", night, stop: stop.id, add: true, current: plan.restAfter, ...(days > 1 ? { days } : {}) };
+  return { type: "rest-in", night, stop: stop.id, add: true, current: plan.restAfter, ...(days > 1 ? { days } : {}), ...(longer ? { longer } : {}) };
 }
 
 /** A night's Booked: it keeps the night where it is, and the date it was booked for (D74). */

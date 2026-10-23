@@ -46,7 +46,14 @@ export function planChanges(before: PlanResult, after: PlanResult): PlanChanges 
   const ra = before.restAfter;
   const rb = after.restAfter;
   const stays = (p: PlanResult) => p.restAfter.map((r) => `${r}:${restLengthOf(p.inputs, r)}`).join();
-  if (ra.join() !== rb.join()) lines.push(rb.length ? `Rest days now after riding ${rb.length === 1 ? "day" : "days"} ${numberList(rb)}` : "No rest days");
+  // By their towns too, as the day list shows them: "Rest day now in Bad Honnef, after riding day 2".
+  const where = rb.map((r) => {
+    const n = after.nights.find((x) => x.afterRide === r);
+    const len = restLengthOf(b, r);
+    return n ? `${n.stop.name ? "in " : ""}${stopName(n.stop)}${len > 1 ? ` for ${len} days` : ""}` : "";
+  });
+  const towns = where.every(Boolean) ? ` ${where.slice(0, -1).join(", ")}${where.length > 1 ? " and " : ""}${where[where.length - 1]},` : "";
+  if (ra.join() !== rb.join()) lines.push(rb.length ? `${rb.length === 1 ? "Rest day" : "Rest days"} now${towns} after riding ${rb.length === 1 ? "day" : "days"} ${numberList(rb)}` : "No rest days");
   // A longer or shorter stay where a rest day already is (D80).
   else if (stays(before) !== stays(after)) {
     for (const r of rb) {

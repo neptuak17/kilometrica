@@ -63,7 +63,10 @@
         "mustSay": [
           "Esplugues de Llobregat"
         ],
-        "reference": "Esplugues de Llobregat, the night after day 5, has 52 hotels and food. You can rest there and keep your end date, but then day 7 becomes 107 km to Sils, with 2 new calls; or rest there and end a day later, on Wed 22 Sep."
+        "reference": "Esplugues de Llobregat, the night after day 5, has 52 hotels and food. You can rest there and keep your end date, but then day 7 becomes 107 km to Sils, with 2 new calls; or rest there and end a day later, on Wed 22 Sep.",
+        "phrasings": [
+          "rest day after day 5 please, somewhere with hotels and places to eat"
+        ]
       }
     ]
   },
@@ -127,7 +130,10 @@
         "mustSay": [
           "Malgrat de Mar"
         ],
-        "reference": "Day 7 can be shorter if the night after day 6 is further on: at Malgrat de Mar, day 7 is 41 km and day 6 becomes 67 km; at Santa Susanna, day 7 is 43 km and day 6 64 km."
+        "reference": "Day 7 can be shorter if the night after day 6 is further on: at Malgrat de Mar, day 7 is 41 km and day 6 becomes 67 km; at Santa Susanna, day 7 is 43 km and day 6 64 km.",
+        "phrasings": [
+          "day 7 looks hard, can it be easier?"
+        ]
       }
     ]
   },
@@ -176,7 +182,10 @@
         "mustSay": [
           "Barcelona"
         ],
-        "reference": "Yes: day 5 would end in Barcelona, 52 km instead of 48 km to Esplugues de Llobregat, and days 6–7 change too."
+        "reference": "Yes: day 5 would end in Barcelona, 52 km instead of 48 km to Esplugues de Llobregat, and days 6–7 change too.",
+        "phrasings": [
+          "stop in barcelona instead of esplugues please"
+        ]
       }
     ]
   },
@@ -232,7 +241,10 @@
           "call": 0,
           "option": 0
         },
-        "reference": "You can make the trip a day shorter, with day 5 ending at Calella, 66 km; or keep your end date and make one day a rest day, after riding day 4."
+        "reference": "You can make the trip a day shorter, with day 5 ending at Calella, 66 km; or keep your end date and make one day a rest day, after riding day 4.",
+        "phrasings": [
+          "can I do it in one day less?"
+        ]
       }
     ]
   },
@@ -274,7 +286,10 @@
         "mustSay": [
           "Sitges"
         ],
-        "reference": "Day 4 is 60 km from Tarragona to Sitges, 4 h 35 riding, within your level. It ends in Sitges for food and a station. Stopping at Vilanova i la Geltrú instead makes it 50 km, and the next day 58 km."
+        "reference": "Day 4 is 60 km from Tarragona to Sitges, 4 h 35 riding, within your level. It ends in Sitges for food and a station. Stopping at Vilanova i la Geltrú instead makes it 50 km, and the next day 58 km.",
+        "phrasings": [
+          "day 4 seems really long, why?"
+        ]
       }
     ]
   },
@@ -339,7 +354,10 @@
         "mustSay": [
           "Sant Adrià de Besòs"
         ],
-        "reference": "Two stops further on: Sant Adrià de Besòs makes day 5 59 km, or Barcelona 52 km; days 6–7 change too."
+        "reference": "Two stops further on: Sant Adrià de Besòs makes day 5 59 km, or Barcelona 52 km; days 6–7 change too.",
+        "phrasings": [
+          "I want to ride further on day 5"
+        ]
       }
     ]
   },
@@ -375,7 +393,10 @@
         "mustSay": [
           "Booking.com"
         ],
-        "reference": "We don't rank places: we have no reviews. Near Calella there are other options, like Hotel Mercury by ALEGRIA 5.6 km on and Càmping El Pinar Platja 5.9 km on. Or search Booking.com or Expedia for Calella, 20–21 September."
+        "reference": "We don't rank places: we have no reviews. Near Calella there are other options, like Hotel Mercury by ALEGRIA 5.6 km on and Càmping El Pinar Platja 5.9 km on. Or search Booking.com or Expedia for Calella, 20–21 September.",
+        "phrasings": [
+          "better places to stay on day 6?"
+        ]
       }
     ]
   },
@@ -417,7 +438,10 @@
           "May",
           "September"
         ],
-        "reference": "May is cooler: usually 13–22 °C, against 18–26 °C in September, with rain 1 day in 3 in both."
+        "reference": "May is cooler: usually 13–22 °C, against 18–26 °C in September, with rain 1 day in 3 in both.",
+        "phrasings": [
+          "may vs september?"
+        ]
       }
     ]
   },
@@ -452,7 +476,10 @@
         "mustSay": [
           "smoke"
         ],
-        "reference": "In July, Alcossebre → Sils is usually 21–30 °C, with rain 1 day in 5. We give the wind along the way only for your trip's own month, and we have no smoke or wildfire data."
+        "reference": "In July, Alcossebre → Sils is usually 21–30 °C, with rain 1 day in 5. We give the wind along the way only for your trip's own month, and we have no smoke or wildfire data.",
+        "phrasings": [
+          "what's july like here?"
+        ]
       }
     ]
   },
@@ -480,7 +507,10 @@
         "mustSay": [
           "safe"
         ],
-        "reference": "We can't tell you whether a place is safe. Your government's travel advice is the place to check that."
+        "reference": "We can't tell you whether a place is safe. Your government's travel advice is the place to check that.",
+        "phrasings": [
+          "is barcelona dangerous?"
+        ]
       }
     ]
   },
@@ -516,7 +546,10 @@
         "mustSay": [
           "reviews"
         ],
-        "reference": "We can't say: we have no reviews. The Grand Hyatt Barcelona is one of the hotels at Esplugues de Llobregat for the night after day 5, open in September; its links are on day 5's card."
+        "reference": "We can't say: we have no reviews. The Grand Hyatt Barcelona is one of the hotels at Esplugues de Llobregat for the night after day 5, open in September; its links are on day 5's card.",
+        "phrasings": [
+          "is the grand hyatt any good?"
+        ]
       }
     ]
   },
@@ -574,7 +607,10 @@
         "mustSay": [
           "Princeton"
         ],
-        "reference": "It can, with a long day: Princeton takes the night that's at Tulameen, so the day to Princeton becomes 152 km and day 5 49 km, and your rest day moves to after riding day 3. That raises 2 new calls."
+        "reference": "It can, with a long day: Princeton takes the night that's at Tulameen, so the day to Princeton becomes 152 km and day 5 49 km, and your rest day moves to after riding day 3. That raises 2 new calls.",
+        "phrasings": [
+          "can I sleep in Hope, Princeton and Greenwood?"
+        ]
       }
     ]
   },
@@ -608,7 +644,10 @@
             }
           }
         ],
-        "reference": "Between Hope and Princeton, 152 km, there's water or food at km 0, 60, 126 and 151 from Hope. The longest stretch without is 66 km: you judge what to carry."
+        "reference": "Between Hope and Princeton, 152 km, there's water or food at km 0, 60, 126 and 151 from Hope. The longest stretch without is 66 km: you judge what to carry.",
+        "phrasings": [
+          "water between Hope and Princeton?"
+        ]
       }
     ]
   },
@@ -650,7 +689,10 @@
         "mustSay": [
           "gravel"
         ],
-        "reference": "Day 5, Tulameen to Bankeir, has a good share of gravel, rolling through forest and nature: 74 km with 779 m of climbing."
+        "reference": "Day 5, Tulameen to Bankeir, has a good share of gravel, rolling through forest and nature: 74 km with 779 m of climbing.",
+        "phrasings": [
+          "day 5 surface?"
+        ]
       }
     ]
   },
@@ -696,7 +738,10 @@
           "call": 0,
           "option": 0
         },
-        "reference": "Not every day. Leaving at 05:00 gets some days in by 15:00, but days 1–2, 4, 7 and 10–11 still end after it."
+        "reference": "Not every day. Leaving at 05:00 gets some days in by 15:00, but days 1–2, 4, 7 and 10–11 still end after it.",
+        "phrasings": [
+          "I want to be done by 3pm each day to set up camp"
+        ]
       }
     ]
   },
@@ -743,7 +788,10 @@
           "call": 0,
           "option": 0
         },
-        "reference": "Your plan leaves getting there and back out. I can add it: on this route it would say to make your own arrangements at both ends."
+        "reference": "Your plan leaves getting there and back out. I can add it: on this route it would say to make your own arrangements at both ends.",
+        "phrasings": [
+          "how do I get home from the end?"
+        ]
       }
     ]
   },
@@ -779,7 +827,10 @@
         "mustSay": [
           "availability"
         ],
-        "reference": "We can't see availability or book: ask Otter Lake Campground directly. It's a BC Parks campground with 45 sites, 5.5 km back from Tulameen, the night after day 4."
+        "reference": "We can't see availability or book: ask Otter Lake Campground directly. It's a BC Parks campground with 45 sites, 5.5 km back from Tulameen, the night after day 4.",
+        "phrasings": [
+          "will Otter Lake Campground have room on day 4?"
+        ]
       }
     ]
   },
@@ -815,6 +866,9 @@
         "reference": "Day 4, Hope to Tulameen, climbs 2,087 m in 126 km, about 12 h 02 riding: beyond your level.",
         "mustSay": [
           "2,087"
+        ],
+        "phrasings": [
+          "what's the climb on day 4 like?"
         ]
       }
     ],
@@ -853,7 +907,10 @@
         "mustSay": [
           "Hope"
         ],
-        "reference": "Day 3 is your rest day in Hope, with 56 places to eat. Open that day: Hope Mountain Cafe, Lola's Tortas and Rolling Pin Bakery, among others."
+        "reference": "Day 3 is your rest day in Hope, with 56 places to eat. Open that day: Hope Mountain Cafe, Lola's Tortas and Rolling Pin Bakery, among others.",
+        "phrasings": [
+          "food and water on day 3?"
+        ]
       }
     ]
   },
@@ -914,6 +971,3392 @@
         "thought": null,
         "calls": [],
         "reference": ""
+      }
+    ]
+  },
+  {
+    "id": "d-p15-overview",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Give me the overview of my trip.",
+        "calls": [
+          {
+            "tool": "the_trip",
+            "args": {}
+          }
+        ],
+        "phrasings": [
+          "summarise the plan please"
+        ],
+        "mustSay": [
+          "Cologne"
+        ],
+        "reference": "Your trip runs from Cologne to Bingen am Rhein: 7 days, Sat 15 – Fri 21 May 2027, 177 km with 1,101 m of climbing, every day within Leisurely. Day 7 is the hardest at 35 km, and your rest day is day 5, at Koblenz. There's a bed every night and 5 things to sort out before you leave. In May it's typically 8–18 °C, with rain 1 day in 2."
+      }
+    ]
+  },
+  {
+    "id": "d-p15-hardest",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Which day is the hardest?",
+        "calls": [
+          {
+            "tool": "the_trip",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "Day 7"
+        ],
+        "reference": "Day 7, Hirzenach → Bingen am Rhein, is the hardest: 35 km, about 3 h 15 riding. It's still within your level, like every day of the trip.",
+        "phrasings": [
+          "hardest day?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-day-2",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Tell me about day 2.",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 2
+            }
+          }
+        ],
+        "mustSay": [
+          "Bad Honnef"
+        ],
+        "reference": "Day 2, Sun 16 May, takes you from Wesseling to Bad Honnef: 34 km and 190 m of climbing (at least: the terrain is unknown for 2.5 km), within your level. It's mostly cycle paths, rolling, through towns, with a 2 km gap in the route. Leaving at 09:00, you're in by 13:44. Water and food are never more than 4 km apart, and Bad Honnef has 3 hotels and 1 hostel nearby, 1 open in May: check ahead for the others.",
+        "phrasings": [
+          "what's day 2 like?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-gap",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "What's this gap on day 2?",
+        "calls": [
+          {
+            "tool": "items",
+            "args": {
+              "day": 2,
+              "kind": "note"
+            }
+          }
+        ],
+        "mustSay": [
+          "gap"
+        ],
+        "reference": "At km 17 of day 2 the official track stops: there's no track, ferry or published link for 2 km. We count it as ridden, so draw your own line across the gap in your route tool. The terrain there is unknown too, so the day's climbing and time are minimums.",
+        "phrasings": [
+          "day 2 has a gap?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-koblenz-rest",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "What can I do on my rest day in Koblenz?",
+        "calls": [
+          {
+            "tool": "rest_day",
+            "args": {
+              "town": "Koblenz"
+            }
+          }
+        ],
+        "mustSay": [
+          "Koblenz"
+        ],
+        "reference": "Your rest day is day 5, Wed 19 May, in Koblenz. To see: Kurfürstliches Schloss, Alte Burg, Löwentor, the Koblenzer Sektmuseum, the Ludwig-Museum im Deutschherrenhaus and the Mittelrhein-Museum. Places to eat open that day include Kornpforte and Altes Brauhaus, and the town has 9 bike shops and a station. It's typically 8–18 °C, with rain 1 day in 2.",
+        "phrasings": [
+          "things to do in koblenz on my day off?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-move-rest",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Move my rest day to Bad Honnef.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "move_rest",
+                      "rest_day": 5,
+                      "after_day": 2
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Bad Honnef"
+        ],
+        "reference": "I can: your rest day would then be in Bad Honnef, after riding day 2. Apply it if that's what you want.",
+        "phrasings": [
+          "rest in bad honnef instead"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-add-day",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Add another day.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "total_days": 8
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "With one riding day more, the trip ends Sat 22 May instead of Fri 21 May, and the last days get shorter: day 6 ends at Boppard, 22 km instead of 30, and day 7 at Oberwesel, 21 km instead of 35.",
+        "phrasings": [
+          "one more day please"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-level-2",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "note": "A what-if is an option to preview, never a change (D77).",
+    "turns": [
+      {
+        "rider": "What if I rode at Easy-moderate?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "level": 2
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "At Easy-moderate (instead of Leisurely) your days stay as they are: only the level they're judged against changes. You can apply it if you like.",
+        "phrasings": [
+          "try easy-moderate"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-june",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Could I go in June instead?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "start_date": "2027-06-15"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "You can: the trip would start Tue 15 Jun instead of Sat 15 May, and the days stay as they are.",
+        "phrasings": [
+          "what about june?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-ebike",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "I'll be on an e-bike.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "bike": "ebike"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "I'll set your bike to an e-bike (it was a touring bike) once you apply it.",
+        "phrasings": [
+          "I'm riding an ebike"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-in-by-1",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "I want to be in by 1pm each day.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "be_in_by",
+                      "time": "13:00"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "Leave at 08:00 instead of 09:00 and every day is in by 13:00.",
+        "phrasings": [
+          "done by 1pm every day please"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-todo",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "What do I still need to sort out?",
+        "calls": [
+          {
+            "tool": "items",
+            "args": {
+              "left": true
+            }
+          }
+        ],
+        "phrasings": [
+          "what's left on my to-do?"
+        ],
+        "reference": "Accommodation for each night: Wesseling on Sat 15 May, Bad Honnef on Sun 16 May, Andernach on Mon 17 May, Koblenz for 2 nights from Tue 18 May, and Hirzenach on Thu 20 May. Book Hirzenach ahead: it's in the school holidays (Pentecost Holidays)."
+      }
+    ]
+  },
+  {
+    "id": "d-p15-book-ahead",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Why does it say to book ahead at Hirzenach?",
+        "calls": [
+          {
+            "tool": "items",
+            "args": {
+              "day": 6,
+              "kind": "todo"
+            }
+          }
+        ],
+        "mustSay": [
+          "Pentecost"
+        ],
+        "reference": "Your night at Hirzenach, Thu 20 May, falls in the school holidays (Pentecost Holidays), so the plan says to book ahead.",
+        "phrasings": [
+          "why book hirzenach early?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-find-koblenz",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "When do I get to Koblenz?",
+        "calls": [
+          {
+            "tool": "find_stop",
+            "args": {
+              "name": "Koblenz"
+            }
+          }
+        ],
+        "mustSay": [
+          "Koblenz"
+        ],
+        "reference": "You reach Koblenz on day 4, at km 27 of the day (km 111 of the trip), and spend the night after day 4 there.",
+        "phrasings": [
+          "which day is koblenz?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-booked-1",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "I've booked my room in Wesseling.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "booked",
+                      "after_day": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Wesseling"
+        ],
+        "reference": "I'll mark the night of Sat 15 May at Wesseling as booked once you apply it.",
+        "phrasings": [
+          "Wesseling is booked"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-best-month",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Which month would be best for this trip?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "best": true
+            }
+          }
+        ],
+        "reference": "May and September are best on Cologne → Bingen am Rhein, with a best-time score of 78 of 100. In May it's typically 8–18 °C, with rain 1 day in 2.",
+        "phrasings": [
+          "best month?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-swim",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "note": "Not our data (bathing water is noted for later, D58).",
+    "turns": [
+      {
+        "rider": "Is the Rhine clean enough to swim in?",
+        "calls": [],
+        "mustSay": [
+          "water quality"
+        ],
+        "reference": "I can't say: we have no water quality data for swimming. Check the local bathing water reports before you go in.",
+        "phrasings": [
+          "can I swim in the rhine?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-book-koblenz",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "note": "We never book (D41): the searches are the hand-off.",
+    "turns": [
+      {
+        "rider": "Can you book Koblenz for me?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 4
+            }
+          }
+        ],
+        "mustSay": [
+          "Booking.com"
+        ],
+        "reference": "We don't book anything ourselves. For the nights after day 4 in Koblenz (18–20 May), the plan lists 49 hotels and more nearby, with their links, and a search of Booking.com or Expedia for Koblenz, 18–20 May.",
+        "phrasings": [
+          "book koblenz please"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p15-followup",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Tell me about day 3.",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 3
+            }
+          }
+        ],
+        "reference": "Day 3, Mon 17 May, is Bad Honnef → Andernach: 29 km and 185 m of climbing, within your level, mostly on cycle paths through towns. You're in by 12:22 if you leave at 09:00, and Andernach has 17 hotels and 1 hostel nearby.",
+        "phrasings": [
+          "day 3?"
+        ]
+      },
+      {
+        "rider": "And the next day?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 4
+            }
+          }
+        ],
+        "mustSay": [
+          "Koblenz"
+        ],
+        "reference": "Day 4, Tue 18 May, takes you from Andernach to Koblenz: 27 km and 174 m of climbing, within your level, on roads and cycle paths. You're in by 12:06, and Koblenz has 49 hotels, 1 guest house and 2 hostels nearby."
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-can-i",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Can I do this?",
+        "calls": [
+          {
+            "tool": "the_trip",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "Challenging"
+        ],
+        "reference": "Yes, at Challenging, though 4 days are harder than your usual. Day 9 is the hardest: Germ → Saint-Girons, 98 km, about 6 h 46 riding. You have 2 rest days, at Arreau and Surba, and 725 km with 14,364 m of climbing over 14 days.",
+        "phrasings": [
+          "am I up to this?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-day-9",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Day 9 looks long - why?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 9
+            }
+          },
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 9
+            }
+          }
+        ],
+        "mustSay": [
+          "Saint-Girons"
+        ],
+        "reference": "It's 98 km from Germ to Saint-Girons, with 1,438 m of climbing and 90 km on busy roads: about 6 h 46 riding, in by 18:13. Stopping sooner makes the next day longer: Castillon-en-Couserans, say, makes this day 85 km and the next 69 km. Saint-Girons itself has 6 hotels and 2 guest houses nearby.",
+        "phrasings": [
+          "why is day 9 so long?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-harder",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Which days are harder?",
+        "calls": [
+          {
+            "tool": "the_trip",
+            "args": {}
+          }
+        ],
+        "reference": "Four days are harder than your usual: day 3 (Aramits → Eaux-Bonnes), day 6 (near Barèges → Arreau), day 8 (Arreau → Germ) and day 9 (Germ → Saint-Girons), the hardest.",
+        "phrasings": [
+          "which days are hardest for me?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-look-out-day-2",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "What should I look out for on day 2?",
+        "calls": [
+          {
+            "tool": "items",
+            "args": {
+              "day": 2,
+              "kind": "headsup"
+            }
+          }
+        ],
+        "mustSay": [
+          "busy roads"
+        ],
+        "reference": "Day 2 has busy roads, with fast or heavy traffic and no cycle lane: 36 km from km 4 to 40 (D 918, D 933, Rond-point de Larceveau), then 12 km from km 42 to 54 and 12 km from km 56 to 67.",
+        "phrasings": [
+          "anything to watch out for on day 2?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-two-days-luchon",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "note": "A longer stay (D80): with the end date held, or the trip longer.",
+    "turns": [
+      {
+        "rider": "I want two days off in Bagnères-de-Luchon.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "label": "Same end date",
+                  "changes": [
+                    {
+                      "do": "rest_in",
+                      "town": "Bagnères-de-Luchon",
+                      "days": 2
+                    }
+                  ]
+                },
+                {
+                  "label": "Two days longer",
+                  "changes": [
+                    {
+                      "do": "rest_in",
+                      "town": "Bagnères-de-Luchon",
+                      "days": 2,
+                      "longer": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Bagnères-de-Luchon"
+        ],
+        "reference": "You can keep your end date: that costs 2 riding days, leaving 10, the last 152 km into Cerbère, with 5 new calls. Or the trip ends on Fri 30 Jul instead, with 2 new calls. Either way you'd have 2 rest days in Bagnères-de-Luchon, and the plan's other rest days move, one of them to Azet, just before.",
+        "phrasings": [
+          "2 rest days in luchon please"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-another-day-arreau",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Can I stay another day in Arreau?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "label": "Same end date",
+                  "changes": [
+                    {
+                      "do": "rest_length",
+                      "town": "Arreau",
+                      "days": 2
+                    }
+                  ]
+                },
+                {
+                  "label": "A day longer",
+                  "changes": [
+                    {
+                      "do": "rest_length",
+                      "town": "Arreau",
+                      "days": 2,
+                      "longer": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Arreau"
+        ],
+        "reference": "Yes, you can have 2 rest days in a row at Arreau. Keeping your end date costs a riding day: day 9 would then end at Malvezie, 79 km instead of Germ's 33, with 2 new calls. Or finish a day later, on Thu 29 Jul, with nothing else changing.",
+        "phrasings": [
+          "one more day in arreau?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-trains",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Put the trains there and back in the plan.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "trains_there_and_back": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "I'll add getting there and back: a train to the start from Belaskoenea and home from the end at Colera, both on your to-do.",
+        "phrasings": [
+          "add the trains to and from"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-bail-out",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Show me where I could bail out by train.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "stations_for_going_home": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "I'll show each day's stations for going home early once you apply it.",
+        "phrasings": [
+          "where can I get a train home if I quit?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-water-laruns",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Where can I get water between Laruns and Argelès-Gazost?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "from_town": "Laruns",
+              "to_town": "Argelès-Gazost"
+            }
+          }
+        ],
+        "mustSay": [
+          "Laruns"
+        ],
+        "reference": "From Laruns to Argelès-Gazost (47 km) there's water and food at km 0, 13, 27, 34, 40 and 46 from Laruns; the longest stretch without is 10 km.",
+        "phrasings": [
+          "water from laruns to argelès?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-september",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "What would September be like instead?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "month": "September"
+            }
+          }
+        ],
+        "mustSay": [
+          "September"
+        ],
+        "reference": "In September on Hendaye → Cerbère it's typically 9–19 °C, with rain 1 day in 2. That's the usual weather, not a forecast.",
+        "phrasings": [
+          "september instead?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-stop-luz",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Can I stop in Luz-Saint-Sauveur instead of near Barèges?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "stop_at",
+                      "after_day": 5,
+                      "town": "Luz-Saint-Sauveur"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Luz-Saint-Sauveur"
+        ],
+        "reference": "You can: the night after day 6 would be at Luz-Saint-Sauveur. But it reshapes the trip: the rest days move to Montory and Mérens-les-Vals, most days change, and days 7–9 would all be harder than your usual.",
+        "phrasings": [
+          "stop at luz-saint-sauveur on day 5"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-booked-aramits",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "I've sorted the room in Aramits.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "booked",
+                      "after_day": 2
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Aramits"
+        ],
+        "reference": "I'll mark the night of Fri 16 Jul at Aramits as booked once you apply it.",
+        "phrasings": [
+          "aramits is booked"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-knee",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "note": "No medical advice (D77).",
+    "turns": [
+      {
+        "rider": "I have a bad knee, is this OK for me?",
+        "calls": [],
+        "mustSay": [
+          "doctor"
+        ],
+        "reference": "I can't tell you that: it's a question for your doctor or physio. What I can show you is how hard each day is, if that helps them.",
+        "phrasings": [
+          "my knee is bad, can I still do it?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-gears",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "note": "Not our data; Plan lists bike shops in rest-day towns.",
+    "turns": [
+      {
+        "rider": "My gears are slipping, how do I fix them?",
+        "calls": [],
+        "mustSay": [
+          "bike shop"
+        ],
+        "reference": "I can't help with repairs: a bike shop is the place for that. Each rest day on your plan lists the bike shops in town.",
+        "phrasings": [
+          "how do I fix slipping gears?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-day-13",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Tell me about day 13.",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 13
+            }
+          }
+        ],
+        "mustSay": [
+          "Villefranche-de-Conflent"
+        ],
+        "reference": "Day 13, Tue 27 Jul, is L'Hospitalet-près-l'Andorre → Villefranche-de-Conflent: 86 km with 1,132 m of climbing, within your level. It starts with the day's big climb, 10 km at 5.3% to 1916 m, and 71 km is on busy roads. Leaving at 09:00 you'd be in by 16:45, and Villefranche-de-Conflent has 2 hotels and 4 guest houses nearby.",
+        "phrasings": [
+          "day 13?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-followup",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "What's day 4 like?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 4
+            }
+          }
+        ],
+        "reference": "Day 4, Sun 18 Jul, is Eaux-Bonnes → Argelès-Gazost: 41 km but 1,194 m of climbing, in the mountains. It opens with the day's big climb, 21 km at 5.9% to 1706 m, steepest 500 m at 12%, and 30 km is on busy roads. You'd be in by 14:27.",
+        "phrasings": [
+          "day 4?"
+        ]
+      },
+      {
+        "rider": "And where do I sleep that night?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 4
+            }
+          }
+        ],
+        "mustSay": [
+          "Argelès-Gazost"
+        ],
+        "reference": "At Argelès-Gazost: 13 hotels and 1 guest house nearby, among them Le Balcon Des Cimes and Les Cimes. Check ahead that they're open, or search Booking.com or Expedia for Argelès-Gazost, 18–19 July."
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-tough",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "What if I ride it as Tough?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "level": 5
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "At Tough, your rest days move to Laruns and Castillon-en-Couserans, and most days shift: day 13, for one, ends at Saint-Pierre-dels-Forcats, 57 km instead of Villefranche-de-Conflent's 86.",
+        "phrasings": [
+          "try it at tough"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-can-i",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "Can I do it?",
+        "calls": [
+          {
+            "tool": "the_trip",
+            "args": {}
+          }
+        ],
+        "phrasings": [
+          "is this doable for me?"
+        ],
+        "mustSay": [
+          "Moderate"
+        ],
+        "reference": "Yes, at Moderate: every day is within your level. Day 4, Tarragona → Sitges, is the hardest at 60 km, about 4 h 35 riding."
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-sort-out",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "What do I sort out before I go?",
+        "calls": [
+          {
+            "tool": "items",
+            "args": {
+              "left": true
+            }
+          }
+        ],
+        "mustSay": [
+          "Train"
+        ],
+        "reference": "Accommodation for each night, at near Ulldecona, l'Ametlla de Mar, Tarragona, Sitges, Esplugues de Llobregat and Calella. Train to the start: Antiga estació d'Alcossebre; train home: Sils. Both carry bikes.",
+        "phrasings": [
+          "what's on my to-do?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-day-2",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "Tell me about day 2.",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 2
+            }
+          }
+        ],
+        "mustSay": [
+          "l'Ametlla de Mar"
+        ],
+        "reference": "Day 2, Thu 16 Sep, runs from near Ulldecona to l'Ametlla de Mar: 61 km with 424 m of climbing, mostly on roads, rolling, through towns, within your level. Water and food are never more than 15 km apart, and l'Ametlla de Mar has 2 campsites, 6 hotels and 1 guest house nearby: check ahead that they're open.",
+        "phrasings": [
+          "day 2?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-three-days-barcelona",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "A longer stay (D80). Keeping the end date leaves 4 riding days for 391 km, so the longer trip comes first.",
+    "turns": [
+      {
+        "rider": "I want 3 days in Barcelona.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "label": "Three days longer",
+                  "changes": [
+                    {
+                      "do": "rest_in",
+                      "town": "Barcelona",
+                      "days": 3,
+                      "longer": true
+                    }
+                  ]
+                },
+                {
+                  "label": "Same end date",
+                  "changes": [
+                    {
+                      "do": "rest_in",
+                      "town": "Barcelona",
+                      "days": 3
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Barcelona"
+        ],
+        "reference": "You can have 3 days in Barcelona after riding day 5, with the trip ending Fri 24 Sep instead of Tue 21 Sep. Keeping your end date instead would leave 4 riding days, with a 114 km day 2 and 3 new calls, so I'd suggest the longer trip.",
+        "phrasings": [
+          "3 days off in barcelona please"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-in-by-4",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "Can I be in by 4pm every day?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "be_in_by",
+                      "time": "16:00"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "Yes: leave at 09:30 instead of 09:00, and every day is in by 16:00.",
+        "phrasings": [
+          "finish by 4pm daily?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-no-trains",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "I don't need the trains in the plan.",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "trains_there_and_back": false
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "I'll leave getting to the start and home out of the plan once you apply it.",
+        "phrasings": [
+          "drop the trains"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-bail-out-day-3",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "Bail-outs are left out until asked for (D75, D79): offered, not answered around.",
+    "turns": [
+      {
+        "rider": "If I need to bail out on day 3, is there a station?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "stations_for_going_home": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "I can show each day's stations for going home early, day 3's among them: apply it to see them.",
+        "phrasings": [
+          "can I get a train home from day 3?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-tarragona",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "When do I get to Tarragona?",
+        "calls": [
+          {
+            "tool": "find_stop",
+            "args": {
+              "name": "Tarragona"
+            }
+          }
+        ],
+        "mustSay": [
+          "Tarragona"
+        ],
+        "reference": "On day 3: Tarragona is at km 58 of the day, km 175 of the trip, and you spend the night after day 3 there.",
+        "phrasings": [
+          "which day is tarragona?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-challenging",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "What if I ride Challenging?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "level": 4
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "At Challenging your days stay as they are: only the level they're judged against changes.",
+        "phrasings": [
+          "try challenging"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-october",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "How would October be?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "month": "October"
+            }
+          }
+        ],
+        "mustSay": [
+          "October"
+        ],
+        "reference": "In October, Alcossebre → Sils is typically 14–22 °C, with rain 1 day in 3: the usual weather, not a forecast.",
+        "phrasings": [
+          "october?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-paella",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "Never ranked by quality (no reviews).",
+    "turns": [
+      {
+        "rider": "Where's the best paella in Sitges?",
+        "calls": [],
+        "mustSay": [
+          "reviews"
+        ],
+        "reference": "I can't say: we have no reviews, so we never rank places to eat. A review site is the place to look.",
+        "phrasings": [
+          "best paella in sitges?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-followup",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "Tell me about day 6.",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 6
+            }
+          }
+        ],
+        "reference": "Day 6, Mon 20 Sep, is Esplugues de Llobregat → Calella: 58 km and 237 m of climbing, flat, on roads and cycle paths through towns. Water and food are never more than 2 km apart, and you're in by 14:31.",
+        "phrasings": [
+          "day 6?"
+        ]
+      },
+      {
+        "rider": "And the night?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 6
+            }
+          }
+        ],
+        "mustSay": [
+          "Calella"
+        ],
+        "reference": "Calella has 2 campsites, 39 hotels, 3 guest houses and 3 hostels nearby, 4 open in September, among them Fragata Hotel and htop Amaika. Or search Booking.com or Expedia for Calella, 20–21 September."
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-calls",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "Are there any calls I need to make?",
+        "calls": [
+          {
+            "tool": "items",
+            "args": {
+              "kind": "call"
+            }
+          }
+        ],
+        "reference": "No: there are no calls to make on this plan.",
+        "phrasings": [
+          "anything I need to decide?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-hot",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "Will it be hot?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {}
+          }
+        ],
+        "reference": "In September it's typically 18–26 °C on Alcossebre → Sils, with rain 1 day in 3: that's the usual weather, not a forecast.",
+        "phrasings": [
+          "how hot will it be?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-camping",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "Is there a campsite every night?",
+        "calls": [
+          {
+            "tool": "the_trip",
+            "args": {}
+          }
+        ],
+        "reference": "Yes, there's somewhere to sleep every night, but for all 5 nights we don't know whether the places are open in October: check ahead.",
+        "phrasings": [
+          "campsites every night?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-night-1",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "Where do I camp after day 1?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 1
+            }
+          }
+        ],
+        "mustSay": [
+          "Carboneras"
+        ],
+        "reference": "At Carboneras: Camper Park Carboneras, 1 campsite nearby. Check ahead that it's open. There's also a wild camp, if it's allowed and feasible.",
+        "phrasings": [
+          "day 1 campsite?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-wild-camp",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "note": "The rider's call, if it's allowed and feasible (D72).",
+    "turns": [
+      {
+        "rider": "Can I wild camp after day 2?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "stay_at",
+                      "after_day": 2,
+                      "place": "wild camp"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "allowed"
+        ],
+        "reference": "You can: the night of Sat 16 Oct, 20 km from Cabo de Gata, would be a wild camp. It's your call whether it's allowed and feasible there.",
+        "phrasings": [
+          "I'd like to wild camp after day 2"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-busy-day-5",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "What's the busy road on day 5?",
+        "calls": [
+          {
+            "tool": "items",
+            "args": {
+              "day": 5,
+              "kind": "headsup"
+            }
+          }
+        ],
+        "mustSay": [
+          "N-340A"
+        ],
+        "reference": "The N-340A: 13 km of it from km 47 to 60. There's also 12 km on the N-340A and N-340a from km 32 to 44, and 11 km on the N-340 and N-340a from km 63 to 74. Fast or heavy traffic, with no cycle lane.",
+        "phrasings": [
+          "which busy road on day 5?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-rest",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "What's there on my rest day?",
+        "calls": [
+          {
+            "tool": "rest_day",
+            "args": {
+              "day": 4
+            }
+          }
+        ],
+        "mustSay": [
+          "El Parador de las Hortichuelas"
+        ],
+        "reference": "Day 4, Mon 18 Oct, at El Parador de las Hortichuelas: the Museo Taurino, Playa La Romanilla and Cerro de las Bolinas to see, places to eat open that day such as Mercadona and Lidl, and 4 bike shops in town. It's typically 19–22 °C, with rain 1 day in 8.",
+        "phrasings": [
+          "rest day - what's there?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-day-5",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "Tell me about day 5.",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 5
+            }
+          }
+        ],
+        "mustSay": [
+          "La Mamola"
+        ],
+        "reference": "Day 5, Tue 19 Oct, is El Parador de las Hortichuelas → La Mamola: 74 km and 583 m of climbing, within your level, mostly on roads, with 37 km on busy roads. Water and food are never more than 6 km apart, and La Mamola has 2 campsites nearby: check ahead that they're open.",
+        "phrasings": [
+          "day 5?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-rooms",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "What if I stay in rooms instead?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "sleep": "rooms"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "In rooms instead of camping, day 6 becomes 53 km instead of 60, days 3 and 5 change too, and there's a new call: rest in Almería instead of Roquetas de Mar?",
+        "phrasings": [
+          "switch to rooms"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-other-way",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "What if I ride it the other way?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "direction": "forward"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "You can: Malaga → Águilas instead. Day 3 would be 74 km instead of 60, and days 1–2 and 5–7 change too.",
+        "phrasings": [
+          "reverse it"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-water-day-6",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "Where's water on day 6?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 6
+            }
+          }
+        ],
+        "reference": "On day 6, La Mamola → La Herradura, there's water and food at km 0, 6, 11, 17, 22, 27, 33, 38, 46, 51 and 56.",
+        "phrasings": [
+          "water on day 6?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-bike-safe",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "Will my bike be safe at the campsite?",
+        "calls": [],
+        "mustSay": [
+          "safe"
+        ],
+        "reference": "I can't say whether it'll be safe: we have no data on security at campsites. Ask the campsite when you book.",
+        "phrasings": [
+          "will my bike get stolen at campsites?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-followup",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "What's the weather usually like?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {}
+          }
+        ],
+        "reference": "In October on Águilas → Malaga it's typically 19–21 °C, with rain 1 day in 6.",
+        "phrasings": [
+          "usual weather?"
+        ]
+      },
+      {
+        "rider": "And in March?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "month": "March"
+            }
+          }
+        ],
+        "mustSay": [
+          "March"
+        ],
+        "reference": "In March it's cooler, typically 13–16 °C, with rain 1 day in 3."
+      }
+    ]
+  },
+  {
+    "id": "d-ptct-calls",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "What calls do I need to make?",
+        "calls": [
+          {
+            "tool": "items",
+            "args": {
+              "kind": "call"
+            }
+          }
+        ],
+        "reference": "Days 1, 2, 4, 7, 10 and 11 are beyond your level (Moderate): the longest is day 4, about 12 h 02 riding against your usual 4 h 25. Days 4, 7 and 11 also end after sunset at your pace: leaving at 04:00, 04:45 and 07:00 would fix that. For each, you can add a day, move the stop or keep it.",
+        "phrasings": [
+          "decisions to make?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ptct-night-7",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "Where do I sleep after day 7?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 7
+            }
+          }
+        ],
+        "mustSay": [
+          "Beaverdell"
+        ],
+        "reference": "At Beaverdell, your own stop, after a 124 km day: Beaverdell RV Park & Campgrounds is the campsite nearby, so check ahead that it's open. A wild camp is the other option, if it's allowed and feasible.",
+        "phrasings": [
+          "where do I sleep night 7?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ptct-water-princeton-midway",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "Is there water between Princeton and Midway?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "from_town": "Princeton",
+              "to_town": "Midway"
+            }
+          }
+        ],
+        "mustSay": [
+          "Princeton"
+        ],
+        "reference": "Some, but far apart: from Princeton to Midway (319 km) there's water and food at km 0, 46, 98, 111, 117, 249, 292 and 299 from Princeton. The longest stretch without is 131 km, so carry plenty.",
+        "phrasings": [
+          "water princeton to midway?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ptct-water-filter",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "note": "The to-do's own advice where water is sparse (D70); otherwise kit is the rider's call.",
+    "turns": [
+      {
+        "rider": "Will I need a water filter?",
+        "calls": [
+          {
+            "tool": "items",
+            "args": {
+              "kind": "todo"
+            }
+          }
+        ],
+        "reference": "Yes: your to-do says to bring one. There are long stretches without water or food on 7 of 11 days, up to 124 km, so bring a water filter and enough food, and filter from streams and lakes where there are any.",
+        "phrasings": [
+          "do I need a filter?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ptct-fire-bans",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "note": "Live conditions belong to Go; we have none for planning.",
+    "turns": [
+      {
+        "rider": "Are there fire bans in August?",
+        "calls": [],
+        "mustSay": [
+          "fire"
+        ],
+        "reference": "I can't say: we have no fire ban data while you plan. Check the provincial fire bans before you go, and again on the way.",
+        "phrasings": [
+          "fire bans in august?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ptct-august",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "What's August usually like?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "August"
+        ],
+        "reference": "In August on Vancouver → Nakusp it's typically 11–24 °C, with rain 1 day in 5.",
+        "phrasings": [
+          "august weather?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ptct-rest-hope",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "What's in Hope for my rest day?",
+        "calls": [
+          {
+            "tool": "rest_day",
+            "args": {
+              "town": "Hope"
+            }
+          }
+        ],
+        "mustSay": [
+          "Hope"
+        ],
+        "reference": "Day 3, Tue 17 Aug, at Hope: Fort Hope, the Hope Museum, Landstrom Ridge and Thacker Mountain to see, and places to eat open that day such as Hope Mountain Cafe and Rolling Pin Bakery. There's a bike shop and 2 pharmacies, and it's typically 10–22 °C, with rain 1 day in 4.",
+        "phrasings": [
+          "what's in hope?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "r-close-rests",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "react",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 8,
+      "level": 3,
+      "month": 8,
+      "travel": true,
+      "rest": 1,
+      "restAfter": [
+        2
+      ]
+    },
+    "turns": [
+      {
+        "change": {
+          "do": "add_rest",
+          "after_day": 4
+        },
+        "thought": "Two rest days close together?",
+        "calls": [],
+        "reference": "Two rest days close together? Only 1 riding day between your rest days in l'Ametlla de Mar and Tarragona. Further apart, each does more for your legs. You could rest in Vilassar de Mar instead, after day 7."
+      }
+    ]
+  },
+  {
+    "id": "r-dates-quiet",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "react",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "change": {
+          "do": "set",
+          "start_date": "2027-09-22"
+        },
+        "thought": null,
+        "calls": [],
+        "reference": ""
+      }
+    ]
+  },
+  {
+    "id": "r-booked-quiet",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "react",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "change": {
+          "do": "booked",
+          "after_day": 2
+        },
+        "thought": null,
+        "calls": [],
+        "reference": ""
+      }
+    ]
+  },
+  {
+    "id": "r-rest-spot",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "react",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "note": "A rest day at a spot with no name (D80).",
+    "turns": [
+      {
+        "change": {
+          "do": "move_rest",
+          "rest_day": 4,
+          "after_day": 2
+        },
+        "thought": "A rest day 20 km from Cabo de Gata?",
+        "calls": [],
+        "reference": "A rest day 20 km from Cabo de Gata? It's a spot between towns, with nothing we know of for a day off. You could rest in El Parador de las Hortichuelas instead, after day 4."
+      }
+    ]
+  },
+  {
+    "id": "r-sleep-quiet",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "react",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "change": {
+          "do": "set",
+          "sleep": "camping"
+        },
+        "thought": null,
+        "calls": [],
+        "reference": ""
+      }
+    ]
+  },
+  {
+    "id": "r-level-quiet-pyr",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "react",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "change": {
+          "do": "set",
+          "level": 3
+        },
+        "thought": null,
+        "calls": [],
+        "reference": ""
+      }
+    ]
+  },
+  {
+    "id": "d-p15-forecast",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "eurovelo/ev15",
+    "run": "20261023T143209Z_7193048a72",
+    "plan": {
+      "sections": [
+        44,
+        48
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 1,
+      "month": 4,
+      "sleep": "rooms"
+    },
+    "note": "Plan holds the usual weather, never a forecast.",
+    "turns": [
+      {
+        "rider": "What's the forecast for my first day?",
+        "calls": [],
+        "mustSay": [
+          "forecast"
+        ],
+        "reference": "I can't give you a forecast: while you plan we hold only the usual weather. Check a weather service nearer the day.",
+        "phrasings": [
+          "will it rain on day 1?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-navigate",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "We never navigate (D41): the GPX goes to the rider's own app.",
+    "turns": [
+      {
+        "rider": "Can you give me turn-by-turn directions?",
+        "calls": [],
+        "mustSay": [
+          "GPX"
+        ],
+        "reference": "I can't navigate you: we hand that to your own app. Use the GPX in your navigation app, and Go when you're on the way.",
+        "phrasings": [
+          "turn by turn please"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-book-train",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "note": "We never book (D41).",
+    "turns": [
+      {
+        "rider": "Book me a train to Hendaye.",
+        "calls": [],
+        "mustSay": [
+          "book"
+        ],
+        "reference": "I can't book trains: we never book anything ourselves. Add getting there and back to your plan and its to-do names the station for your search.",
+        "phrasings": [
+          "can you get me a train ticket to hendaye?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-cost",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "No prices in our data: never guessed.",
+    "turns": [
+      {
+        "rider": "How much will this trip cost me?",
+        "calls": [],
+        "mustSay": [
+          "prices"
+        ],
+        "reference": "I can't say: we have no prices for places to stay, food or trains, so I can't put a cost on the trip.",
+        "phrasings": [
+          "what's the budget for this?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ptct-packing",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "note": "Kit is the rider's call; the to-do raises only what the data shows.",
+    "turns": [
+      {
+        "rider": "Write me a packing list.",
+        "calls": [],
+        "mustSay": [
+          "packing"
+        ],
+        "reference": "I can't write you a packing list: what to bring is your call. Your to-do raises what our data shows, like where water is scarce.",
+        "phrasings": [
+          "what should I pack?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-ppyr-insurance",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "user/u4ad6e50f59",
+    "run": "20261022T205520Z_2f48b23061",
+    "plan": {
+      "sections": [
+        1,
+        12
+      ],
+      "days": 14,
+      "rest": 2,
+      "level": 4,
+      "month": 6,
+      "sleep": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "Do I need travel insurance for this?",
+        "calls": [],
+        "mustSay": [
+          "insurance"
+        ],
+        "reference": "I can't advise on insurance: check with an insurer, or your bank or card provider.",
+        "phrasings": [
+          "is insurance needed?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8a-strikes",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "No live news in planning.",
+    "turns": [
+      {
+        "rider": "Are there any train strikes planned in September?",
+        "calls": [],
+        "mustSay": [
+          "strikes"
+        ],
+        "reference": "I can't say: we have no news on train strikes. Check with the rail operator nearer the time.",
+        "phrasings": [
+          "any rail strikes in september?"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "d-p8b-mamola-nice",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        8,
+        16
+      ],
+      "way": "reverse",
+      "days": 7,
+      "rest": 1,
+      "level": 3,
+      "month": 9,
+      "sleep": "camping"
+    },
+    "note": "Never ranked by quality (no reviews).",
+    "turns": [
+      {
+        "rider": "Is the campsite at La Mamola any good?",
+        "calls": [],
+        "mustSay": [
+          "reviews"
+        ],
+        "reference": "I can't say: we have no reviews, so we never rank campsites.",
+        "phrasings": [
+          "good campsite at la mamola?"
+        ]
       }
     ]
   }
