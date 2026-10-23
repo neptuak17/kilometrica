@@ -45,7 +45,7 @@ import { Button, cn, EffortChart, ElevationProfile, Icons } from "@dpg/ui";
 import { type ReactNode, useEffect, useMemo } from "react";
 import { GROUPS, Qr } from "./BeforeYouGo";
 import { TOPIC } from "./Brief";
-import { dayFacts } from "./dayFacts";
+import { dayFacts } from "@dpg/planner";
 import { eleAt } from "./Profile";
 
 interface Props {

@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./app": "./src/app.ts",
+    "./store": "./src/store.ts"
+  },
   "scripts": {
     "dev": "tsx watch src/node.ts",
     "start": "tsx src/node.ts",

@@ -38,7 +38,7 @@ import {
 } from "@dpg/planner";
 import { Badge, Button, Card, CardContent, Checkbox, cn, Icons, Label, LinkButton } from "@dpg/ui";
 import { type ReactNode, useId, useState } from "react";
-import { dayFacts, restFacts } from "./dayFacts";
+import { dayFacts, restFacts } from "@dpg/planner";
 import { looksUp, openPhoto } from "./photos";
 
 const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;

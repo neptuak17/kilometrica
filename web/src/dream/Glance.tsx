@@ -4,39 +4,10 @@
  * from its column head.
  */
 import type { DreamSection } from "@dpg/contracts";
+import { countryRows, whole } from "@dpg/dream";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, cn } from "@dpg/ui";
 import { country, MONTHS, MONTHS_LONG } from "@dpg/planner";
 import { useMemo } from "react";
-import { whole } from "./ask";
-
-interface Row {
-  cc: string;
-  length: number;
-  best: ({ v: number; share: number } | null)[];
-}
-
-export function countryRows(sections: DreamSection[]): Row[] {
-  const by = new Map<string, DreamSection[]>();
-  for (const s of sections) {
-    const cc = s.country ?? "??";
-    by.set(cc, [...(by.get(cc) ?? []), s]);
-  }
-  return [...by.entries()].map(([cc, secs]) => {
-    const length = secs.reduce((a, s) => a + s.length_m, 0);
-    const best = MONTHS.map((_, m) => {
-      let sum = 0;
-      let len = 0;
-      for (const s of secs) {
-        const v = s.best_time[m];
-        if (v === null || v === undefined) continue;
-        sum += v * s.length_m;
-        len += s.length_m;
-      }
-      return len ? { v: sum / len, share: len / length } : null;
-    });
-    return { cc, length, best };
-  });
-}
 
 /**
  * The highlight colour, stronger for a better score: scores lie between about 30 and 90. Mixed in oklab, since an

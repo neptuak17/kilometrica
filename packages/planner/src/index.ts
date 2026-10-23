@@ -4,6 +4,7 @@ export * from "./brief";
 export * from "./changes";
 export * from "./document";
 export * from "./exports";
+export * from "./facts";
 export * from "./geometry";
 export * from "./items";
 export * from "./pace";

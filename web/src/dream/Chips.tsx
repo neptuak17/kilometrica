@@ -24,7 +24,7 @@ import {
 import type { ReactNode } from "react";
 import { Dialog, type Key } from "react-aria-components";
 import { SELECTED } from "../rider/Questions";
-import { and, type Ask, type Level, PACE, PREFS, STAY, SURFACES, surfacesText, WAY } from "./ask";
+import { and, type Ask, type Level, PACE, PREFS, STAY, SURFACES, surfacesText, WAY } from "@dpg/dream";
 
 export type ChipId = "level" | "days" | "pace" | "month" | "surfaces" | "scenery" | "stay" | "direction";
 

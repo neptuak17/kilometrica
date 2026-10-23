@@ -1,28 +1,17 @@
 /**
- * What a day card and its trip-book page say about one day (11.6, D55), worked out once for both: water and food by
- * km and the longest gap, the bail-out stations, and where to sleep: the places at the night's stop and the other
- * options nearby (D72), never ranked by quality (we have no prices or reviews). Where places didn't load, nothing is
- * "none" (D37).
+ * What the screens say about one day and about a whole plan, worked out once for the day card, its trip-book page
+ * (11.6, D55) and the assistant's tools (A2, D77): water and food by km and the longest gap, the bail-out stations,
+ * where to sleep (the places at the night's stop and the other options nearby, D72, never ranked by quality: we have
+ * no prices or reviews), a rest day's town (D74), and the figures Compare sets side by side. Where places didn't load,
+ * nothing is "none" (D37).
  */
 import type { Highlight, Place, Stop } from "@dpg/contracts";
-import {
-  type DayPlan,
-  dayIndex,
-  km,
-  MONTHS_LONG,
-  monthOf,
-  type NightOptions,
-  nightOptions,
-  type NightPlan,
-  type PlanData,
-  type PlanResult,
-  placeKind,
-  listable,
-  placesMissing,
-  placeTitle,
-  restPlace,
-  stopName,
-} from "@dpg/planner";
+import { type NightOptions, nightOptions } from "./items";
+import type { PlanResult } from "./plan";
+import { restPlace } from "./rest";
+import { dayIndex, monthOf } from "./sun";
+import { hours, km, listable, MONTHS_LONG, placeKind, placeTitle, stopName } from "./text";
+import { type DayPlan, type NightPlan, type PlanData, placesMissing } from "./types";
 
 export interface DayFacts {
   /** The night after this day; none on a rest day or the last day. */
@@ -134,4 +123,22 @@ export function restFacts(plan: PlanResult, data: PlanData, d: DayPlan): RestFac
     })
     .sort((a, b) => b.score - a.score);
   return { afterRide, stop, sights: restPlace(data, stop, plan.inputs.sleep, month).sights.slice(0, 6), food, services, moves };
+}
+
+/** What Compare sets side by side for a plan (11.6): days, the hardest day, total hours, nights, calls, busy km. */
+export function planFigures(p: PlanResult) {
+  const rides = p.days.filter((d) => d.kind === "ride");
+  const hardest = [...rides].sort((a, b) => b.hoursSlow - a.hoursSlow)[0]!;
+  const busy = p.items
+    .filter((i) => i.id.startsWith("finding:") && i.title.includes("busy roads"))
+    .reduce((a, i) => a + Math.abs((i.toM ?? 0) - (i.fromM ?? 0)) / 1000, 0);
+  return {
+    days: `${p.days.length} (${rides.length} riding)`,
+    hardest: `Day ${hardest.number}: ${km(hardest.km)} km, ${hours(hardest.hoursSlow)}`,
+    hours: hours(rides.reduce((a, d) => a + d.hoursSlow, 0)),
+    beyond: String(rides.filter((d) => d.effort === "beyond").length),
+    nights: String(p.nights.filter((n) => n.beds.open + n.beds.partly === 0).length),
+    calls: String(p.items.filter((i) => i.kind === "call").length),
+    busy: p.mode === "full" ? `${km(busy)} km` : "with a Trip Pass",
+  };
 }

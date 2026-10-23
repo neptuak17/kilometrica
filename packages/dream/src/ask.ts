@@ -3,7 +3,7 @@
  * or reopened, and the lines a stretch is described with. Level and days start unset: nothing is assumed.
  */
 import type { DailySection, DreamFile, DreamSection } from "@dpg/contracts";
-import type { DreamQuery, Pref, StretchResult, SurfaceKind } from "@dpg/dream";
+import type { DreamQuery, Pref, StretchResult, SurfaceKind } from "./matchmaker";
 import { km, MONTHS_LONG } from "@dpg/planner";
 
 export type Level = DreamFile["levels"][number];

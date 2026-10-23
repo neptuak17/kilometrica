@@ -15,7 +15,6 @@ import {
   dayGpx,
   type DayPlan,
   day as dayText,
-  hours,
   itineraryOf,
   km,
   makePlan,
@@ -26,6 +25,7 @@ import {
   optionOutcome,
   type PlanAction,
   planChanges,
+  planFigures,
   type PlanChoices,
   type PlanData,
   type PlanDocument,
@@ -63,7 +63,7 @@ import { Header } from "../shared/Header";
 import { BeforeYouGo, type ExportKind } from "./BeforeYouGo";
 import { Brief, DayList, EffortChart } from "./Brief";
 import { Calls } from "./Calls";
-import { loadFull, loadRoute, type FullFiles, type RouteFiles } from "./data";
+import { loadFull, loadRoute, type FullFiles, type RouteFiles } from "@dpg/routes";
 import { DayCard } from "./DayCard";
 import { type Step, usePlanHistory } from "./history";
 import { PlanMap } from "./PlanMap";
@@ -288,23 +288,6 @@ interface Pinned {
   choices: PlanChoices;
 }
 
-function metrics(p: PlanResult) {
-  const rides = p.days.filter((d) => d.kind === "ride");
-  const hardest = [...rides].sort((a, b) => b.hoursSlow - a.hoursSlow)[0]!;
-  const busy = p.items
-    .filter((i) => i.id.startsWith("finding:") && i.title.includes("busy roads"))
-    .reduce((a, i) => a + Math.abs((i.toM ?? 0) - (i.fromM ?? 0)) / 1000, 0);
-  return {
-    days: `${p.days.length} (${rides.length} riding)`,
-    hardest: `Day ${hardest.number}: ${km(hardest.km)} km, ${hours(hardest.hoursSlow)}`,
-    hours: hours(rides.reduce((a, d) => a + d.hoursSlow, 0)),
-    beyond: String(rides.filter((d) => d.effort === "beyond").length),
-    nights: String(p.nights.filter((n) => n.beds.open + n.beds.partly === 0).length),
-    calls: String(p.items.filter((i) => i.kind === "call").length),
-    busy: p.mode === "full" ? `${km(busy)} km` : "with a Trip Pass",
-  };
-}
-
 function Compare({ data, current, pinned, onPin, onUnpin, readOnly }: {
   data: PlanData;
   current: PlanResult;
@@ -315,8 +298,8 @@ function Compare({ data, current, pinned, onPin, onUnpin, readOnly }: {
 }) {
   const plans = useMemo(() => pinned.map((p) => makePlan(data, p.inputs, p.choices, { languages: [...navigator.languages] })), [data, pinned]);
   if (readOnly) return null;
-  const cols = [...plans.map((p, i) => ({ label: pinned[i]!.label, m: metrics(p), i })), { label: "Yours now", m: metrics(current), i: -1 }];
-  const rows: [keyof ReturnType<typeof metrics>, string][] = [
+  const cols = [...plans.map((p, i) => ({ label: pinned[i]!.label, m: planFigures(p), i })), { label: "Yours now", m: planFigures(current), i: -1 }];
+  const rows: [keyof ReturnType<typeof planFigures>, string][] = [
     ["days", "Days"],
     ["hardest", "Hardest day"],
     ["hours", "Riding in all"],

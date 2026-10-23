@@ -28,7 +28,7 @@ import {
   StretchCard,
 } from "@dpg/ui";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
-import { loadDreamFiles, type DreamFiles } from "../rider/data";
+import { loadDreamFiles, type DreamFiles } from "@dpg/routes";
 import { useRouteList } from "../rider/routes";
 import { Header } from "../shared/Header";
 import {
@@ -36,6 +36,7 @@ import {
   and,
   type Ask,
   climbText,
+  countryRows,
   EMPTY,
   examplesFor,
   factsText,
@@ -52,10 +53,10 @@ import {
   whenText,
   whole,
   whyLines,
-} from "./ask";
+} from "@dpg/dream";
 import { type ChipId, Chips } from "./Chips";
 import { DreamMap, type MapStretch } from "./DreamMap";
-import { countryRows, Glance } from "./Glance";
+import { Glance } from "./Glance";
 
 const SHOWN = 3;
 const MORE = 5;
