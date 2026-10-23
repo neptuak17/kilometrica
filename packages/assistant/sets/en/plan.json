@@ -2453,7 +2453,7 @@
     "source": "drafted",
     "kind": "lookup",
     "route": "user/u4ad6e50f59",
-    "run": "20261022T205520Z_2f48b23061",
+    "run": "20261023T203008Z_2f48b23061",
     "plan": {
       "sections": [
         1,
@@ -2479,7 +2479,7 @@
         "mustSay": [
           "Villefranche-de-Conflent"
         ],
-        "reference": "Day 13, Tue 27 Jul, is L'Hospitalet-près-l'Andorre → Villefranche-de-Conflent: 86 km with 1,132 m of climbing, within your level. It starts with the day's big climb, 9 km at 5.4% to 1916 m, and 71 km is on busy roads. Leaving at 09:00 you'd be in by 16:45, and Villefranche-de-Conflent has 2 hotels and 4 guest houses nearby.",
+        "reference": "Day 13, Tue 27 Jul, is L'Hospitalet-près-l'Andorre → Villefranche-de-Conflent: 86 km with 1,132 m of climbing, within your level. It starts with the day's big climb, 9 km at 5.4% to 1917 m, the rest of a 29 km climb from before L'Hospitalet, and 71 km is on busy roads. Leaving at 09:00 you'd be in by 16:45, and Villefranche-de-Conflent has 2 hotels and 4 guest houses nearby.",
         "phrasings": [
           "day 13?"
         ]
