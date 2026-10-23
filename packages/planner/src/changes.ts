@@ -57,6 +57,8 @@ export function planChanges(before: PlanResult, after: PlanResult): PlanChanges 
   }
   if (a.fromM !== b.fromM || a.toM !== b.toM || a.direction !== b.direction) lines.push(`Now ${after.brief.title} (was ${before.brief.title})`);
   if (a.startDate !== b.startDate) lines.push(`Starts ${day(b.startDate)} (was ${day(a.startDate)})`);
+  // The end date holds unless a change moves it (D74, D75): when it does, it is said.
+  else if (before.endDate !== after.endDate) lines.push(`Ends ${day(after.endDate)} (was ${day(before.endDate)})`);
   if (a.startMinutes !== b.startMinutes) lines.push(`Leave at ${clock(b.startMinutes)} (was ${clock(a.startMinutes)})`);
   if (a.level !== b.level) lines.push(`Level: ${after.level.name} (was ${before.level.name})`);
   if (a.sleep !== b.sleep) lines.push(`Sleep: ${SLEEP[b.sleep]} (was ${SLEEP[a.sleep]})`);

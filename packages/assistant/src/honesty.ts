@@ -44,7 +44,7 @@ const ALLOWED = [
   "Leisurely", "Easy-moderate", "Moderate", "Challenging", "Tough",
   "Kilometrica", "Dream", "Plan", "Go", "Trip Pass", "EuroVelo", "EV", "GPX",
   "Booking.com", "Booking", "Expedia", "Google Maps", "Google", "Wikipedia", "Wikimedia Commons", "Commons", "Street View", "Mapillary", "Panoramax",
-  "Apply", "Discard", "Undo", "Keep it", "Keep both", "Rest in", "I",
+  "Apply", "Discard", "Undo", "Keep it", "Keep both", "Rest in", "I", "I'll", "I'm", "I've", "I'd",
 ].map(fold);
 
 /** Ordinary words that start a sentence with a capital: never a name on their own. */
@@ -58,7 +58,8 @@ next last other another same such let let's please thanks thank note choose pick
 leave start add move book bring carry take make get come consider expect enjoy want would could should can will may might must
 does do did is are was were be been has have had there's that's here's what's it'll i'm i'd i'll i've you've they're day days night
 nights trip route stretch stretches option options water food morning afternoon evening today tomorrow typically usually mostly roughly
-about nothing everything something anything search find call visit cycle head follow use set switch turn open tell remember allow`
+about nothing everything something anything search find call visit cycle head follow use set switch turn open tell remember allow
+whether although though besides beyond within except`
     .split(/\s+/)
     .map(fold),
 );
@@ -117,13 +118,15 @@ function names(answer: string): { text: string; start: boolean }[] {
   let sentenceStart = true;
   const flush = () => {
     while (run.length && JOINERS.has(fold(run[run.length - 1]!))) run.pop();
+    // "Benicarló's": the name is Benicarló; "Lola's Tortas" keeps its own.
+    if (run.length) run[run.length - 1] = run[run.length - 1]!.replace(/['’]s$/, "");
     if (run.length) out.push({ text: run.join(" "), start: runStart });
     run = [];
   };
   for (const raw of tokens) {
     const ends = /[.!?:;]$/.test(raw);
     const breaks = ends || /,$/.test(raw);
-    const word = raw.replace(/^[^\p{L}\d]+|[^\p{L}\d.'’-]+$/gu, "").replace(/['’]s$/, "").replace(/\.$/, "");
+    const word = raw.replace(/^[^\p{L}\d]+|[^\p{L}\d.'’-]+$/gu, "").replace(/\.$/, "");
     // "l'Ampolla", "d'Arrossa": the capital comes after the apostrophe.
     const capital = /^\p{Lu}/u.test(word) || /^[ld]['’]\p{Lu}/u.test(word);
     if (capital && !/^\d/.test(word)) {
@@ -145,7 +148,9 @@ function names(answer: string): { text: string; start: boolean }[] {
  */
 function bare(name: { text: string; start: boolean }): string {
   const words = name.text.split(" ");
-  if (name.start) while (words.length && STARTERS.has(fold(words[0]!))) words.shift();
+  // An ordinary word, or one that reads like one ("Avoiding", "Usually", "Planned"), capitalised only to start a sentence.
+  const ordinary = (w: string) => STARTERS.has(fold(w)) || /^\p{Lu}\p{Ll}+(?:ing|ly|ed)$/u.test(w);
+  if (name.start) while (words.length && ordinary(words[0]!)) words.shift();
   while (words.length && JOINERS.has(fold(words[0]!))) words.shift();
   return words.join(" ");
 }

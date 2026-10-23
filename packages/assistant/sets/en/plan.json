@@ -1,0 +1,920 @@
+[
+  {
+    "id": "ev-plan-1-rest-after-day-5",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "Can you add a rest day after day 5 somewhere with a hotel and restaurants?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 5
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "label": "Rest there, same end date",
+                  "changes": [
+                    {
+                      "do": "add_rest",
+                      "after_day": 5
+                    }
+                  ]
+                },
+                {
+                  "label": "Rest there, a day longer",
+                  "changes": [
+                    {
+                      "do": "add_rest",
+                      "after_day": 5
+                    },
+                    {
+                      "do": "set",
+                      "total_days": 8
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 1,
+          "option": 0
+        },
+        "mustSay": [
+          "Esplugues de Llobregat"
+        ],
+        "reference": "Esplugues de Llobregat, the night after day 5, has 52 hotels and food. You can rest there and keep your end date, but then day 7 becomes 107 km to Sils, with 2 new calls; or rest there and end a day later, on Wed 22 Sep."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-2-day-7-easier",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "Is there any way to make day 7 easier?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 6
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "stop_at",
+                      "after_day": 6,
+                      "town": "Malgrat de Mar"
+                    }
+                  ]
+                },
+                {
+                  "changes": [
+                    {
+                      "do": "stop_at",
+                      "after_day": 6,
+                      "town": "Santa Susanna"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 1,
+          "option": 0
+        },
+        "mustSay": [
+          "Malgrat de Mar"
+        ],
+        "reference": "Day 7 can be shorter if the night after day 6 is further on: at Malgrat de Mar, day 7 is 41 km and day 6 becomes 67 km; at Santa Susanna, day 7 is 43 km and day 6 64 km."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-3-stop-elsewhere",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "The owner's 'x' and 'y': Esplugues de Llobregat and Barcelona.",
+    "turns": [
+      {
+        "rider": "I don't want to stop at Esplugues de Llobregat, can I stop in Barcelona instead?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "stop_at",
+                      "town": "Barcelona"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Barcelona"
+        ],
+        "reference": "Yes: day 5 would end in Barcelona, 52 km instead of 48 km to Esplugues de Llobregat, and days 6–7 change too."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-4-a-day-off",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "Ambiguous: a shorter trip or a rest day. Both are offered.",
+    "turns": [
+      {
+        "rider": "Could I take a day off the trip and still get it done?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "label": "A day shorter",
+                  "changes": [
+                    {
+                      "do": "set",
+                      "total_days": 6
+                    }
+                  ]
+                },
+                {
+                  "label": "A rest day instead",
+                  "changes": [
+                    {
+                      "do": "rest_days",
+                      "count": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "You can make the trip a day shorter, with day 5 ending at Calella, 66 km; or keep your end date and make one day a rest day, after riding day 4."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-5-why-so-long",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "The owner's day 5 is this plan's hardest, day 4.",
+    "turns": [
+      {
+        "rider": "Why is day 4 so long?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 4
+            }
+          },
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 4
+            }
+          }
+        ],
+        "mustSay": [
+          "Sitges"
+        ],
+        "reference": "Day 4 is 60 km from Tarragona to Sitges, 4 h 35 riding, within your level. It ends in Sitges for food and a station. Stopping at Vilanova i la Geltrú instead makes it 50 km, and the next day 58 km."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-6-go-further",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "The owner's day 7 is this plan's shortest, day 5 (day 7 ends the stretch).",
+    "turns": [
+      {
+        "rider": "Day 5 is too short - I'd like to go further that day",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 5
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "stop_at",
+                      "after_day": 5,
+                      "town": "Sant Adrià de Besòs"
+                    }
+                  ]
+                },
+                {
+                  "changes": [
+                    {
+                      "do": "stop_at",
+                      "after_day": 5,
+                      "town": "Barcelona"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 1,
+          "option": 0
+        },
+        "mustSay": [
+          "Sant Adrià de Besòs"
+        ],
+        "reference": "Two stops further on: Sant Adrià de Besòs makes day 5 59 km, or Barcelona 52 km; days 6–7 change too."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-7-better-accommodation",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "Never ranked by quality (no reviews): the other options and the booking searches.",
+    "turns": [
+      {
+        "rider": "I don't like the accommodation options for day 6, is there somewhere better to stay?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 6
+            }
+          }
+        ],
+        "mustSay": [
+          "Booking.com"
+        ],
+        "reference": "We don't rank places: we have no reviews. Near Calella there are other options, like Hotel Mercury by ALEGRIA 5.6 km on and Càmping El Pinar Platja 5.9 km on. Or search Booking.com or Expedia for Calella, 20–21 September."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-8-may-or-september",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "How does May compare to September for this route?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "month": "May"
+            }
+          },
+          {
+            "tool": "usual_weather",
+            "args": {
+              "month": "September"
+            }
+          }
+        ],
+        "mustSay": [
+          "May",
+          "September"
+        ],
+        "reference": "May is cooler: usually 13–22 °C, against 18–26 °C in September, with rain 1 day in 3 in both."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-9-july",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "How hot/rainy/windy/smoky is July on this route?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "month": "July"
+            }
+          }
+        ],
+        "mustSay": [
+          "smoke"
+        ],
+        "reference": "In July, Alcossebre → Sils is usually 21–30 °C, with rain 1 day in 5. We give the wind along the way only for your trip's own month, and we have no smoke or wildfire data."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-10-barcelona-safe",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "turns": [
+      {
+        "rider": "Is Barcelona safe to stay in?",
+        "calls": [],
+        "mustSay": [
+          "safe"
+        ],
+        "reference": "We can't tell you whether a place is safe. Your government's travel advice is the place to check that."
+      }
+    ]
+  },
+  {
+    "id": "ev-plan-11-hotel-nice",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "The owner's Avignon hotel is one on this stretch. 'Nice' is a review: we have none (D77).",
+    "turns": [
+      {
+        "rider": "Is the Grand Hyatt Barcelona nice?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "town": "Esplugues de Llobregat"
+            }
+          }
+        ],
+        "mustSay": [
+          "reviews"
+        ],
+        "reference": "We can't say: we have no reviews. The Grand Hyatt Barcelona is one of the hotels at Esplugues de Llobregat for the night after day 5, open in September; its links are on day 5's card."
+      }
+    ]
+  },
+  {
+    "id": "own-plan-1-nights-at",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "offer",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "note": "The owner's x, y and z: Hope, Princeton and Greenwood.",
+    "turns": [
+      {
+        "rider": "I want to overnight in Hope, Princeton and Greenwood, will it work?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "stop_at",
+                      "town": "Hope"
+                    },
+                    {
+                      "do": "stop_at",
+                      "town": "Princeton"
+                    },
+                    {
+                      "do": "stop_at",
+                      "town": "Greenwood"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Princeton"
+        ],
+        "reference": "It can, with a long day: Princeton takes the night that's at Tulameen, so the day to Princeton becomes 152 km and day 5 49 km, and your rest day moves to after riding day 3. That raises 2 new calls."
+      }
+    ]
+  },
+  {
+    "id": "own-plan-2-water-between",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "Are there any resupply/water refill points between Hope and Princeton?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "from_town": "Hope",
+              "to_town": "Princeton"
+            }
+          }
+        ],
+        "reference": "Between Hope and Princeton, 152 km, there's water or food at km 0, 60, 126 and 151 from Hope. The longest stretch without is 66 km: you judge what to carry."
+      }
+    ]
+  },
+  {
+    "id": "own-plan-3-surface",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "What is the road surface like on day 5?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 5
+            }
+          },
+          {
+            "tool": "items",
+            "args": {
+              "day": 5
+            }
+          }
+        ],
+        "mustSay": [
+          "gravel"
+        ],
+        "reference": "Day 5, Tulameen to Bankeir, has a good share of gravel, rolling through forest and nature: 74 km with 779 m of climbing."
+      }
+    ]
+  },
+  {
+    "id": "own-plan-4-finish-by-3",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "offer",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "I don't want to ride at night - can I finish my days by 3pm so I can set up camp?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "be_in_by",
+                      "time": "15:00"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "Not every day. Leaving at 05:00 gets some days in by 15:00, but days 1–2, 4, 7 and 10–11 still end after it."
+      }
+    ]
+  },
+  {
+    "id": "own-plan-5-transport-home",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "offer",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "note": "Getting there and back is left out of a new plan (D79): offered, not answered around.",
+    "turns": [
+      {
+        "rider": "Are there any transportation options from the end of my route?",
+        "calls": [
+          {
+            "tool": "offer_options",
+            "args": {
+              "options": [
+                {
+                  "changes": [
+                    {
+                      "do": "set",
+                      "trains_there_and_back": true
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "reference": "Your plan leaves getting there and back out. I can add it: on this route it would say to make your own arrangements at both ends."
+      }
+    ]
+  },
+  {
+    "id": "own-plan-6-campground-space",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "decline",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "Is there space available at Otter Lake Campground on day 4?",
+        "calls": [
+          {
+            "tool": "night",
+            "args": {
+              "after_day": 4
+            }
+          }
+        ],
+        "mustSay": [
+          "availability"
+        ],
+        "reference": "We can't see availability or book: ask Otter Lake Campground directly. It's a BC Parks campground with 45 sites, 5.5 km back from Tulameen, the night after day 4."
+      }
+    ]
+  },
+  {
+    "id": "own-plan-7-climb-day-4",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "turns": [
+      {
+        "rider": "How big is the climb on day 4?",
+        "calls": [
+          {
+            "tool": "days",
+            "args": {
+              "day": 4
+            }
+          }
+        ],
+        "reference": "Day 4, Hope to Tulameen, climbs 2,087 m in 126 km, about 12 h 02 riding: beyond your level.",
+        "mustSay": [
+          "2,087"
+        ]
+      }
+    ],
+    "note": "The owner's day 5 is this plan's biggest day of climbing, day 4."
+  },
+  {
+    "id": "own-plan-8-food-water-day-3",
+    "phase": "plan",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "plan": {
+      "sections": [
+        1,
+        17
+      ],
+      "days": 12,
+      "rest": 1,
+      "level": 3,
+      "month": 7,
+      "sleep": "camping"
+    },
+    "note": "Day 3 is the rest day at Hope: food in town, from the rest day's card.",
+    "turns": [
+      {
+        "rider": "Where can I get food/water on day 3?",
+        "calls": [
+          {
+            "tool": "rest_day",
+            "args": {
+              "day": 3
+            }
+          }
+        ],
+        "mustSay": [
+          "Hope"
+        ],
+        "reference": "Day 3 is your rest day in Hope, with 56 places to eat. Open that day: Hope Mountain Cafe, Lola's Tortas and Rolling Pin Bakery, among others."
+      }
+    ]
+  },
+  {
+    "id": "react-rest-after-day-1",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "react",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "A change made on screen that's allowed but unusual: a second thought (D77).",
+    "turns": [
+      {
+        "change": {
+          "do": "add_rest",
+          "after_day": 1
+        },
+        "thought": "A rest day straight after day 1?",
+        "calls": [],
+        "reference": "A rest day straight after day 1? A rest day helps most once a few days are in your legs. If you arrive from far away, a day to settle in can make sense."
+      }
+    ]
+  },
+  {
+    "id": "react-level-quiet",
+    "phase": "plan",
+    "source": "drafted",
+    "kind": "react",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "plan": {
+      "sections": [
+        32,
+        39
+      ],
+      "days": 7,
+      "level": 3,
+      "month": 8,
+      "travel": true
+    },
+    "note": "An ordinary change made on screen: the assistant stays quiet.",
+    "turns": [
+      {
+        "change": {
+          "do": "set",
+          "level": 4
+        },
+        "thought": null,
+        "calls": [],
+        "reference": ""
+      }
+    ]
+  }
+]

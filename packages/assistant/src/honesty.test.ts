@@ -64,6 +64,16 @@ describe("the honesty check (D38, D77, D81)", () => {
     expect(failing("The Ebro delta is lovely in October.")).toEqual(["Ebro"]);
   });
 
+  it("reads ordinary words as words: I'll, and a sentence's first word ending -ing, -ly or -ed; a possessive keeps the name", () => {
+    const shop: ToolResult = { lines: ["To eat: Lola's Tortas (open that day). Avoid Greece."], facts: {} };
+    const ok = (a: string) => checkAnswer(a, { results: [shop], rider: [] }).unsupported.map((u) => u.text);
+    expect(ok("Choose one and I'll show you. Whether that's you is your call.")).toEqual([]);
+    expect(ok("Avoiding Greece, it fits. Usually it's quiet.")).toEqual([]);
+    expect(ok("Lola's Tortas is open that day.")).toEqual([]);
+    // Counting what the tools showed is working a number out (D81).
+    expect(ok("Two ways to do it.")).toEqual(["Two"]);
+  });
+
   it("isn't fooled by a list's own numbers", () => {
     expect(check("Two ways:\n1. Ride to l'Ampolla, 76 km.\n2. Stop at Benicarló.").ok).toBe(true);
   });

@@ -1,0 +1,690 @@
+[
+  {
+    "id": "ev-dream-1-september-beaches-culture",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "note": "The level is the rider's own: 'reasonably fit' is offered as two levels, never guessed (D77).",
+    "turns": [
+      {
+        "rider": "I have 10 days in September to ride somewhere on EuroVelo 8. I like beaches and cultural experiences. I am reasonably fit, but want a relaxed experience. Can you suggest a couple of options?",
+        "calls": [
+          {
+            "tool": "set_question",
+            "args": {
+              "options": [
+                {
+                  "level": 2,
+                  "days": 10,
+                  "month": "September",
+                  "pace": "relaxed",
+                  "themes": [
+                    "coast",
+                    "culture"
+                  ]
+                },
+                {
+                  "level": 3,
+                  "days": 10,
+                  "month": "September",
+                  "pace": "relaxed",
+                  "themes": [
+                    "coast",
+                    "culture"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 1
+        },
+        "mustSay": [
+          "Easy-moderate",
+          "Moderate"
+        ],
+        "reference": "Here is how it could look; which level is yours is your call. At Easy-moderate, with 10 days, relaxed, in September with coast and culture, 29 stretches fit: the best is Cabo de Gata → San Roque, 408 km at 51 km a day. At Moderate, 23 fit: the best is Águilas → San Roque, 519 km at 65 km a day. Choose one and I'll show you its list."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-2-days-in-barcelona",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3
+    },
+    "note": "Passing through a town (D80); the days there are rest days, set in Plan with Rest in…",
+    "turns": [
+      {
+        "rider": "Can you build a route that includes spending a few days in Barcelona somewhere in the middle of a 7 day trip?",
+        "calls": [
+          {
+            "tool": "set_question",
+            "args": {
+              "options": [
+                {
+                  "days": 7,
+                  "through": "Barcelona"
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Barcelona",
+          "Rest in"
+        ],
+        "reference": "I can set Dream to 7 days through Barcelona: 2 stretches fit, Alcossebre → Sils and Narbonne → Barcelona. For days in Barcelona itself, plan the stretch and use Rest in… with Barcelona: the rest days there are taken from your 7 days."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-3-family-flat-easy",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "turns": [
+      {
+        "rider": "Suggest a route that is flat and easy for myself and my family to ride that we can cover at a relaxed pace in 5 days. We want sunny weather and beaches and hotels at every stop.",
+        "calls": [
+          {
+            "tool": "set_question",
+            "args": {
+              "options": [
+                {
+                  "level": 1,
+                  "days": 5,
+                  "pace": "relaxed",
+                  "themes": [
+                    "coast"
+                  ],
+                  "stay": "rooms"
+                },
+                {
+                  "level": 2,
+                  "days": 5,
+                  "pace": "relaxed",
+                  "themes": [
+                    "coast"
+                  ],
+                  "stay": "rooms"
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Leisurely"
+        ],
+        "reference": "Which level fits your family is your call. At Leisurely, with 5 days, relaxed, coast and rooms, 111 stretches fit: the best is Estepona → Torre del Mar, 126 km at 31 km a day. At Easy-moderate, 66 fit: the best is Fuengirola → Adra, 192 km at 48 km a day. Each stretch shows its best month, for the sunshine."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-4-better-time",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7,
+      "month": 7
+    },
+    "screen": {
+      "stretch": 1
+    },
+    "turns": [
+      {
+        "rider": "When would be a better time of the year to ride this route?",
+        "phrasings": [
+          "is august a bad time for this one? when's best?"
+        ],
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "best": true
+            }
+          }
+        ],
+        "reference": "The best months for Cartagena → Almuñecar are May, June and October, with a best-time score of 90 of 100. In May it's usually 17–20 °C, with rain 1 day in 8."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-5-italy-only",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7
+    },
+    "turns": [
+      {
+        "rider": "I would like to stick to Italy for my trip, is there a route that fits?",
+        "calls": [
+          {
+            "tool": "set_question",
+            "args": {
+              "options": [
+                {
+                  "countries": {
+                    "IT": "only"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Italy"
+        ],
+        "reference": "Yes: keeping to Italy, 5 stretches fit. The best is Jesolo → Piacenza, 398 km at 66 km a day; then Piacenza → Cuneo, and San Benedetto Po → Casale Monferrato."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-6-avoid-greece",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 14
+    },
+    "turns": [
+      {
+        "rider": "Can I avoid Greece altogether?",
+        "calls": [
+          {
+            "tool": "set_question",
+            "args": {
+              "options": [
+                {
+                  "countries": {
+                    "GR": "avoid"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Greece"
+        ],
+        "reference": "Yes. Avoiding Greece, 13 stretches fit your 14 days; the best is Ulldecona → Carboneras, 779 km at 65 km a day."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-7-no-ferries",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7,
+      "month": 8
+    },
+    "note": "Ferries are on each stretch's card; there is no ferry choice in the question.",
+    "turns": [
+      {
+        "rider": "Are there any routes without ferries?",
+        "calls": [
+          {
+            "tool": "stretches",
+            "args": {}
+          }
+        ],
+        "reference": "Dream has no ferry choice, but each stretch lists its ferry crossings, and none of the best three has one: Aliaga → Selcuk, Cartagena → Almuñecar and Castell de Ferro → Conil de la Frontera."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-8-too-many-hills",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7,
+      "month": 8
+    },
+    "screen": {
+      "stretch": 1
+    },
+    "turns": [
+      {
+        "rider": "There are too many hills on this route, can you suggest another?",
+        "calls": [
+          {
+            "tool": "set_question",
+            "args": {
+              "options": [
+                {
+                  "level": 2
+                },
+                {
+                  "level": 1
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Easy-moderate"
+        ],
+        "reference": "For less climbing, a lower level; whether it's yours is your call. At Easy-moderate, 42 stretches fit: the best is Torre del Mar → Conil de la Frontera, with ↑ 424 m a day. At Leisurely, 72 fit: the best is Paphos → Larnaka."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-9-not-challenging",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "offer",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7,
+      "month": 8
+    },
+    "screen": {
+      "stretch": 1
+    },
+    "note": "Other routes are out of scope for now (D77); a higher level or fewer days are not.",
+    "turns": [
+      {
+        "rider": "This route isn't challenging enough, suggest other routes or way to increase the challenge?",
+        "calls": [
+          {
+            "tool": "set_question",
+            "args": {
+              "options": [
+                {
+                  "level": 4
+                },
+                {
+                  "days": 5
+                }
+              ]
+            }
+          }
+        ],
+        "offer": {
+          "call": 0,
+          "option": 0
+        },
+        "mustSay": [
+          "Challenging"
+        ],
+        "reference": "Other routes aren't in Dream yet, but on this one you could go up a level or take fewer days. At Challenging, 21 stretches fit: the best is Trojica → Pakostane, 85 km a day with ↑ 1111 m a day. Or the same level in 5 days: 38 fit, the best Cabo de Gata → Marbella at 66 km a day."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-10-fit-enough",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7,
+      "month": 8
+    },
+    "screen": {
+      "stretch": 1
+    },
+    "note": "We have no fitness data (D35): the stretch against the level, and the rider judges.",
+    "turns": [
+      {
+        "rider": "Am I fit enough to do this route?",
+        "calls": [
+          {
+            "tool": "stretches",
+            "args": {}
+          },
+          {
+            "tool": "route_overview",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "Moderate"
+        ],
+        "reference": "Aliaga → Selcuk asks 65 km a day and ↑ 561 m a day, which grades as Moderate: 50–80 km a day with luggage, up to about 850 m of climbing. Whether that's you is your call: we have nothing to judge your fitness by."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-11-rain",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7,
+      "month": 8
+    },
+    "screen": {
+      "stretch": 1
+    },
+    "note": "Never a forecast (D77): the usual weather.",
+    "turns": [
+      {
+        "rider": "Will it rain while I am on this route?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "number": 1
+            }
+          }
+        ],
+        "mustSay": [
+          "forecast"
+        ],
+        "reference": "We can't forecast, but in September on Aliaga → Selcuk it usually rains 1 day in 23, at 21–26 °C."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-12-too-hot",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7,
+      "month": 6
+    },
+    "screen": {
+      "stretch": 1
+    },
+    "turns": [
+      {
+        "rider": "Will this route be too hot for me?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "number": 1
+            }
+          }
+        ],
+        "reference": "In July, Cartagena → Almuñecar is usually 24–27 °C, and it rarely rains. Whether that's too hot for you is your call."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-13-packing",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7,
+      "month": 8
+    },
+    "note": "No kit advice (D48, D77).",
+    "turns": [
+      {
+        "rider": "What should I pack for this route?",
+        "calls": [],
+        "mustSay": [
+          "your call"
+        ],
+        "reference": "We don't give kit advice: what you carry is your call. I can tell you the usual weather on a stretch, or where water and food are once you plan it."
+      }
+    ]
+  },
+  {
+    "id": "ev-dream-14-safe",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "decline",
+    "route": "eurovelo/ev8",
+    "run": "20261023T142510Z_3018cecd40",
+    "ask": {
+      "level": 3,
+      "days": 7,
+      "month": 8
+    },
+    "screen": {
+      "stretch": 1
+    },
+    "note": "Never whether it's safe; what we know that bears on it (D80).",
+    "turns": [
+      {
+        "rider": "Will I be safe on this route?",
+        "calls": [
+          {
+            "tool": "stretches",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "safe",
+          "busy roads"
+        ],
+        "reference": "We can't tell you whether a route is safe. What we know: Aliaga → Selcuk has 101 km on busy roads, and 5 things to look out for, detailed with a Trip Pass."
+      }
+    ]
+  },
+  {
+    "id": "own-dream-1-doable",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "ask": {
+      "level": 3,
+      "days": 14
+    },
+    "turns": [
+      {
+        "rider": "Is this route doable in the time I have and for the level I am at?",
+        "calls": [
+          {
+            "tool": "stretches",
+            "args": {}
+          },
+          {
+            "tool": "route_overview",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "Moderate"
+        ],
+        "reference": "With your 14 days (12 riding, 2 rest), Vancouver → Nakusp is 85 km a day with ↑ 889 m a day, which grades as Challenging: more than Moderate's 50–80 km a day and about 850 m of climbing. Whether you can do that is your call."
+      }
+    ]
+  },
+  {
+    "id": "own-dream-2-how-many-days",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "ask": {
+      "level": 3
+    },
+    "turns": [
+      {
+        "rider": "How many days should this route take at my level?",
+        "calls": [
+          {
+            "tool": "stretches",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "16"
+        ],
+        "reference": "Your file's nights make it 11 riding days. At a usual Moderate day it would be 16. Set your days in Dream and we find the stops for them instead."
+      }
+    ]
+  },
+  {
+    "id": "own-dream-3-best-time",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "ask": {
+      "level": 3
+    },
+    "turns": [
+      {
+        "rider": "When is best to do this route to avoid cold/heat/rain/smoke?",
+        "calls": [
+          {
+            "tool": "usual_weather",
+            "args": {
+              "best": true
+            }
+          }
+        ],
+        "mustSay": [
+          "smoke"
+        ],
+        "reference": "July and August are best, with a best-time score of 87 of 100. In July it's usually 11–24 °C, with rain 1 day in 5. We have no smoke or wildfire data, so we can't help you avoid the smoke."
+      }
+    ]
+  },
+  {
+    "id": "own-dream-4-camping",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "ask": {
+      "level": 3,
+      "stay": "camping"
+    },
+    "note": "Dream knows the gaps between places to stay; each night is Plan's.",
+    "turns": [
+      {
+        "rider": "I prefer camping every night, can I do that on this route?",
+        "calls": [
+          {
+            "tool": "stretches",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "Plan"
+        ],
+        "reference": "Dream can't tell you night by night: along the route there are up to 53 km between places to stay. Plan it, and Plan shows each night's campsites."
+      }
+    ]
+  },
+  {
+    "id": "own-dream-5-hotels",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "lookup",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "ask": {
+      "level": 3,
+      "stay": "rooms"
+    },
+    "turns": [
+      {
+        "rider": "I prefer staying in hotels every night, can I do that on this route?",
+        "calls": [
+          {
+            "tool": "stretches",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "Plan"
+        ],
+        "reference": "Not everywhere: Dream found no rooms on 2 of the route's sections. Plan it, and Plan shows each night's places."
+      }
+    ]
+  },
+  {
+    "id": "own-dream-6-safe",
+    "phase": "dream",
+    "source": "owner",
+    "kind": "decline",
+    "route": "user/u4a8fece911",
+    "run": "20261023T143356Z_95d7025d78",
+    "ask": {
+      "level": 3
+    },
+    "turns": [
+      {
+        "rider": "Is this route safe to do?",
+        "calls": [
+          {
+            "tool": "stretches",
+            "args": {}
+          }
+        ],
+        "mustSay": [
+          "safe"
+        ],
+        "reference": "We can't tell you whether it's safe. What we know: 104 km on busy roads, up to 53 km between places to stay, and 6 things to look out for, detailed with a Trip Pass."
+      }
+    ]
+  }
+]

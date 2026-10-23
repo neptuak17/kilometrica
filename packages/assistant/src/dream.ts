@@ -276,8 +276,9 @@ const setQuestion: Tool<DreamContext, DreamApply> = {
     // What each would bring, so the rider can choose knowing (D80); nothing changes until they do.
     const best = options.map((o) => bestFor(ctx, (o.apply as { ask: Ask }).ask));
     return {
+      // A label made of the changes says them already; then only what the option would bring follows it.
       lines: options.flatMap((o, i) => [
-        `${o.label}: ${o.changes.join("; ")}.`,
+        `${o.label}: ${o.label.endsWith(o.changes.slice(0, -1).join(" · ")) ? o.changes.at(-1) : o.changes.join("; ")}.`,
         ...(best[i]!.length ? [`  The best: ${best[i]!.map((s) => `${s.name} (${s.facts})`).join("; ")}.`] : []),
       ]),
       facts: { ok: true, options: options.map((o, i) => ({ label: o.label, changes: o.changes, best: best[i] })) },
@@ -366,14 +367,22 @@ const usualWeatherTool: Tool<DreamContext> = {
   name: "usual_weather",
   description:
     "The usual weather (averages over past years, never a forecast) on a stretch in a month: night lows to day highs and how often it rains; without a month, the best months by Dream's best-time score. A stretch by its number in the list, or by two towns; without one, the whole route. There is no smoke or wildfire data.",
-  parameters: () => schema({ number: { type: "integer", minimum: 1 }, from: { type: "string" }, to: { type: "string" }, month: { type: "string", enum: MONTHS_ENUM } }),
+  parameters: () =>
+    schema({
+      number: { type: "integer", minimum: 1 },
+      from: { type: "string" },
+      to: { type: "string" },
+      month: { type: "string", enum: MONTHS_ENUM },
+      best: { type: "boolean", description: "The best months." },
+    }),
   run(ctx, args) {
-    const named = arg.int(args, "number") !== undefined || (arg.str(args, "from") && arg.str(args, "to"));
+    // A stretch by number or towns, else the one on screen ("this route", D77), else the whole route.
+    const named = arg.int(args, "number") !== undefined || (arg.str(args, "from") && arg.str(args, "to")) || !!ctx.screen?.stretch;
     const r = named ? stretchOf(ctx, args) : null;
     if (r && "lines" in r) return r;
     const secs = r ? ctx.route.dream.sections.filter((s) => s.number >= r.first && s.number <= r.last) : sectionsOf(ctx.route);
     const where = r ? stretchName(dailyOf(ctx), r) : ctx.route.name;
-    return weatherIn(secs, where, monthIndex(arg.str(args, "month")) ?? ctx.ask.month);
+    return weatherIn(secs, where, arg.bool(args, "best") ? null : (monthIndex(arg.str(args, "month")) ?? ctx.ask.month));
   },
 };
 

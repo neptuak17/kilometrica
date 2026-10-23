@@ -13,7 +13,6 @@ import {
   bookingSearches,
   clock,
   day as dayText,
-  dayList,
   dayFacts,
   dayItems,
   dayStory,
@@ -26,6 +25,7 @@ import {
   monthOf,
   nightStay,
   nightsAt,
+  numberList,
   optionOutcome,
   ownNights,
   placeKind,
@@ -159,6 +159,8 @@ function dayLines(ctx: PlanContext, p: PlanResult, d: DayPlan): { lines: string[
     `Riding ${riding}, about ${hours(d.hoursSlow + d.stopsMin / 60)} with stops; off at ${clock(d.startMinutes)}, in by ${clock(d.endMinutes)}${d.sunset !== null ? `, sunset ${clock(d.sunset)}${d.clockApprox ? " (approximate)" : ""}` : ""}.`,
     ...(steep ? [`Steepest ${d.steepest!.lengthKm} km: ${Math.round(d.steepest!.grade)}% at km ${Math.round(d.steepest!.atKm)}.`] : []),
     dayStory(ctx.data, d, p.items),
+    // The day's big climb, as its card gives it among the heads-ups or highlights (D75).
+    ...p.items.filter((i) => i.id === `climb:${d.number}`).map((i) => `${i.title}; ${i.why}`),
     ...(weather ? [weather] : []),
   ];
   if (free) lines.push(`Water and food, heads-ups, highlights and where to sleep ${PASS}.`);
@@ -497,7 +499,7 @@ function build(ctx: PlanContext, state: PlanState, c: Record<string, unknown>): 
       if (!m) return { error: "Be in by what time (HH:MM)?" };
       const by = Number(m[1]) * 60 + Number(m[2]);
       const { start, late } = beInBy(p, by);
-      const note = late.length ? `${sentence(dayList(late))} still ${late.length === 1 ? "ends" : "end"} after ${clock(by)}` : `Every day in by ${clock(by)}`;
+      const note = late.length ? `${late.length === 1 ? "Day" : "Days"} ${numberList(late)} still ${late.length === 1 ? "ends" : "end"} after ${clock(by)}` : `Every day in by ${clock(by)}`;
       return { action: { type: "set", inputs: { ...inputs, startMinutes: start } }, note };
     }
     case "add_rest": {
@@ -646,7 +648,10 @@ const offerOptions: Tool<PlanContext, PlanApply> = {
       const after = ctx.planFor(state);
       const what = planChanges(before, after);
       // A place chosen, a booking, a tick or "I know" changes no day: what it settles is the change, as the to-do says it.
-      const lines = [...(what.lines.length ? what.lines : actions.map((x) => settles(after, x))), ...notes];
+      // What it adds to the to-do (getting there and back, a booking to change): the to-do's own lines.
+      const was = new Set(before.items.map((i) => i.id));
+      const added = after.items.filter((i) => i.kind === "todo" && !was.has(i.id) && !i.id.startsWith("bed:")).map((i) => `New on the to-do: ${i.title}`);
+      const lines = [...(what.lines.length ? what.lines : actions.map((x) => settles(after, x))), ...added, ...notes];
       const label = arg.str(o as Record<string, unknown>, "label") ?? lines[0] ?? "A change";
       options.push({ id: `plan:${options.length + 1}`, label, changes: lines, apply: { state, actions } });
     }
