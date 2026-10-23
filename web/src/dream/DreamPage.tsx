@@ -7,7 +7,7 @@
  * for us (D43). The question lives in the address, so a search can be shared or reopened.
  */
 import type { DreamSection } from "@dpg/contracts";
-import { type DreamRoute, fileNights, pickedStretch, planLink, stretchesFor, type StretchResult } from "@dpg/dream";
+import { daysNote, type DreamRoute, pickedStretch, planLink, stretchesFor, type StretchResult } from "@dpg/dream";
 import { km } from "@dpg/planner";
 import {
   Button,
@@ -240,12 +240,6 @@ function TownPicker({ points, from, to, onChange }: { points: Point[]; from: num
   );
 }
 
-/** Where a stretch's days come from until the rider sets theirs. */
-const daysNote = (fileNights: boolean) =>
-  fileNights
-    ? "The days follow the nights your route file marks; set your days above and we find the stops instead."
-    : "The days are those of a usual day at your level; set your days above to change them.";
-
 function DreamRoute({ route }: { route: string }) {
   const [network = "", ref = ""] = route.split("/");
   const [files, setFiles] = useState<DreamFiles | null>(null);
@@ -287,7 +281,6 @@ function DreamRoute({ route }: { route: string }) {
   );
   // A rider's own file is the trip (D76); until the rider sets their days, the nights it marks set them (D70, D78).
   const ownRoute = !!dr?.own;
-  const fileNightsMarked = useMemo(() => (dr ? fileNights(dr) : false), [dr]);
   // Every stretch that fits is counted; the list shows the best few.
   const results = useMemo(() => (dr ? stretchesFor(dr, a) : []), [dr, a]);
   const shown = useMemo(() => results.slice(0, count), [results, count]);
@@ -339,7 +332,18 @@ function DreamRoute({ route }: { route: string }) {
   };
   const toggleCompare = (r: StretchResult) =>
     setCompare((c) => (c.includes(keyOf(r)) ? c.filter((x) => x !== keyOf(r)) : [...c.slice(-1), keyOf(r)]));
-  const chips = <Chips a={a} levels={levels} themes={files.dream.themes} open={open} onOpen={setOpen} onChange={change} />;
+  const chips = (
+    <Chips
+      a={a}
+      levels={levels}
+      themes={files.dream.themes}
+      countries={countryRows(sections).map((r) => r.cc)}
+      towns={points.map((p) => p.name)}
+      open={open}
+      onOpen={setOpen}
+      onChange={change}
+    />
+  );
   const footnote = (
     <p className="text-xs text-muted-foreground">
       From the audit of {routeName}: {files.dream.climate_source}. Where we have no data we say so, and it becomes a check for you.
@@ -417,7 +421,7 @@ function DreamRoute({ route }: { route: string }) {
               />
             )}
             {ownResult && a.days === null && (
-              <p className="text-xs text-muted-foreground">{daysNote(fileNightsMarked)}</p>
+              <p className="text-xs text-muted-foreground">{dr && daysNote(dr, a, ownResult)}</p>
             )}
           </section>
           <section aria-label="Map of your stretch" className="min-w-0 flex-[999_1_560px] lg:sticky lg:top-6">
@@ -476,7 +480,7 @@ function DreamRoute({ route }: { route: string }) {
               </p>
             )}
             {ownRoute && a.days === null && results.length > 0 && (
-              <p className="text-xs text-muted-foreground">{daysNote(fileNightsMarked)}</p>
+              <p className="text-xs text-muted-foreground">{dr && daysNote(dr, a, results[0]!)}</p>
             )}
             {shown.map((r, i) => (
               <StretchCard

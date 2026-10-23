@@ -9,6 +9,7 @@
  */
 import {
   applyAction,
+  beInBy,
   bookedAction,
   calendarFile,
   choicesOf,
@@ -38,6 +39,7 @@ import {
   readFragment,
   restAfterAction,
   restInAction,
+  restLengthAction,
   restMoveAction,
   secondThoughts,
   shareFragment,
@@ -786,6 +788,8 @@ function PlanPage({ start }: { start: Start }) {
                     suggestedMonth={suggested}
                     datesConfirmed={datesConfirmed}
                     ownNights={ownNights(data, inputs.fromM, inputs.toM).length}
+                    onBeInBy={plan ? (by) => apply({ type: "set", inputs: { startMinutes: beInBy(plan, by).start } }) : undefined}
+                    dayEnds={(plan?.days ?? []).filter((d) => d.kind === "ride").map((d) => ({ day: d.number, end: d.endMinutes }))}
                     towns={data.stops.stops
                       .filter((s) => s.name && s.at_m > Math.min(inputs.fromM, inputs.toM) && s.at_m < Math.max(inputs.fromM, inputs.toM))
                       .sort((a, b) => (inputs.direction === "reverse" ? b.at_m - a.at_m : a.at_m - b.at_m))
@@ -904,6 +908,7 @@ function PlanPage({ start }: { start: Start }) {
                 onToggleRest={(r) => apply(restAfterAction(plan, r, !plan.restAfter.includes(r)))}
                 onMoveRest={(from, to) => apply(restMoveAction(plan, from, to))}
                 onRemoveRest={(r) => apply(restAfterAction(plan, r, false))}
+                onRestLength={(r, n) => apply(restLengthAction(plan, r, n))}
                 onDone={toggleDone}
                 onGpx={onGpx}
                 onClose={() => setSelected(null)}

@@ -8,6 +8,7 @@ import { monthOf } from "./sun";
 import { foodOnDay, isNightLine, toDo } from "./items";
 import { dayList, hours, KNOWN_ENOUGH, km, MONTHS_LONG, numberList, plural, range, shareOf, sleepNoun } from "./text";
 import type { Brief, BriefLine, DayPlan, PlanData, PlanItem } from "./types";
+import { restLengthOf } from "./rest";
 import { usualWeather } from "./weather";
 
 const THEME_PHRASE: Record<string, string> = {
@@ -58,6 +59,21 @@ export function dayStory(data: PlanData, d: DayPlan, items: PlanItem[]): string 
   return `${surface}, ${terrain}${theme ? `, ${theme}` : ""}${extras.length ? `; ${extras.join(", ")}` : ""}.`;
 }
 
+/**
+ * " 2 rest days, after riding days 4 and 9.", and with a longer stay (D80) " 2 rest days in a row, after riding day 5."
+ * or " 3 rest days: 2 in a row after riding day 4, and 1 after day 9."
+ */
+function restLine(core: PlanCore): string {
+  const r = core.restAfter;
+  if (!r.length) return "";
+  const lens = r.map((x) => restLengthOf(core.inputs, x));
+  const total = lens.reduce((a, b) => a + b, 0);
+  if (lens.every((l) => l === 1)) return ` ${plural(total, "rest day")}, after riding ${r.length === 1 ? "day" : "days"} ${numberList(r)}.`;
+  if (r.length === 1) return ` ${plural(total, "rest day")} in a row, after riding day ${r[0]}.`;
+  const parts = r.map((x, i) => `${lens[i]}${lens[i]! > 1 ? " in a row" : ""} after ${i ? "day" : "riding day"} ${x}`);
+  return ` ${plural(total, "rest day")}: ${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}.`;
+}
+
 function weather(data: PlanData, core: PlanCore): string {
   const month = monthOf(core.inputs.startDate);
   const secs = new Set(core.days.flatMap((d) => d.sections));
@@ -103,7 +119,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
         ? `Mostly, at ${level.name}: ${beyond.length === 1 ? `day ${beyond[0]!.number} is` : `${beyond.length} days are`} beyond your level.`
         : `Yes, at ${level.name}${harder.length ? `, with ${plural(harder.length, "harder day")}` : ""}.`) +
       ` Day ${hardest.number} is the hardest: ${km(hardest.km)} km, about ${hours(hardest.hoursSlow)} riding.` +
-      (core.restAfter.length ? ` ${plural(core.restAfter.length, "rest day")}, after riding ${core.restAfter.length === 1 ? "day" : "days"} ${numberList(core.restAfter)}.` : ""),
+      restLine(core),
     more: ableCalls.length,
     moreIds: ableCalls.map((i) => i.id),
   });

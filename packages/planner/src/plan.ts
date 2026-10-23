@@ -9,7 +9,7 @@ import { TripAxis } from "./axis";
 import type { Geometry } from "./geometry";
 import { makeBrief } from "./brief";
 import { planItems, STEEP } from "./items";
-import { placeRests, restWhy } from "./rest";
+import { placeRests, restLengthOf, restWhy } from "./rest";
 import { type Rider, riderFor, usualDay } from "./pace";
 import {
   alternatives,
@@ -225,7 +225,9 @@ export function makePlan(
   const fileRests = own.flatMap((i, k) => (ownRest.has(candidates[i]!.stop.id) ? [k + 1] : []));
   const rest = new Set([...inputs.restAfter, ...fileRests].filter((r) => r >= 1 && r < rides));
   const ownRests = new Set(rest);
-  const dayDate = (k: number) => addDays(inputs.startDate, k + [...rest].filter((r) => r <= k).length);
+  // A longer stay is several rest days in a row (D80); the planner's own rest days are one each.
+  const restLen = (r: number) => (rest.has(r) ? restLengthOf(inputs, r) : 0);
+  const dayDate = (k: number) => addDays(inputs.startDate, k + [...rest].filter((r) => r <= k).reduce((a, r) => a + restLen(r), 0));
   const endStop = nearestStop(data.stops.stops, axis.endM);
   const ctx: DayContext = {
     axis,
@@ -275,10 +277,11 @@ export function makePlan(
   // night when that day stays within the rider's level, else it's offered. The days after a rest day move a day on.
   const restOffers: RestOffer[] = [];
   const moved = new Map<number, { from: Stop; km: number }>();
-  const wanted = Math.min(Math.max(0, rides - 2), Math.max(rest.size, inputs.restDays ?? 0));
-  if (wanted > rest.size) {
+  const ownDays = [...rest].reduce((a, r) => a + restLen(r), 0);
+  const wanted = Math.min(Math.max(0, rides - 2 - rest.size), Math.max(0, (inputs.restDays ?? 0) - ownDays));
+  if (wanted > 0) {
     const nights = [...stage.nights];
-    for (const p of placeRests(data, ctx, stage, usual.hours, rest, wanted - rest.size, new Set(own))) {
+    for (const p of placeRests(data, ctx, stage, usual.hours, rest, wanted, new Set(own))) {
       const k = p.afterRide - 1;
       if (p.move !== undefined && !own.length && !kept && !locked.has(k)) {
         moved.set(p.afterRide, { from: candidates[nights[k]!]!.stop, km: (candidates[p.move]!.t - candidates[nights[k]!]!.t) / 1000 });
@@ -407,13 +410,13 @@ export function makePlan(
         own: mine,
         wildCamp,
       });
-      if (rest.has(k + 1)) {
+      for (let j = 1; j <= restLen(k + 1); j++) {
         number += 1;
         days.push({
           ...days[days.length - 1]!,
           number,
           ride: null,
-          date: addDays(date, 1),
+          date: addDays(date, j),
           kind: "rest",
           fromT: t1,
           toT: t1,

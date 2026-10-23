@@ -5,21 +5,27 @@
  */
 import {
   applyAction,
+  beInBy,
+  bedKinds,
+  bedsFor,
   bedsKnown,
   bookedAction,
   bookingSearches,
   clock,
   day as dayText,
+  dayList,
   dayFacts,
   dayItems,
   dayStory,
   dayWeather,
   hours,
   km,
+  MAX_REST_LENGTH,
   MONTHS_LONG,
   nightOptions,
   monthOf,
   nightStay,
+  nightsAt,
   optionOutcome,
   ownNights,
   placeKind,
@@ -31,11 +37,14 @@ import {
   type PlanItem,
   type PlanResult,
   type PlanState,
+  placesMissing,
   plural,
   restAfterAction,
   restFacts,
   restInAction,
+  restLengthAction,
   restMoveAction,
+  sleepNoun,
   STEEP,
   stayDates,
   stopName,
@@ -46,7 +55,8 @@ import {
 } from "@dpg/planner";
 import type { DayPlan, NightPlan } from "@dpg/planner";
 import { closeNames, matchNames } from "./names";
-import { arg, problem, schema, type Tool, type ToolOption, type ToolResult } from "./tool";
+import { weatherIn } from "./dream";
+import { arg, monthIndex, MONTHS_ENUM, problem, schema, type Tool, type ToolOption, type ToolResult } from "./tool";
 
 export interface PlanContext {
   data: PlanData;
@@ -176,12 +186,50 @@ function dayLines(ctx: PlanContext, p: PlanResult, d: DayPlan): { lines: string[
   };
 }
 
+/**
+ * Water and food between two towns on the stretch (D80): by km of the trip, as the day cards give them by km of the
+ * day, and the longest stretch without. Not loaded is never none (D37).
+ */
+function between(ctx: PlanContext, p: PlanResult, fromName: string, toName: string): ToolResult<never> {
+  if (!ctx.data.full) return problem(`Water and food along the way ${PASS}.`);
+  const [x, y] = [stopOf(ctx, fromName).stops[0], stopOf(ctx, toName).stops[0]];
+  if (!x || !y) return problem(`"${!x ? fromName : toName}" isn't a town on this plan's stretch.`);
+  const [t0, t1] = [p.axis.tOf(x.at_m), p.axis.tOf(y.at_m)].sort((m, n) => m - n) as [number, number];
+  const [lo, hi] = [Math.min(x.at_m, y.at_m), Math.max(x.at_m, y.at_m)];
+  if (placesMissing(ctx.data.full, lo, hi).length) return problem(`Places between ${stopName(x)} and ${stopName(y)} didn't all load: any there aren't known.`);
+  const at = ctx.data.full.places
+    .filter((pl) => (pl.service === "water" || pl.service === "food") && pl.counts && pl.access_at_m >= lo && pl.access_at_m <= hi)
+    .map((pl) => (p.axis.tOf(pl.access_at_m) - t0) / 1000)
+    .sort((m, n) => m - n);
+  const pts = [0, ...at, (t1 - t0) / 1000];
+  let longest = 0;
+  for (let i = 1; i < pts.length; i++) longest = Math.max(longest, pts[i]! - pts[i - 1]!);
+  const thinned: number[] = [];
+  for (const k of at) if (!thinned.length || k - thinned[thinned.length - 1]! >= 5) thinned.push(k);
+  const span = `${stopName(x)} to ${stopName(y)} (${km((t1 - t0) / 1000)} km)`;
+  return {
+    lines: at.length
+      ? [`Water and food from ${span}: at km ${thinned.map((k) => Math.round(k)).join(" · ")} from ${stopName(x)}; longest stretch without ${Math.round(longest)} km.`]
+      : [`No water or food we know of from ${span}: you judge what to carry.`],
+    facts: { ok: true, from: stopName(x), to: stopName(y), km: km((t1 - t0) / 1000), at: thinned.map((k) => Math.round(k)), longest: Math.round(longest) },
+  };
+}
+
 const days: Tool<PlanContext> = {
   name: "days",
-  description: "One day, or a run of days with their totals, as the day cards say: km, climbing, hours, effort against the rider's level, times, the steepest stretch, the way, the usual weather, water and food, and the night. Without a day, the one on screen.",
-  parameters: () => schema({ day: { type: "integer", minimum: 1 }, to: { type: "integer", minimum: 1, description: "The last day of a run." } }),
+  description:
+    "One day, or a run of days with their totals, as the day cards say: km, climbing, hours, effort against the rider's level, times, the steepest stretch, the way, the usual weather, water and food, and the night. Without a day, the one on screen. Or between two towns: the water and food there and the longest stretch without.",
+  parameters: () =>
+    schema({
+      day: { type: "integer", minimum: 1 },
+      to: { type: "integer", minimum: 1, description: "The last day of a run." },
+      from_town: { type: "string" },
+      to_town: { type: "string" },
+    }),
   run(ctx, args) {
     const p = planOf(ctx);
+    const [a, b] = [arg.str(args, "from_town"), arg.str(args, "to_town")];
+    if (a && b) return between(ctx, p, a, b);
     const first = dayOf(ctx, p, arg.int(args, "day"));
     if ("lines" in first) return first;
     const last = arg.int(args, "to");
@@ -261,10 +309,11 @@ const night: Tool<PlanContext> = {
       n = x;
     }
     const d = p.days.find((x) => x.ride === n!.afterRide)!;
-    const stay = nightStay(n, p.restAfter);
+    const stay = nightStay(n, p.restAfter, p.inputs);
+    const nights = nightsAt(n, p.restAfter, p.inputs);
     const month = MONTHS_LONG[monthOf(n.date)]!;
     const lines = [
-      `The night after day ${d.number} (${stayDates(stay.checkIn, stay.checkOut)}${p.restAfter.includes(n.afterRide) ? ", 2 nights" : ""}): ${stopName(n.stop)}: ${bedsKnown(n.beds, month, p.inputs.sleep, !!n.own)}.`,
+      `The night after day ${d.number} (${stayDates(stay.checkIn, stay.checkOut)}${nights > 1 ? `, ${nights} nights` : ""}): ${stopName(n.stop)}: ${bedsKnown(n.beds, month, p.inputs.sleep, !!n.own)}.`,
       n.whyOther,
     ];
     const facts: Record<string, unknown> = { afterDay: d.number, at: stopName(n.stop), dates: stayDates(stay.checkIn, stay.checkOut), beds: bedsKnown(n.beds, month, p.inputs.sleep, !!n.own) };
@@ -279,6 +328,16 @@ const night: Tool<PlanContext> = {
       const search = bookingSearches(n, { ...p.inputs, restAfter: p.restAfter });
       if (search.length) lines.push(`None of these suit? Search ${search.map((h) => h.label).join(" or ")} for ${n.stop.name ?? "places near this stop"}, ${stayDates(stay.checkIn, stay.checkOut)}.`);
       Object.assign(facts, { here, others });
+    }
+    // The day card's "Stay somewhere else this night": the other stops, with this day's and the next day's km (D80).
+    const stops = n.alternatives.map((a) => {
+      const b = bedsFor(a.stop, p.inputs.sleep, monthOf(n!.date));
+      const beds = b.count - b.closed ? bedKinds(b.kinds) : `no known ${sleepNoun(p.inputs.sleep)}`;
+      return `${stopName(a.stop)}: this day ${km(a.dayKm)} km, next day ${a.nextKm === null ? "–" : `${km(a.nextKm)} km`} (${beds})`;
+    });
+    if (stops.length) {
+      lines.push(`Other stops for this night: ${stops.join("; ")}.`);
+      facts.otherStops = stops;
     }
     // What settled it, as the to-do says; its nudges are the to-do's, and the night's line above says the same (D64).
     const line = p.items.find((i) => i.id.startsWith(`bed:${n!.index}:`));
@@ -316,6 +375,24 @@ const restDay: Tool<PlanContext> = {
   },
 };
 
+const usualWeatherTool: Tool<PlanContext> = {
+  name: "usual_weather",
+  description:
+    "The usual weather (averages over past years, never a forecast) on the trip, or one day, in a month: night lows to day highs and how often it rains; without a month, the trip's own month, or the best months when asked for them. There is no smoke or wildfire data.",
+  parameters: () => schema({ day: { type: "integer", minimum: 1 }, month: { type: "string", enum: MONTHS_ENUM }, best: { type: "boolean", description: "The best months." } }),
+  run(ctx, args) {
+    const p = planOf(ctx);
+    const n = arg.int(args, "day");
+    const d = n === undefined ? null : dayOf(ctx, p, n);
+    if (d && "lines" in d) return d;
+    const nums = new Set((d ? [d] : p.days).flatMap((x) => x.sections));
+    const secs = ctx.data.dream.sections.filter((s) => nums.has(s.number));
+    const where = d ? `day ${d.number}` : p.brief.title;
+    const month = arg.bool(args, "best") ? null : (monthIndex(arg.str(args, "month")) ?? monthOf(d?.date ?? ctx.state.inputs.startDate));
+    return weatherIn(secs, where, month);
+  },
+};
+
 const findStop: Tool<PlanContext> = {
   name: "find_stop",
   description: "A town the rider names on the plan's stretch: which day passes it and at what km, and whether a night is there.",
@@ -349,7 +426,8 @@ const findStop: Tool<PlanContext> = {
 
 // --- offering changes ----------------------------------------------------------------------------------------------
 
-type Built = { action: PlanAction } | { error: string };
+/** A change built as the screen builds it, with what the rider should know about it that the plan's changes don't say. */
+type Built = { action: PlanAction; note?: string } | { error: string };
 
 /** One change in the rider's terms, built as the screen's control for it would (D77). */
 function build(ctx: PlanContext, state: PlanState, c: Record<string, unknown>): Built {
@@ -400,8 +478,27 @@ function build(ctx: PlanContext, state: PlanState, c: Record<string, unknown>): 
       const town = arg.str(c, "town") ?? "";
       const stop = stopOf(ctx, town).stops[0];
       if (!stop || !stop.name) return { error: `"${town}" isn't a town on this stretch.` };
-      const action = restInAction(p, stop);
+      // A longer stay: 2 or 3 rest days in a row (D80).
+      const action = restInAction(p, stop, Math.min(MAX_REST_LENGTH, Math.max(1, arg.int(c, "days") ?? 1)));
       return action ? { action } : { error: "A one-day trip has no night to rest." };
+    }
+    case "rest_length": {
+      // "Stay another day" or "One day fewer" where a rest day is (D80).
+      const town = arg.str(c, "town");
+      const r = town ? matchNames(town, p.days.filter((x) => x.kind === "rest"), (x) => x.endName)[0] : p.days.find((x) => x.number === arg.int(c, "rest_day") && x.kind === "rest");
+      const before = r && p.days.filter((x) => x.number < r.number && x.kind === "ride").pop();
+      const n = arg.int(c, "days");
+      if (!before || n === undefined) return { error: "Which rest day, and how many days in a row?" };
+      return { action: restLengthAction(p, before.ride!, Math.min(MAX_REST_LENGTH, Math.max(1, n))) };
+    }
+    case "be_in_by": {
+      // The planner works out the start (D80); the model never does.
+      const m = /^(\d{1,2}):(\d{2})$/.exec(arg.str(c, "time") ?? "");
+      if (!m) return { error: "Be in by what time (HH:MM)?" };
+      const by = Number(m[1]) * 60 + Number(m[2]);
+      const { start, late } = beInBy(p, by);
+      const note = late.length ? `${sentence(dayList(late))} still ${late.length === 1 ? "ends" : "end"} after ${clock(by)}` : `Every day in by ${clock(by)}`;
+      return { action: { type: "set", inputs: { ...inputs, startMinutes: start } }, note };
     }
     case "add_rest": {
       const d = riding(arg.int(c, "after_day"));
@@ -419,10 +516,12 @@ function build(ctx: PlanContext, state: PlanState, c: Record<string, unknown>): 
       return before && to ? { action: restMoveAction(p, before.ride!, to.ride!) } : { error: "Which rest day, and after which riding day?" };
     }
     case "stop_at": {
-      const d = riding(arg.int(c, "after_day"));
-      const n = d && p.nights.find((x) => x.afterRide === d.ride);
       const stop = stopOf(ctx, arg.str(c, "town") ?? "").stops[0];
-      return n && stop ? { action: { type: "lock-night", night: n.index, stop: stop.id } } : { error: "Which night, and at which town on the stretch?" };
+      if (!stop) return { error: `"${arg.str(c, "town") ?? ""}" isn't a town on this stretch.` };
+      // Without a day, the night nearest the town moves there, as "Rest in…" picks its night (D80).
+      const d = riding(arg.int(c, "after_day"));
+      const n = d ? p.nights.find((x) => x.afterRide === d.ride) : p.nights.reduce<NightPlan | undefined>((b, x) => (!b || Math.abs(x.stop.at_m - stop.at_m) < Math.abs(b.stop.at_m - stop.at_m) ? x : b), undefined);
+      return n ? { action: { type: "lock-night", night: n.index, stop: stop.id } } : { error: "A one-day trip has no night to move." };
     }
     case "stay_at": {
       const d = riding(arg.int(c, "after_day"));
@@ -480,7 +579,9 @@ function settles(after: PlanResult, a: PlanAction): string {
 
 const CHANGE = schema(
   {
-    do: { type: "string", enum: ["set", "rest_days", "rest_in", "add_rest", "remove_rest", "move_rest", "stop_at", "stay_at", "booked", "answer_call", "tick", "i_know"] },
+    do: { type: "string", enum: ["set", "rest_days", "rest_in", "rest_length", "add_rest", "remove_rest", "move_rest", "be_in_by", "stop_at", "stay_at", "booked", "answer_call", "tick", "i_know"] },
+    days: { type: "integer", minimum: 1, maximum: 3, description: "Rest days in a row in one town." },
+    time: { type: "string", description: "HH:MM" },
     start_date: { type: "string", description: "YYYY-MM-DD" },
     total_days: { type: "integer", minimum: 1, maximum: 60 },
     level: { type: "integer", minimum: 1, maximum: 5 },
@@ -525,6 +626,7 @@ const offerOptions: Tool<PlanContext, PlanApply> = {
       const changes = (arg.list(o as Record<string, unknown>, "changes") ?? []).slice(0, 3);
       let state = ctx.state;
       const actions: PlanAction[] = [];
+      const notes: string[] = [];
       let failed: string | null = null;
       for (const c of changes) {
         if (!c || typeof c !== "object") continue;
@@ -534,6 +636,7 @@ const offerOptions: Tool<PlanContext, PlanApply> = {
           break;
         }
         actions.push(b.action);
+        if (b.note) notes.push(b.note);
         state = applyAction(state, b.action);
       }
       if (failed) {
@@ -543,7 +646,7 @@ const offerOptions: Tool<PlanContext, PlanApply> = {
       const after = ctx.planFor(state);
       const what = planChanges(before, after);
       // A place chosen, a booking, a tick or "I know" changes no day: what it settles is the change, as the to-do says it.
-      const lines = what.lines.length ? what.lines : actions.map((x) => settles(after, x));
+      const lines = [...(what.lines.length ? what.lines : actions.map((x) => settles(after, x))), ...notes];
       const label = arg.str(o as Record<string, unknown>, "label") ?? lines[0] ?? "A change";
       options.push({ id: `plan:${options.length + 1}`, label, changes: lines, apply: { state, actions } });
     }
@@ -557,5 +660,5 @@ const offerOptions: Tool<PlanContext, PlanApply> = {
   },
 };
 
-export const PLAN_TOOLS = [theTrip, days, items, night, restDay, findStop, offerOptions] as Tool<PlanContext, PlanApply>[];
+export const PLAN_TOOLS = [theTrip, days, items, night, restDay, findStop, usualWeatherTool, offerOptions] as Tool<PlanContext, PlanApply>[];
 

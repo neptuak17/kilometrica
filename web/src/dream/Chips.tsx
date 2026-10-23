@@ -4,7 +4,7 @@
  */
 import type { DreamFile } from "@dpg/contracts";
 import type { Pref } from "@dpg/dream";
-import { MONTHS_LONG } from "@dpg/planner";
+import { country, MONTHS_LONG } from "@dpg/planner";
 import {
   Button,
   cn,
@@ -16,6 +16,11 @@ import {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   TextField,
   Toggle,
   ToggleGroup,
@@ -24,16 +29,20 @@ import {
 import type { ReactNode } from "react";
 import { Dialog, type Key } from "react-aria-components";
 import { SELECTED } from "../rider/Questions";
-import { and, type Ask, type Level, PACE, PREFS, STAY, SURFACES, surfacesText, WAY } from "@dpg/dream";
+import { and, type Ask, countriesText, type Level, PACE, PREFS, STAY, SURFACES, surfacesText, WAY } from "@dpg/dream";
 
-export type ChipId = "level" | "days" | "pace" | "month" | "surfaces" | "scenery" | "stay" | "direction";
+export type ChipId = "level" | "days" | "pace" | "month" | "surfaces" | "scenery" | "countries" | "through" | "stay" | "direction";
 
 const first = (keys: Set<Key>) => [...keys][0];
 
-export function Chips({ a, levels, themes, open, onOpen, onChange }: {
+export function Chips({ a, levels, themes, countries, towns, open, onOpen, onChange }: {
   a: Ask;
   levels: Level[];
   themes: DreamFile["themes"];
+  /** The route's countries in route order, by code (D80). */
+  countries: string[];
+  /** The towns where stretches start and end, in route order (D80). */
+  towns: string[];
   open: ChipId | null;
   onOpen: (c: ChipId | null) => void;
   onChange: (patch: Partial<Ask>) => void;
@@ -189,6 +198,41 @@ export function Chips({ a, levels, themes, open, onOpen, onChange }: {
     </ToggleGroup>
   );
 
+  // Where the rider would rather ride (D80): each country fine, only, or to avoid.
+  const countriesEditor = (
+    <div className="grid gap-2.5">
+      {countries.map((cc) => (
+        <div key={cc} className="flex flex-wrap items-center justify-between gap-2">
+          <span className="font-medium">{country(cc)}</span>
+          {single(country(cc), ["ok", "only", "avoid"] as const, a.countries[cc] ?? "ok", (v) => (v === "ok" ? "Fine" : v === "only" ? "Only" : "Avoid"), (v) => {
+            const next = { ...a.countries };
+            if (v === "ok") delete next[cc];
+            else next[cc] = v;
+            onChange({ countries: next });
+          })}
+        </div>
+      ))}
+    </div>
+  );
+
+  const throughEditor = (
+    <Select aria-label="Passing through" selectedKey={a.through ?? "any"} onSelectionChange={(k) => onChange({ through: k === null || k === "any" ? null : String(k) })} className="w-full">
+      <SelectTrigger className="w-full">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem id="any" textValue="Anywhere">
+          Anywhere
+        </SelectItem>
+        {[...new Set(towns)].map((t) => (
+          <SelectItem key={t} id={t} textValue={t}>
+            {t}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <div role="group" aria-label="Your trip" className="flex flex-wrap items-center gap-2">
       {chip("level", <Icons.Bike />, level?.name ?? "Your level", "Your level", "An ordinary good day for you. We measure every stretch against it.", levelEditor, !level)}
@@ -218,6 +262,17 @@ export function Chips({ a, levels, themes, open, onOpen, onChange }: {
         "Scenery",
         "Choose any you'd like more of.",
         sceneryEditor,
+      )}
+      {countries.length > 1 &&
+        chip("countries", <Icons.Globe />, countriesText(a), "Countries", "Ride only in some of the route's countries, or keep out of one.", countriesEditor)}
+      {chip(
+        "through",
+        <Icons.MapPin />,
+        // A town from the address that isn't one of the route's is no choice at all: the search ignores it too.
+        a.through && towns.includes(a.through) ? `Through ${a.through}` : "Passing through",
+        "Passing through",
+        "A town your stretch must include: to spend days there, or to start or end nearby.",
+        throughEditor,
       )}
       {chip("stay", <Icons.Bed />, STAY[a.stay], "Where you sleep", "Places to stay along the way.", single("Where you sleep", ["any", "rooms", "camping"] as const, a.stay, (v) => STAY[v], (v) => onChange({ stay: v })))}
       {chip(

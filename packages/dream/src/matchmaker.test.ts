@@ -1,7 +1,7 @@
 import type { DreamFile, DreamSection } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
 import { watchLines } from "./ask";
-import { describeStretch, type DreamQuery, findStretches, gradeFor, type StretchResult } from "./matchmaker";
+import { type CountryPref, describeStretch, type DreamQuery, findStretches, gradeFor, type StretchResult } from "./matchmaker";
 
 const LEVELS = [
   { level: 1, name: "Leisurely", km_min: 20, km_max: 40, climb_max_m: 300 },
@@ -246,5 +246,31 @@ describe("a stretch's card", () => {
     expect(watchLines(r as StretchResult)).toEqual(["104 km on busy roads", "up to 53 km between places to stay", "steepest 500 m at 18%", count]);
     expect(watchLines({ watch: ["a", "b", "c", "d", "e"], lookOut: 0 } as StretchResult)).toEqual(["a", "b", "c", "d"]);
     expect(watchLines({ watch: ["a", count], lookOut: 6 } as StretchResult)).toEqual(["a", count]);
+  });
+});
+
+describe("countries and a town to pass through (D80)", () => {
+  const two = Array.from({ length: 10 }, (_, i) => section(i + 1, { country: i < 5 ? "IT" : "GR" }));
+
+  it("keeps a search within the countries marked only, and out of those to avoid", () => {
+    for (const countries of [{ GR: "avoid" }, { IT: "only" }] as Record<string, CountryPref>[]) {
+      const rs = findStretches(dream(two), { ...base, days: 2, countries, limit: 20 });
+      expect(rs.length).toBeGreaterThan(0);
+      expect(rs.every((r) => r.last <= 5)).toBe(true);
+    }
+  });
+
+  it("never rules a picked stretch out, but says where it leaves them", () => {
+    const r = describeStretch(dream(two), 3, 8, { ...base, days: 4, countries: { GR: "avoid" } });
+    expect(r!.watch).toContain("enters Greece, which you'd rather avoid");
+    const s = describeStretch(dream(two), 3, 8, { ...base, days: 4, countries: { IT: "only" } });
+    expect(s!.watch).toContain("goes outside Italy, into Greece");
+  });
+
+  it("keeps to stretches that pass a town", () => {
+    const rs = findStretches(dream(two), { ...base, days: 2, through: { m: 375_000, name: "Midway" }, limit: 20 });
+    expect(rs.length).toBeGreaterThan(0);
+    expect(rs.every((r) => r.first <= 8 && r.last >= 8)).toBe(true);
+    expect(describeStretch(dream(two), 1, 3, { ...base, days: 2, through: { m: 375_000, name: "Midway" } })!.watch).toContain("doesn't pass Midway");
   });
 });

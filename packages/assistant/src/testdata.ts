@@ -109,12 +109,13 @@ function stop(km: number): Stop {
   } as Stop;
 }
 
-/** A place to stay at every stop: a hotel and a campsite open all year. */
+/** A place to stay at every stop (a hotel and a campsite open all year), and water at km 25 and 35. */
 function places(): Place[] {
-  return Array.from({ length: 29 }, (_, i) => (i + 1) * 10).flatMap((km) => [
+  const water = [25, 35].map((km) => ({ id: `w${km}`, name: null, kind: "drinking_water", service: "water", counts: true, access_at_m: km * 1000, access_m: 20, lat: LAT, lon: km * 1000 * DEG_PER_M, months: "aaaaaaaaaaaa", detail: {} }));
+  return [...water, ...Array.from({ length: 29 }, (_, i) => (i + 1) * 10).flatMap((km) => [
     { id: `h${km}`, name: `Hôtel du ${km}`, kind: "hotel", service: "accommodation", counts: true, access_at_m: km * 1000, access_m: 100, lat: LAT, lon: km * 1000 * DEG_PER_M, months: "????????????", detail: { website: "example.org" } },
     { id: `c${km}`, name: `Camping ${km}`, kind: "campsite", service: "accommodation", counts: true, access_at_m: km * 1000 + 50, access_m: 300, lat: LAT, lon: km * 1000 * DEG_PER_M, months: "oooooooooooo", detail: { phone: "+33 1 23 45 67 89" } },
-  ]) as unknown as Place[];
+  ])] as unknown as Place[];
 }
 
 const dreamFile = (): DreamFile =>

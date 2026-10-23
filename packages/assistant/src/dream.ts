@@ -5,8 +5,11 @@
 import {
   and,
   type Ask,
+  bestMonths,
   compareRows,
+  countriesText,
   countryRows,
+  daysNote,
   type DreamRoute,
   factsText,
   keyOf,
@@ -26,6 +29,7 @@ import {
   whole,
   whyLines,
 } from "@dpg/dream";
+import type { DreamSection } from "@dpg/contracts";
 import { country, MONTHS_LONG, plural, usualWeather } from "@dpg/planner";
 import { closeNames, matchNames } from "./names";
 import { arg, monthIndex, MONTHS_ENUM, problem, schema, type Tool, type ToolOption, type ToolResult } from "./tool";
@@ -163,7 +167,17 @@ function askChanges(ctx: DreamContext, a: Ask, b: Ask): string[] {
   if (a.stay !== b.stay) out.push(STAY[b.stay]);
   if (a.avoidBusy !== b.avoidBusy) out.push(b.avoidBusy ? "Avoid busy roads" : "Busy roads are fine");
   if (a.direction !== b.direction) out.push(WAY[b.direction]);
+  if (JSON.stringify(a.countries) !== JSON.stringify(b.countries)) out.push(countriesText(b));
+  if (a.through !== b.through) out.push(b.through ? `Through ${b.through}` : "Passing anywhere");
   return out;
+}
+
+/** The best three stretches a question would bring, for an option to name before it is chosen. */
+function bestFor(ctx: DreamContext, a: Ask) {
+  if (a.level === null || (a.days === null && !ctx.route.own)) return [];
+  return stretchesFor(ctx.route, a)
+    .slice(0, SHOWN)
+    .map((r) => ({ name: stretchName(dailyOf(ctx), r), facts: factsText(r, ctx.route.dream.levels, a) }));
 }
 
 function fitCount(ctx: DreamContext, a: Ask): string {
@@ -197,6 +211,11 @@ const setQuestion: Tool<DreamContext, DreamApply> = {
             stay: { type: "string", enum: ["any", "rooms", "camping"] },
             avoid_busy: { type: "boolean" },
             direction: { type: "string", enum: ["either", "forward", "reverse"] },
+            countries: {
+              ...schema(Object.fromEntries(countryRows(sectionsOf(ctx.route)).map((r) => [r.cc, { type: "string", enum: ["only", "avoid", "ok"] }]))),
+              description: `The route's countries: ${countryRows(sectionsOf(ctx.route)).map((r) => `${r.cc} ${country(r.cc)}`).join(", ")}. "only": stay within those; "avoid": never enter.`,
+            },
+            through: { type: "string", description: "A town the stretch must pass, or 'anywhere'." },
           }),
         },
       },
@@ -231,15 +250,37 @@ const setQuestion: Tool<DreamContext, DreamApply> = {
       if (busy !== undefined) b.avoidBusy = busy;
       const way = arg.str(o, "direction");
       if (way === "either" || way === "forward" || way === "reverse") b.direction = way;
+      const countries = arg.obj(o, "countries");
+      if (countries) {
+        b.countries = { ...b.countries };
+        for (const [cc, v] of Object.entries(countries)) {
+          if (v === "only" || v === "avoid") b.countries[cc] = v;
+          else if (v === "ok") delete b.countries[cc];
+        }
+      }
+      const through = arg.str(o, "through");
+      if (through) {
+        if (/^any(where)?$/i.test(through)) b.through = null;
+        else {
+          const p = findPoint(ctx, through);
+          if ("lines" in p) return p;
+          b.through = p.name;
+        }
+      }
       const changes = askChanges(ctx, ctx.ask, b);
       if (!changes.length) continue;
       const label = arg.str(o, "label") ?? `${given.length === 1 ? "Use these: " : ""}${changes.join(" · ")}`;
       options.push({ id: `ask:${options.length + 1}`, label, changes: [...changes, fitCount(ctx, b)], apply: { ask: b } });
     }
     if (!options.length) return problem("Those answers are already Dream's question: nothing to change.");
+    // What each would bring, so the rider can choose knowing (D80); nothing changes until they do.
+    const best = options.map((o) => bestFor(ctx, (o.apply as { ask: Ask }).ask));
     return {
-      lines: options.map((o) => `${o.label}: ${o.changes.join("; ")}.`),
-      facts: { ok: true, options: options.map((o) => ({ label: o.label, changes: o.changes })) },
+      lines: options.flatMap((o, i) => [
+        `${o.label}: ${o.changes.join("; ")}.`,
+        ...(best[i]!.length ? [`  The best: ${best[i]!.map((s) => `${s.name} (${s.facts})`).join("; ")}.`] : []),
+      ]),
+      facts: { ok: true, options: options.map((o, i) => ({ label: o.label, changes: o.changes, best: best[i] })) },
       options,
     };
   },
@@ -266,7 +307,9 @@ const stretches: Tool<DreamContext> = {
     const shown = results.slice(from - 1, from - 1 + (from === 1 ? SHOWN : MORE));
     const list = shown.map((r, i) => stretchFacts(ctx, r, from + i));
     const head = ctx.route.own ? "Your route:" : `${plural(results.length, "stretch", "stretches")} fit${from === 1 && results.length > SHOWN ? `; the best ${SHOWN}` : ""}:`;
-    return { lines: [head, ...list.flatMap(stretchLines)], facts: { ok: true, fit: results.length, stretches: list } };
+    // A rider's own route: where its days come from, the file's nights beside a usual day at the level (D80).
+    const note = ctx.route.own && a.days === null && results[0] ? [daysNote(ctx.route, a, results[0])] : [];
+    return { lines: [head, ...list.flatMap(stretchLines), ...note], facts: { ok: true, fit: results.length, stretches: list, ...(note.length ? { days: note[0] } : {}) } };
   },
 };
 
@@ -302,25 +345,35 @@ const compare: Tool<DreamContext> = {
   },
 };
 
+/**
+ * The usual weather on some sections in a month; without one, their best months by best-time and the weather in the
+ * first of them (D80). Shared with Plan's tool, so both phases say it alike.
+ */
+export function weatherIn(secs: DreamSection[], where: string, month: number | null): ToolResult<never> {
+  const best = month === null ? bestMonths(secs) : null;
+  const m = month ?? best?.months[0] ?? null;
+  if (m === null) return problem(`We have no climate data for ${where}.`);
+  const weather = usualWeather(secs, m);
+  if (!weather) return problem(`We have no climate data for ${where}.`);
+  const lines = [
+    ...(best ? [`Best on ${where}: ${and(best.months.map((x) => MONTHS_LONG[x]!))} (best-time ${best.score} of 100: comfort, crowds and what's open).`] : []),
+    `In ${MONTHS_LONG[m]} on ${where}: ${weather} (the usual weather, not a forecast).`,
+  ];
+  return { lines, facts: { ok: true, where, month: MONTHS_LONG[m], weather, ...(best ? { bestMonths: best.months.map((x) => MONTHS_LONG[x]), bestTime: best.score } : {}) } };
+}
+
 const usualWeatherTool: Tool<DreamContext> = {
   name: "usual_weather",
   description:
-    "The usual weather (averages over past years, never a forecast) on a stretch in a month: night lows to day highs and how often it rains. A stretch by its number in the list, or by two towns; without one, the whole route.",
+    "The usual weather (averages over past years, never a forecast) on a stretch in a month: night lows to day highs and how often it rains; without a month, the best months by Dream's best-time score. A stretch by its number in the list, or by two towns; without one, the whole route. There is no smoke or wildfire data.",
   parameters: () => schema({ number: { type: "integer", minimum: 1 }, from: { type: "string" }, to: { type: "string" }, month: { type: "string", enum: MONTHS_ENUM } }),
   run(ctx, args) {
     const named = arg.int(args, "number") !== undefined || (arg.str(args, "from") && arg.str(args, "to"));
     const r = named ? stretchOf(ctx, args) : null;
     if (r && "lines" in r) return r;
     const secs = r ? ctx.route.dream.sections.filter((s) => s.number >= r.first && s.number <= r.last) : sectionsOf(ctx.route);
-    const month = monthIndex(arg.str(args, "month")) ?? ctx.ask.month ?? r?.month ?? null;
-    if (month === null) return problem("Which month?");
     const where = r ? stretchName(dailyOf(ctx), r) : ctx.route.name;
-    const weather = usualWeather(secs, month);
-    if (!weather) return problem(`We have no climate data for ${where}.`);
-    return {
-      lines: [`In ${MONTHS_LONG[month]} on ${where}: ${weather} (the usual weather, not a forecast).`],
-      facts: { ok: true, where, month: MONTHS_LONG[month], weather },
-    };
+    return weatherIn(secs, where, monthIndex(arg.str(args, "month")) ?? ctx.ask.month);
   },
 };
 

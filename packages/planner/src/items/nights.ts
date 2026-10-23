@@ -8,6 +8,7 @@ import { monthOf } from "../sun";
 import { day as dayText, km, listable, placeTitle, sleepNoun, stopName } from "../text";
 import type { NightPlan, PlanChoices, PlanData, Sleep } from "../types";
 import { holidayOn, schoolOn } from "./calendar";
+import { nightsAt } from "./links";
 import type { Add } from "./shared";
 
 /** A night's places "here": within this of its stop. Other options reach OPTIONS_M either way (D72). */
@@ -93,7 +94,7 @@ export function nightItems(data: PlanData, core: PlanCore, add: Add) {
   for (const n of nights) {
     const d = days.find((x) => x.ride === n.afterRide)!;
     const name = stopName(n.stop);
-    const twoNights = core.restAfter.includes(n.afterRide);
+    const stayNights = nightsAt(n, core.restAfter, inputs);
     // A booking whose night has moved to another date (a rest day moved, D74) is to sort again.
     const bookedFor = core.choices.bookedOn?.[n.index];
     const booked = core.choices.booked.includes(n.index);
@@ -138,7 +139,7 @@ export function nightItems(data: PlanData, core: PlanCore, add: Add) {
       day: d.number,
       fromM: n.stop.at_m,
       toM: n.stop.at_m,
-      title: `${n.wildCamp ? "Find a place to camp" : "Find accommodation"} at ${name} for ${dayText(n.date)}${twoNights ? ", 2 nights" : ""}`,
+      title: `${n.wildCamp ? "Find a place to camp" : "Find accommodation"} at ${name} for ${dayText(n.date)}${stayNights > 1 ? `, ${stayNights} nights` : ""}`,
       why: nudges.join(" "),
       rank,
       topic: "sleep",

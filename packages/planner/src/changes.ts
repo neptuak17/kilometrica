@@ -4,7 +4,8 @@
  */
 import type { PlanResult } from "./plan";
 import { clock } from "./sun";
-import { day, km, numberList, plural } from "./text";
+import { restLengthOf } from "./rest";
+import { day, km, numberList, plural, stopName } from "./text";
 import type { Bike, PlanItem, Sleep, StopStyle } from "./types";
 
 export interface PlanChanges {
@@ -44,7 +45,16 @@ export function planChanges(before: PlanResult, after: PlanResult): PlanChanges 
   // Rest days in effect, the rider's and the planner's (D74).
   const ra = before.restAfter;
   const rb = after.restAfter;
+  const stays = (p: PlanResult) => p.restAfter.map((r) => `${r}:${restLengthOf(p.inputs, r)}`).join();
   if (ra.join() !== rb.join()) lines.push(rb.length ? `Rest days now after riding ${rb.length === 1 ? "day" : "days"} ${numberList(rb)}` : "No rest days");
+  // A longer or shorter stay where a rest day already is (D80).
+  else if (stays(before) !== stays(after)) {
+    for (const r of rb) {
+      const [x, y] = [restLengthOf(a, r), restLengthOf(b, r)];
+      const town = after.nights.find((n) => n.afterRide === r);
+      if (x !== y) lines.push(`${plural(y, "rest day")} in a row${town ? ` at ${stopName(town.stop)}` : ""} (was ${x})`);
+    }
+  }
   if (a.fromM !== b.fromM || a.toM !== b.toM || a.direction !== b.direction) lines.push(`Now ${after.brief.title} (was ${before.brief.title})`);
   if (a.startDate !== b.startDate) lines.push(`Starts ${day(b.startDate)} (was ${day(a.startDate)})`);
   if (a.startMinutes !== b.startMinutes) lines.push(`Leave at ${clock(b.startMinutes)} (was ${clock(a.startMinutes)})`);

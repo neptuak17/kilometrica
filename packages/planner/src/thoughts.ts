@@ -6,7 +6,7 @@
  */
 import type { PlanAction } from "./actions";
 import type { PlanResult } from "./plan";
-import { MIN_APART, restPlace } from "./rest";
+import { MIN_APART, restLengthOf, restPlace } from "./rest";
 import { bedsFor, usable } from "./stages";
 import { monthOf } from "./sun";
 import { plural, sleepNoun, stopName } from "./text";
@@ -97,7 +97,7 @@ function thoughtsOf(data: PlanData, p: PlanResult): SecondThought[] {
       id: `thought:place:${r}:${n.stop.id}`,
       question: `A rest day ${n.stop.name ? "in " : ""}${town}?`,
       why: noBed
-        ? `We know of no ${sleepNoun(p.inputs.sleep)} there for the 2 nights.`
+        ? `We know of no ${sleepNoun(p.inputs.sleep)} there for the ${1 + restLengthOf(p.inputs, r)} nights.`
         : n.stop.name
           ? "We know of nothing to see there."
           : "It's a spot between towns, with nothing we know of for a day off.",

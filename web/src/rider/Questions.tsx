@@ -4,7 +4,7 @@
  * the level and the bike, never from fitness data (D35).
  */
 import type { DailySection, RiderLevel } from "@dpg/contracts";
-import { clock, daysAnswer, MONTHS_LONG, type PlanInputs, plural, suggestedRest, withRestDays, withTotalDays } from "@dpg/planner";
+import { clock, dayList, daysAnswer, MONTHS_LONG, type PlanInputs, plural, suggestedRest, withRestDays, withTotalDays } from "@dpg/planner";
 import {
   Checkbox,
   cn,
@@ -20,7 +20,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@dpg/ui";
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 interface Props {
   inputs: PlanInputs;
@@ -34,6 +34,10 @@ interface Props {
   /** Named stops on the stretch, in the direction of travel, for "Rest in…" (D74). */
   towns: { id: string; name: string }[];
   onRestIn?: (stopId: string) => void;
+  /** "Be in by" (D80): sets the start that gets every day in by then, worked out by the planner. */
+  onBeInBy?: (minutes: number) => void;
+  /** When each riding day ends now, for what "be in by" achieved. */
+  dayEnds: { day: number; end: number }[];
   readOnly: boolean;
   onChange: (next: PlanInputs, confirmDates?: boolean) => void;
 }
@@ -114,7 +118,19 @@ function Check({ label, checked, disabled, onChange }: { label: string; checked:
   );
 }
 
-export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirmed, ownNights, towns, onRestIn, readOnly, onChange }: Props) {
+export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirmed, ownNights, towns, onRestIn, onBeInBy, dayEnds, readOnly, onChange }: Props) {
+  const [inBy, setInBy] = useState<number | null>(null);
+  const late = inBy === null ? [] : dayEnds.filter((d) => d.end > inBy).map((d) => d.day);
+  const inByHint =
+    inBy === null
+      ? undefined
+      : late.length
+        ? `${dayList(late)[0]!.toUpperCase()}${dayList(late).slice(1)} still ${late.length === 1 ? "ends" : "end"} after ${clock(inBy)}${inputs.startMinutes <= 5 * 60 ? ", even leaving at 05:00" : ""}.`
+        : `Every day in by ${clock(inBy)}.`;
+  const time = (v: string) => {
+    const [h, m] = v.split(":").map(Number);
+    return h !== undefined && m !== undefined && !Number.isNaN(h) && !Number.isNaN(m) ? h * 60 + m : null;
+  };
   // The end date holds (D74): total days come from Dream; rest days are taken from them, riding days are the rest.
   const { own, rest: restCount, riding, total } = daysAnswer(inputs, ownNights);
   const suggest = suggestedRest(total, own ? riding : undefined);
@@ -240,18 +256,43 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Off at">
-          <TextField
-            aria-label="Off at"
-            value={clock(inputs.startMinutes)}
-            isDisabled={readOnly}
-            onChange={(v) => {
-              const [h, m] = v.split(":").map(Number);
-              if (h !== undefined && m !== undefined && !Number.isNaN(h) && !Number.isNaN(m)) set("startMinutes", h * 60 + m);
-            }}
-          >
-            <Input type="time" step={900} />
-          </TextField>
+        <Field label="Off at" hint={inByHint}>
+          <div className="flex flex-wrap items-center gap-2">
+            <TextField
+              aria-label="Off at"
+              value={clock(inputs.startMinutes)}
+              isDisabled={readOnly}
+              className="min-w-0 flex-1"
+              onChange={(v) => {
+                const m = time(v);
+                if (m === null) return;
+                setInBy(null);
+                set("startMinutes", m);
+              }}
+            >
+              <Input type="time" step={900} />
+            </TextField>
+            {/* Or the other way round (D80): the planner finds the start that gets every day in by then. */}
+            {onBeInBy && (
+              <>
+                <span className="text-xs text-muted-foreground">or be in by</span>
+                <TextField
+                  aria-label="Be in by"
+                  value={inBy === null ? "" : clock(inBy)}
+                  isDisabled={readOnly}
+                  className="min-w-0 flex-1"
+                  onChange={(v) => {
+                    const m = time(v);
+                    if (m === null) return;
+                    setInBy(m);
+                    onBeInBy(m);
+                  }}
+                >
+                  <Input type="time" step={900} />
+                </TextField>
+              </>
+            )}
+          </div>
         </Field>
         <Field label="Stops during the day" hint={'For the "in by" times, and whether a day ends before dark.'}>
           <Choice label="Stops during the day" value={inputs.stopStyle} options={STOPS} disabled={readOnly} onPick={(v) => set("stopStyle", v)} />

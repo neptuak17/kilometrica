@@ -38,7 +38,7 @@ import {
 } from "@dpg/planner";
 import { Badge, Button, Card, CardContent, Checkbox, cn, Icons, Label, LinkButton } from "@dpg/ui";
 import { type ReactNode, useId, useState } from "react";
-import { dayFacts, dayWeather, restFacts } from "@dpg/planner";
+import { dayFacts, dayWeather, MAX_REST_LENGTH, restFacts, restLengthOf } from "@dpg/planner";
 import { looksUp, openPhoto } from "./photos";
 
 const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
@@ -151,6 +151,8 @@ interface Props {
   /** Move a rest day to after another riding day, or remove it (D74). */
   onMoveRest: (from: number, to: number) => void;
   onRemoveRest: (afterRide: number) => void;
+  /** A longer or shorter stay (D80): so many rest days in a row here. */
+  onRestLength: (afterRide: number, days: number) => void;
   onToggleRest: (ride: number) => void;
   onDone: (id: string) => void;
   onGpx: (day: DayPlan) => void;
@@ -158,7 +160,7 @@ interface Props {
   onNext?: () => void;
 }
 
-export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNight, onToggleBooked, onChooseBed, onStay, onMoveRest, onRemoveRest, onToggleRest, onDone, onGpx, onClose, onNext }: Props) {
+export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNight, onToggleBooked, onChooseBed, onStay, onMoveRest, onRemoveRest, onRestLength, onToggleRest, onDone, onGpx, onClose, onNext }: Props) {
   const ids = useId();
   const mine = dayItems(plan.items, d.number);
   // The night's own line is settled in Sleep below, so the day's to-dos leave it out (D64).
@@ -171,6 +173,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   // Only a long steep stretch is worth a line (D75).
   const steepShown = !!d.steepest && d.steepest.grade > STEEP(plan.level.level).grade;
   const rest = d.kind === "rest" && !free ? restFacts(plan, data, d) : null;
+  const stayLength = rest ? restLengthOf(plan.inputs, rest.afterRide) : 1;
   // The usual weather (D77): climate normals, free like the rest of Dream's data.
   const weather = dayWeather(data, d);
   const next = plan.days.find((x) => x.number === d.number + 1);
@@ -180,7 +183,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   const wild = !!night && choices.beds[night.index] === WILD_CAMP;
   // When none of our places suit: the big booking sites, searched for the stop and its nights (D60).
   const search = night ? bookingSearches(night, { ...plan.inputs, restAfter: plan.restAfter }) : [];
-  const stay = night ? nightStay(night, plan.restAfter) : undefined;
+  const stay = night ? nightStay(night, plan.restAfter, plan.inputs) : undefined;
   const headsups = all("headsup");
   const highlights = all("highlight");
 
@@ -309,8 +312,14 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                       ))}
                     </ul>
                     <span className="flex flex-wrap items-center gap-2">
-                      <Button variant="ghost" size="xs" onPress={() => onRemoveRest(rest.afterRide)}>
-                        Remove this rest day
+                      {/* A longer stay in one town (D80): up to 3 rest days in a row. */}
+                      {stayLength < MAX_REST_LENGTH && (
+                        <Button variant="outline" size="xs" onPress={() => onRestLength(rest.afterRide, stayLength + 1)}>
+                          Stay another day
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="xs" onPress={() => (stayLength > 1 ? onRestLength(rest.afterRide, stayLength - 1) : onRemoveRest(rest.afterRide))}>
+                        {stayLength > 1 ? "One day fewer" : "Remove this rest day"}
                       </Button>
                       <span className="text-xs text-muted-foreground">Moving it changes only dates; a booking whose night moves goes back on the to-do.</span>
                     </span>

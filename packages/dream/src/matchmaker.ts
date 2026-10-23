@@ -5,11 +5,14 @@
  * Missing data never lowers a stretch's rank; it is listed under "check yourself" instead (D37).
  */
 import type { DreamFile, DreamSection, RiderLevel } from "@dpg/contracts";
-import { usualWeather } from "@dpg/planner";
+import { country, usualWeather } from "@dpg/planner";
+import { and } from "./ask";
 
 export type Pref = "prefer" | "ok" | "avoid";
 export type Way = "forward" | "reverse";
 export type SurfaceKind = "road" | "cycle_path" | "gravel";
+/** A country the rider will ride only in, or avoids (D80). */
+export type CountryPref = "only" | "avoid";
 
 export interface DreamQuery {
   /** Rider level 1-5 (D36). */
@@ -26,6 +29,10 @@ export interface DreamQuery {
   stay: "any" | "camping" | "rooms";
   avoidBusy: boolean;
   direction: "either" | Way;
+  /** Countries by code (D80): a stretch stays within those marked "only" and never enters one to "avoid". */
+  countries?: Record<string, CountryPref>;
+  /** A town the stretch must pass, at its route measure (D80). */
+  through?: { m: number; name: string } | null;
   limit?: number;
 }
 
@@ -210,6 +217,23 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
     beyond.push(`${partly ? "at least " : ""}${Math.round(climbKnown)} m of climbing a day: more than ${level.name}'s ${level.climb_max_m} m`);
   }
   const climbPerDay = partly ? null : climbKnown;
+
+  // Where the rider would rather ride (D80): a search keeps within it; a stretch picked by hand says where it doesn't.
+  const prefs = Object.entries(q.countries ?? {});
+  const only = prefs.filter(([, v]) => v === "only").map(([c]) => c);
+  const avoid = prefs.filter(([, v]) => v === "avoid").map(([c]) => c);
+  const entered = [...new Set(secs.map((s) => s.country).filter((c): c is string => !!c))];
+  const avoided = entered.filter((c) => avoid.includes(c));
+  const outside = only.length ? entered.filter((c) => !only.includes(c)) : [];
+  if (avoided.length || outside.length) {
+    if (strict) return null;
+    if (avoided.length) beyond.push(`enters ${and(avoided.map(country))}, which you'd rather avoid`);
+    if (outside.length) beyond.push(`goes outside ${and(only.map(country))}, into ${and(outside.map(country))}`);
+  }
+  if (q.through && !secs.some((s) => s.from_m <= q.through!.m && q.through!.m <= s.to_m)) {
+    if (strict) return null;
+    beyond.push(`doesn't pass ${q.through.name}`);
+  }
 
   const first = secs[0]!;
   const last = secs[secs.length - 1]!;

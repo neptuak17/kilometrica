@@ -95,6 +95,7 @@ export function parseDocument(raw: unknown): PlanDocument | string {
       avoidBusy: i.avoidBusy === true,
       ...(i.stops === "own" || i.stops === "ours" ? { stops: i.stops } : {}),
       ...(isNum(i.restDays) ? { restDays: Math.max(0, Math.round(i.restDays)) } : {}),
+      ...(isObj(i.restLength) ? { restLength: Object.fromEntries(Object.entries(i.restLength).filter(([, v]) => isNum(v))) as Record<number, number> } : {}),
       ...(i.bailouts === true ? { bailouts: true } : {}),
       ...(typeof i.travel === "boolean" ? { travel: i.travel } : {}),
     },

@@ -123,3 +123,44 @@ describe("Plan's tools", () => {
     );
   });
 });
+
+describe("what the owner's questions asked of the tools (D80)", () => {
+  it("names the best stretches each option of Dream's question would bring, and keeps to a town to pass through", () => {
+    const r = dream("set_question").run(ask({ level: 3, days: 3 }), { options: [{ through: "charlie" }] });
+    expect(r.options![0]!.label).toBe("Use these: Through Charlie");
+    const best = (r.facts.options as { best: { name: string }[] }[])[0]!.best;
+    expect(best.length).toBeGreaterThan(0);
+    // Every stretch it brings passes Charlie, at km 100.
+    for (const s of best) expect(s.name).toMatch(/^(Alpha|Bravo|Charlie) → (Charlie|Delta|Echo|Foxtrot|Golf)$/);
+    expect(dream("set_question").run(ask(), { options: [{ through: "Atlantis" }] }).facts.ok).toBe(false);
+  });
+
+  it("gives the best months when no month is asked, in Dream and in Plan", () => {
+    expect(dream("usual_weather").run(ask(), {}).lines[0]).toBe("Best on Test route: October (best-time 80 of 100: comfort, crowds and what's open).");
+    expect(plan("usual_weather").run(testPlan(), { best: true }).lines[0]).toBe("Best on Alpha → Golf: October (best-time 80 of 100: comfort, crowds and what's open).");
+    expect(plan("usual_weather").run(testPlan(), { month: "May" }).lines).toEqual(["In May on Alpha → Golf: typically 12–21 °C, rain 1 day in 5 (the usual weather, not a forecast)."]);
+  });
+
+  it("gives a night's other stops, and the water and food between two towns", () => {
+    const n = plan("night").run(testPlan(), { after_day: 1 });
+    expect(n.lines.find((l) => l.startsWith("Other stops for this night: "))).toMatch(/Town \d+: this day \d+ km, next day \d+ km \(/);
+    expect(plan("days").run(testPlan(), { from_town: "Town 10", to_town: "Town 50" }).lines).toEqual([
+      "Water and food from Town 10 to Town 50 (40 km): at km 15 · 25 from Town 10; longest stretch without 15 km.",
+    ]);
+    expect(plan("days").run(testPlan(), { from_town: "Town 60", to_town: "Town 90" }).lines).toEqual(["No water or food we know of from Town 60 to Town 90 (30 km): you judge what to carry."]);
+  });
+
+  it("offers a longer stay, being in by a time, and a night at a town without naming its day", () => {
+    const ctx = testPlan({ days: 7, toM: 300_000 });
+    const stay = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "rest_in", town: "Saint-Jean", days: 2 }] }] });
+    const after = ctx.planFor(stay.options![0]!.apply.state);
+    expect(after.days.filter((d) => d.kind === "rest").map((d) => d.endName)).toEqual(["Saint-Jean", "Saint-Jean"]);
+    const longer = plan("offer_options").run({ ...ctx, state: stay.options![0]!.apply.state }, { options: [{ changes: [{ do: "rest_length", town: "Saint-Jean", days: 3 }] }] });
+    expect(longer.options![0]!.changes).toContain("3 rest days in a row at Saint-Jean (was 2)");
+    const early = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "be_in_by", time: "13:00" }] }] });
+    expect(early.options![0]!.changes[0]).toMatch(/^Leave at \d\d:\d\d \(was 09:00\)$/);
+    expect(early.options![0]!.changes.at(-1)).toMatch(/^(Every day in by 13:00|Days? .+ still ends? after 13:00)$/);
+    const night = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "stop_at", town: "Saint-Jean" }] }] });
+    expect(ctx.planFor(night.options![0]!.apply.state).nights.some((n) => n.stop.name === "Saint-Jean")).toBe(true);
+  });
+});

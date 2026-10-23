@@ -8,7 +8,7 @@ import type { Highlight, Stop } from "@dpg/contracts";
 import { bedsFor, type DayContext, type DayEval, evalDay, type StagePlan, usable } from "./stages";
 import { monthOf } from "./sun";
 import { km, plural, stopName } from "./text";
-import type { PlanData, Sleep } from "./types";
+import type { PlanData, PlanInputs, Sleep } from "./types";
 
 const SIGHTS_M = 5000;
 /** Rest days are at least this many riding days apart when the planner places them (D74). */
@@ -30,6 +30,31 @@ export function ridingDays(total: number, pace: Pace): number {
   let r = total;
   while (r > 1 && r + restFor(r, pace) > total) r--;
   return r;
+}
+
+/** A longer stay is at most this many rest days in a row (D80). */
+export const MAX_REST_LENGTH = 3;
+
+/** The rest days in a row after this riding day (D80): the rider's longer stays; one otherwise. */
+export const restLengthOf = (inputs: Pick<PlanInputs, "restLength">, afterRide: number) =>
+  Math.min(MAX_REST_LENGTH, Math.max(1, Math.round(inputs.restLength?.[afterRide] ?? 1)));
+
+/** The rider's own rest days, a longer stay counting each of its days. */
+export const ownRestDays = (inputs: Pick<PlanInputs, "restAfter" | "restLength">) => inputs.restAfter.reduce((a, r) => a + restLengthOf(inputs, r), 0);
+
+/** The rider's own rest days cut to at most so many, the earliest kept and a longer stay shortened first. */
+export function trimOwnRests(inputs: Pick<PlanInputs, "restAfter" | "restLength">, max: number): Pick<PlanInputs, "restAfter" | "restLength"> {
+  const restAfter: number[] = [];
+  const restLength: Record<number, number> = {};
+  let left = Math.max(0, max);
+  for (const r of [...inputs.restAfter].sort((a, b) => a - b)) {
+    if (!left) break;
+    const n = Math.min(left, restLengthOf(inputs, r));
+    restAfter.push(r);
+    if (n > 1) restLength[r] = n;
+    left -= n;
+  }
+  return { restAfter, restLength };
 }
 
 /** Rest days by default (D74): about one per 6 riding days, from 7 riding days. */

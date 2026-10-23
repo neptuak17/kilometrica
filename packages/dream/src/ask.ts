@@ -3,8 +3,8 @@
  * or reopened, and the lines a stretch is described with. Level and days start unset: nothing is assumed.
  */
 import type { DailySection, DreamFile, DreamSection } from "@dpg/contracts";
-import type { DreamQuery, Pref, StretchResult, SurfaceKind } from "./matchmaker";
-import { km, MONTHS_LONG, type Pace, restFor, ridingDays } from "@dpg/planner";
+import type { CountryPref, DreamQuery, Pref, StretchResult, SurfaceKind } from "./matchmaker";
+import { country, km, MONTHS_LONG, type Pace, restFor, ridingDays } from "@dpg/planner";
 
 export type Level = DreamFile["levels"][number];
 
@@ -13,10 +13,14 @@ export const PACE: Record<Pace, string> = { relaxed: "Relaxed", steady: "Steady"
 
 /** The rider's answers. Level and days start unset: no stretch is shown until the rider gives them. `days` is the
  * whole trip, rest days included (D74). */
-export interface Ask extends Omit<DreamQuery, "level" | "days" | "limit"> {
+export interface Ask extends Omit<DreamQuery, "level" | "days" | "limit" | "countries" | "through"> {
   level: number | null;
   days: number | null;
   pace: Pace;
+  /** Countries by code, "only" or "avoid" (D80); a country not named is fine. */
+  countries: Record<string, CountryPref>;
+  /** A town the stretch must pass, by its name among the towns where stretches start and end (D80). */
+  through: string | null;
 }
 
 /** A stretch's rest days: the rider's days in all less its riding days, or by pace for a stretch of its own length. */
@@ -40,6 +44,8 @@ export const EMPTY: Ask = {
   stay: "any",
   avoidBusy: false,
   direction: "either",
+  countries: {},
+  through: null,
 };
 
 /** Starting points: a whole question in one tap, changed from there. */
@@ -95,6 +101,13 @@ export function readAsk(p: URLSearchParams): Ask {
     stay: stay === "rooms" || stay === "camping" ? stay : "any",
     avoidBusy: p.get("busy") === "1",
     direction: way === "forward" || way === "reverse" ? way : "either",
+    countries: Object.fromEntries(
+      (p.get("countries") ?? "")
+        .split(",")
+        .map((x) => x.split(":"))
+        .filter((x): x is [string, CountryPref] => !!x[0] && (x[1] === "only" || x[1] === "avoid")),
+    ),
+    through: p.get("through") || null,
   };
 }
 
@@ -110,6 +123,9 @@ export function addressOf(route: string, a: Ask): string {
   if (a.stay !== "any") p.set("stay", a.stay);
   if (a.avoidBusy) p.set("busy", "1");
   if (a.direction !== "either") p.set("way", a.direction);
+  const countries = Object.entries(a.countries);
+  if (countries.length) p.set("countries", countries.map(([c, v]) => `${c}:${v}`).join(","));
+  if (a.through) p.set("through", a.through);
   return `/dream?${p}`;
 }
 
@@ -121,6 +137,14 @@ export function surfacesText(a: Ask): string {
   const of = (p: Pref) => SURFACES.filter((s) => a.surfaces[s.key] === p).map((s) => s.label);
   const parts = [of("prefer").length ? `Prefer ${and(of("prefer"))}` : "", of("avoid").length ? `avoid ${and(of("avoid"))}` : ""].filter(Boolean);
   return parts.length ? parts.join(", ") : "Any surface";
+}
+
+/** The countries chip (D80): "Only Italy", "Avoid Greece", "Only Spain and France, avoid Andorra", or "Any country". */
+export function countriesText(a: Pick<Ask, "countries">): string {
+  const of = (v: CountryPref) => Object.entries(a.countries).filter(([, x]) => x === v).map(([c]) => country(c));
+  const parts = [of("only").length ? `Only ${and(of("only"))}` : "", of("avoid").length ? `avoid ${and(of("avoid"))}` : ""].filter(Boolean);
+  const text = parts.join(", ");
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) : "Any country";
 }
 
 /** A point between daily sections: a town, else its km. */

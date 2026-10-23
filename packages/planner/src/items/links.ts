@@ -7,7 +7,8 @@ import { bearing, type Geometry, locate } from "../geometry";
 import type { PlanCore } from "../plan";
 import { addDays } from "../sun";
 import { country } from "../text";
-import type { Handoff, NightPlan, PlanData, PlanItem, Sleep } from "../types";
+import { restLengthOf } from "../rest";
+import type { Handoff, NightPlan, PlanData, PlanInputs, PlanItem, Sleep } from "../types";
 import { dayKm } from "./shared";
 
 /**
@@ -143,19 +144,24 @@ export function placeLinks(
   return out;
 }
 
-/** The nights at a stop: in that night, out the next morning, or the morning after when a rest day follows. */
-export function nightStay(night: NightPlan, restAfter: number[]): { checkIn: string; checkOut: string } {
-  return { checkIn: night.date, checkOut: addDays(night.date, restAfter.includes(night.afterRide) ? 2 : 1) };
+/** The nights at a stop: in that night, out the next morning, or after the rest days that follow (D74, D80). */
+export function nightStay(night: NightPlan, restAfter: number[], inputs?: Pick<PlanInputs, "restLength">): { checkIn: string; checkOut: string } {
+  const rest = restAfter.includes(night.afterRide) ? restLengthOf(inputs ?? {}, night.afterRide) : 0;
+  return { checkIn: night.date, checkOut: addDays(night.date, 1 + rest) };
 }
+
+/** How many nights at a stop: 1, or more before rest days. */
+export const nightsAt = (night: NightPlan, restAfter: number[], inputs?: Pick<PlanInputs, "restLength">) =>
+  restAfter.includes(night.afterRide) ? 1 + restLengthOf(inputs ?? {}, night.afterRide) : 1;
 
 /**
  * A night's fallback, for when none of our places suit (D60): Booking.com and Expedia searched for the stop and the
  * nights there. By town and country, or by the stop's position, nearest first, when it has no town name. Guests are
  * left to the rider. None for riders who only camp: the two sites list few campsites.
  */
-export function bookingSearches(night: NightPlan, inputs: { sleep: Sleep; restAfter: number[] }): Handoff[] {
+export function bookingSearches(night: NightPlan, inputs: { sleep: Sleep; restAfter: number[]; restLength?: PlanInputs["restLength"] }): Handoff[] {
   if (inputs.sleep === "camping") return [];
-  const { checkIn, checkOut } = nightStay(night, inputs.restAfter);
+  const { checkIn, checkOut } = nightStay(night, inputs.restAfter, inputs);
   const s = night.stop;
   const where = s.name && (s.country ? `${s.name}, ${country(s.country)}` : s.name);
   const lat = s.lat.toFixed(5);

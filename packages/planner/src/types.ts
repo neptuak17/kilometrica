@@ -42,6 +42,11 @@ export interface PlanInputs {
    * `days` riding days plus these; unset means the rider's own only.
    */
   restDays?: number;
+  /**
+   * A longer stay (D80): the rest days in a row after one of the rider's own rest nights, 2 or 3; one when unset. Each
+   * counts in `restDays` like any rest day.
+   */
+  restLength?: Record<number, number>;
   /** From Dream: avoid gravel, avoid busy roads. */
   avoidGravel: boolean;
   avoidBusy: boolean;

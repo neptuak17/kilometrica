@@ -1,6 +1,6 @@
 import type { DailySection, DreamSection, EffortFile, Finding, Highlight, Place, ServiceType, Stop, UserPlace } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
-import { applyAction, bookedAction, daysAnswer, optionOutcome, type PlanState, restAfterAction, restInAction, restMoveAction, withRestDays, withTotalDays } from "./actions";
+import { applyAction, bookedAction, daysAnswer, optionOutcome, type PlanState, restAfterAction, restInAction, restLengthAction, restMoveAction, withRestDays, withTotalDays } from "./actions";
 import { TripAxis } from "./axis";
 import { dayStory } from "./brief";
 import { planChanges } from "./changes";
@@ -17,7 +17,7 @@ import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./shar
 import { bedsFor } from "./stages";
 import { addDays, clock, sunTimes, weekday } from "./sun";
 import { usualWeather } from "./weather";
-import { bedKinds, bedsKnown, listable, placeKind, placeTitle, stayDates } from "./text";
+import { bedKinds, bedsKnown, listable, placeKind, placeTitle, stayDates, stopName } from "./text";
 import { NO_CHOICES, type NightPlan, type PlanData, type PlanInputs } from "./types";
 
 const LEVELS = [
@@ -928,5 +928,38 @@ describe("the screen's ways in, shared with the assistant (D77)", () => {
     const target = p.nights[5]!.stop;
     expect(restInAction(p, target)).toEqual({ type: "rest-in", night: 5, stop: target.id, add: true, current: p.restAfter });
     expect(bookedAction(p, 2, true)).toEqual({ type: "booked", night: 2, stop: p.nights[2]!.stop.id, on: true, date: p.nights[2]!.date });
+  });
+});
+
+describe("a longer stay: several rest days in one town (D80)", () => {
+  it("rests 2 or 3 days in a row there, taking them from the total, booked for all its nights", () => {
+    const d = data({ lengthKm: 900 });
+    const base = inputs({ toM: 900_000, days: 12 });
+    const p = makePlan(d, base);
+    const stop = p.nights[4]!.stop;
+    const state = applyAction({ inputs: base, choices: NO_CHOICES }, restInAction(p, stop, 2)!);
+    expect(state.inputs).toMatchObject({ days: 10, restDays: 2, restAfter: [5], restLength: { 5: 2 } });
+    const q = makePlan(d, state.inputs, state.choices);
+    expect(q.days).toHaveLength(12);
+    const rests = q.days.filter((x) => x.kind === "rest");
+    expect(rests.map((x) => x.endName)).toEqual([stopName(stop), stopName(stop)]);
+    expect(rests[1]!.date).toBe(addDays(rests[0]!.date, 1));
+    expect(q.items.find((i) => i.id.startsWith("bed:4:"))!.title).toMatch(/, 3 nights$/);
+    expect(nightStay(q.nights[4]!, q.restAfter, q.inputs)).toEqual({ checkIn: q.nights[4]!.date, checkOut: addDays(q.nights[4]!.date, 3) });
+    expect(q.brief.lines[0]!.answer).toContain("2 rest days in a row, after riding day 5.");
+
+    // Another day, then one fewer: the end date holds.
+    const three = applyAction(state, restLengthAction(q, 5, 3));
+    expect(three.inputs).toMatchObject({ days: 9, restDays: 3, restLength: { 5: 3 } });
+    const r3 = makePlan(d, three.inputs, three.choices);
+    expect(planChanges(q, r3).lines).toContain(`3 rest days in a row at ${stopName(stop)} (was 2)`);
+    expect(r3.days).toHaveLength(12);
+    const two = applyAction(three, restLengthAction(r3, 5, 2));
+    expect(two.inputs).toMatchObject({ days: 10, restDays: 2, restLength: { 5: 2 } });
+    // Removing it gives all its days back.
+    expect(applyAction(state, restAfterAction(q, 5, false)).inputs).toMatchObject({ days: 12, restDays: 0, restAfter: [], restLength: {} });
+    // The count of rest days and trimming them keep the longer stay's days.
+    expect(daysAnswer(state.inputs, 0)).toMatchObject({ rest: 2, riding: 10, total: 12 });
+    expect(withRestDays(three.inputs, 2, 0)).toMatchObject({ restDays: 2, restAfter: [5], restLength: { 5: 2 } });
   });
 });
