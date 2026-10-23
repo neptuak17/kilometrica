@@ -23,7 +23,7 @@ export function Calls({ calls, free, readOnly, previewing, onOption, onShowDay }
   if (!calls.length) return null;
   if (free) {
     return (
-      <Locked title={calls.length === 1 ? "1 thing needs your call" : `${calls.length} things need your call`}>
+      <Locked title={calls.length === 1 ? "1 decision to make" : `${calls.length} decisions to make`}>
         What they are, and their options worked out, with a Trip Pass.
       </Locked>
     );
@@ -34,7 +34,7 @@ export function Calls({ calls, free, readOnly, previewing, onOption, onShowDay }
     <Card>
       <CardHeader>
         <CardDescription>
-          Your call{calls.length > 1 ? ` · ${i + 1} of ${calls.length}` : ""}
+          Your decision{calls.length > 1 ? ` · ${i + 1} of ${calls.length}` : ""}
         </CardDescription>
         <CardTitle className="text-lg leading-snug font-semibold">{call.title}</CardTitle>
       </CardHeader>

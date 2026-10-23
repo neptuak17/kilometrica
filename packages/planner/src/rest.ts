@@ -107,7 +107,7 @@ function recovery(days: DayEval[], r: number, usualHours: number, since: number)
   const score = 0.6 * effort + 0.4 * Math.min(1, hours / (run.length * usualHours) / 1.2);
   const text =
     d.effort !== "within"
-      ? `after ${d.effort === "beyond" ? "a day beyond your level" : "a hard day"} (${km(d.km)} km)`
+      ? `after ${d.effort === "beyond" ? "a day beyond your selected level" : "a hard day"} (${km(d.km)} km)`
       : run.length === 3 && run.every((x) => x.hours >= usualHours)
         ? "after three long days in a row"
         : `after ${plural(since, "riding day")}`;
@@ -126,7 +126,8 @@ export interface RestPick {
 
 /**
  * The planner's rest days (D74), around the rider's own (`fixed`, never moved): `count` more, each with its reason.
- * `own` holds the candidate indices of the rider's own nights (D70), which never move to a better town.
+ * `own` holds the candidate indices of the rider's own nights (D70), which never move to a better town. `towns` are
+ * where the planner's rest days were before the last change (stop ids, D83): they stay there as far as the days allow.
  */
 export function placeRests(
   data: PlanData,
@@ -136,6 +137,7 @@ export function placeRests(
   fixed: Set<number>,
   count: number,
   own: Set<number> = new Set(),
+  towns: string[] = [],
 ): RestPick[] {
   const rides = stage.days.length;
   const C = ctx.candidates;
@@ -143,14 +145,35 @@ export function placeRests(
   const total = fixed.size + count;
   // Even spacing: the rider's own rest days take the ideal places nearest them.
   const ideals = Array.from({ length: total }, (_, i) => Math.round((rides * (i + 1)) / (total + 1)));
-  for (const f of fixed) {
+  const takeIdeal = (f: number) => {
     const i = ideals.reduce((b, x, j) => (Math.abs(x - f) < Math.abs(ideals[b]! - f) ? j : b), 0);
     ideals.splice(i, 1);
-  }
+  };
+  for (const f of fixed) takeIdeal(f);
   const window = Math.max(2, Math.round(rides / (2 * (total + 1))));
   const taken = [...fixed];
   const picks: number[] = [];
-  for (const ideal of ideals.slice(0, count)) {
+  // Where the planner's rest days were (D83): the night at that town, or the nearest within a day's ride that is as far
+  // from the rider's rest days as the planner keeps them, and not next to one of its own.
+  const keptAt = new Map<number, number>();
+  const reach = ctx.axis.length / rides;
+  for (const id of towns) {
+    if (picks.length >= count) break;
+    const c = C.findIndex((x) => x.stop.id === id);
+    if (c < 0) continue;
+    const off = (r: number) => Math.abs(C[stage.nights[r - 1]!]!.t - C[c]!.t);
+    let best: number | null = null;
+    for (let r = 2; r <= rides - 1; r++) {
+      if (taken.some((t) => Math.abs(t - r) < (fixed.has(t) ? MIN_APART : 2)) || off(r) > reach) continue;
+      if (best === null || off(r) < off(best)) best = r;
+    }
+    if (best === null) continue;
+    taken.push(best);
+    picks.push(best);
+    keptAt.set(best, c);
+    takeIdeal(best);
+  }
+  for (const ideal of ideals.slice(0, count - picks.length)) {
     let best: number | null = null;
     for (const [gap, named] of [[MIN_APART, true], [2, true], [1, true], [1, false]] as const) {
       let bestScore = Number.NEGATIVE_INFINITY;
@@ -184,6 +207,15 @@ export function placeRests(
       const prevT = r >= 2 ? C[stage.nights[r - 2]!]!.t : 0;
       const last = r === rides - 1;
       const nextT = last ? ctx.axis.length : C[stage.nights[r]!]!.t;
+      // A rest day kept in its town (D83): the night moves back there when the days around it stay within the level.
+      const town = keptAt.get(r);
+      if (town !== undefined) {
+        if (town === s || C[town]!.t <= prevT || C[town]!.t >= nextT) return pick;
+        const a = evalDay(ctx, r - 1, prevT, C[town]!.t, C[town]!.stop, false);
+        const b = evalDay(ctx, r, C[town]!.t, nextT, last ? null : C[stage.nights[r]!]!.stop, last);
+        if (a.effort === "within" && b.effort !== "beyond") pick.move = town;
+        return pick;
+      }
       const here = place(r).score;
       let better: number | null = null;
       for (let j = 0; j < C.length; j++) {

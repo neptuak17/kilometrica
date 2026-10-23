@@ -317,9 +317,9 @@ function Compare({ data, current, pinned, onPin, onUnpin, readOnly }: {
     ["days", "Days"],
     ["hardest", "Hardest day"],
     ["hours", "Riding in all"],
-    ["beyond", "Days beyond your level"],
+    ["beyond", "Days beyond your selected level"],
     ["nights", "Nights with no known-open place"],
-    ["calls", "Your calls"],
+    ["calls", "Your decisions"],
     ["busy", "Busy roads"],
   ];
   return (
@@ -513,9 +513,9 @@ function PlanPage({ start }: { start: Start }) {
   const apply = useCallback(
     (a: PlanAction) => {
       setPreview(null);
-      applyStep(a);
+      applyStep(a, plan ?? undefined);
     },
-    [applyStep],
+    [applyStep, plan],
   );
   const edit = useCallback(
     (next: PlanInputs, confirm?: boolean) => {
@@ -540,7 +540,7 @@ function PlanPage({ start }: { start: Start }) {
     if ("showDay" in out) return showDay(out.showDay);
     if (out.action.type === "dismiss") return apply(out.action);
     const label = item.options?.find((o) => o.id === id)?.label ?? "a change";
-    setPreview({ label, state: applyAction(history.present, out.action), callId: item.id, optionId: id });
+    setPreview({ label, state: applyAction(history.present, out.action, plan ?? undefined), callId: item.id, optionId: id });
   };
 
   useEffect(() => {
@@ -683,7 +683,7 @@ function PlanPage({ start }: { start: Start }) {
                       // Each way to change it is previewed first, as a call's option is (D77).
                       options: thought.options.map((o) => ({
                         label: o.label,
-                        onPress: () => setPreview({ label: o.label, state: applyAction(history.present!, o.action), callId: thought.id, optionId: o.label }),
+                        onPress: () => setPreview({ label: o.label, state: applyAction(history.present!, o.action, plan ?? undefined), callId: thought.id, optionId: o.label }),
                       })),
                       keep: thought.keep,
                       onKeep: () => apply({ type: "dismiss", item: thought.id }),
@@ -766,7 +766,7 @@ function PlanPage({ start }: { start: Start }) {
             <div className="grid min-w-0 flex-[1_1_360px] gap-0.5">
               <span className="font-semibold">This is the outline of your trip</span>
               <span className="text-muted-foreground">
-                A Trip Pass adds each day in full, the places to stay with their links, your calls, moving stops, the exports and sharing.
+                A Trip Pass adds each day in full, the places to stay with their links, your decisions, moving stops, the exports and sharing.
               </span>
             </div>
           </div>

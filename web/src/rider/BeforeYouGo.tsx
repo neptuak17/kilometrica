@@ -29,7 +29,7 @@ interface Props {
 
 /** The to-do's groups, on screen and in the trip book. */
 export const GROUPS: { title: string; test: (i: PlanItem) => boolean }[] = [
-  { title: "Your calls", test: (i) => i.kind === "call" },
+  { title: "Your decisions", test: (i) => i.kind === "call" },
   { title: "Places to stay", test: isNightLine },
   { title: "Water and food", test: (i) => i.id.startsWith("supply:") },
   { title: "Ferries and transport", test: (i) => i.id.startsWith("ferry:") || i.id.startsWith("transport:") },

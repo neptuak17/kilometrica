@@ -63,7 +63,7 @@
         "mustSay": [
           "Esplugues de Llobregat"
         ],
-        "reference": "Esplugues de Llobregat, the night after day 5, has 52 hotels and food. You can rest there and keep your end date, but then day 7 becomes 107 km to Sils, with 2 new calls; or rest there and end a day later, on Wed 22 Sep.",
+        "reference": "Esplugues de Llobregat, the night after day 5, has 52 hotels and food. You can rest there and keep your end date, but then day 7 becomes 107 km to Sils, with 2 new decisions; or rest there and end a day later, on Wed 22 Sep.",
         "phrasings": [
           "rest day after day 5 please, somewhere with hotels and places to eat"
         ]
@@ -607,7 +607,7 @@
         "mustSay": [
           "Princeton"
         ],
-        "reference": "It can, with a long day: Princeton takes the night that's at Tulameen, so the day to Princeton becomes 152 km and day 5 49 km, and your rest day moves to after riding day 3. That raises 2 new calls.",
+        "reference": "It works, with a long day: you'd stop at Hope after day 2, Princeton after day 4 and Greenwood after day 8, but day 4 becomes 152 km to Princeton (it was 126 km to Tulameen), and day 5 49 km.",
         "phrasings": [
           "can I sleep in Hope, Princeton and Greenwood?"
         ]
@@ -863,7 +863,7 @@
             }
           }
         ],
-        "reference": "Day 4, Hope to Tulameen, climbs 2,087 m in 126 km, about 12 h 02 riding: beyond your level. Its big climb starts at km 29: 28 km at 2.5% to 1115 m, 700 m up, with a steepest 500 m of 15%.",
+        "reference": "Day 4, Hope to Tulameen, climbs 2,087 m in 126 km, about 12 h 02 riding: beyond your selected level. Its big climb starts at km 29: 28 km at 2.5% to 1115 m, 700 m up, with a steepest 500 m of 15%.",
         "mustSay": [
           "2,087",
           "700"
@@ -1009,7 +1009,7 @@
         "mustSay": [
           "Cologne"
         ],
-        "reference": "Your trip runs from Cologne to Bingen am Rhein: 7 days, Sat 15 – Fri 21 May 2027, 177 km with 1,101 m of climbing, every day within Leisurely. Day 7 is the hardest at 35 km, and your rest day is day 5, at Koblenz. There's a bed every night and 5 things to sort out before you leave. In May it's typically 8–18 °C, with rain 1 day in 2."
+        "reference": "Your trip runs from Cologne to Bingen am Rhein: 7 days, Sat 15 – Fri 21 May 2027, 177 km with 1,101 m of climbing, every day within Leisurely. Day 7 is the hardest at 35 km, and your rest day is day 5, at Koblenz. There's accommodation every night and 5 things to sort out before you leave. In May it's typically 8–18 °C, with rain 1 day in 2."
       }
     ]
   },
@@ -2027,7 +2027,7 @@
         "mustSay": [
           "Bagnères-de-Luchon"
         ],
-        "reference": "You can keep your end date: that costs 2 riding days, leaving 10, the last 152 km into Cerbère, with 5 new calls. Or the trip ends on Fri 30 Jul instead, with 2 new calls. Either way you'd have 2 rest days in Bagnères-de-Luchon, and the plan's other rest days move, one of them to Azet, just before.",
+        "reference": "You can have 2 days in Bagnères-de-Luchon, and the plan's rest day nearby gives way to them. Keeping your end date costs a riding day: day 13 then ends at Villefranche-de-Conflent, 86 km instead of L'Hospitalet-près-l'Andorre's 46, with 3 new decisions, and the plan's other rest day moves to Eaux-Bonnes. Or end a day later, on Thu 29 Jul, with the other rest day at L'Hospitalet-près-l'Andorre.",
         "phrasings": [
           "2 rest days in luchon please"
         ]
@@ -2092,7 +2092,7 @@
         "mustSay": [
           "Arreau"
         ],
-        "reference": "Yes, you can have 2 rest days in a row at Arreau. Keeping your end date costs a riding day: day 9 would then end at Malvezie, 79 km instead of Germ's 33, with 2 new calls. Or finish a day later, on Thu 29 Jul, with nothing else changing.",
+        "reference": "Yes, you can have 2 rest days in a row at Arreau. Keeping your end date costs a riding day: day 9 would then end at Malvezie, 79 km instead of Germ's 33, with 2 new decisions. Or finish a day later, on Thu 29 Jul, with nothing else changing.",
         "phrasings": [
           "one more day in arreau?"
         ]
@@ -2322,7 +2322,7 @@
         "mustSay": [
           "Luz-Saint-Sauveur"
         ],
-        "reference": "You can: the night after day 6 would be at Luz-Saint-Sauveur. But it reshapes the trip: the rest days move to Montory and Mérens-les-Vals, most days change, and days 7–9 would all be harder than your usual.",
+        "reference": "You can: the night after day 5 would be at Luz-Saint-Sauveur. Your rest days stay close to where they were, at Estensan and Massat, but most days change, and days 12–14 would all be harder than your usual.",
         "phrasings": [
           "stop at luz-saint-sauveur on day 5"
         ]
@@ -2579,7 +2579,7 @@
           "call": 0,
           "option": 0
         },
-        "reference": "At Tough, your rest days move to Laruns and Castillon-en-Couserans, and most days shift: day 13, for one, ends at Saint-Pierre-dels-Forcats, 57 km instead of Villefranche-de-Conflent's 86.",
+        "reference": "At Tough most days shift: day 13, for one, ends at Saint-Pierre-dels-Forcats, 57 km instead of Villefranche-de-Conflent's 86. Your rest days stay where they are.",
         "phrasings": [
           "try it at tough"
         ]
@@ -2756,7 +2756,7 @@
         "mustSay": [
           "Barcelona"
         ],
-        "reference": "You can have 3 days in Barcelona after riding day 5, with the trip ending Fri 24 Sep instead of Tue 21 Sep. Keeping your end date instead would leave 4 riding days, with a 114 km day 2 and 3 new calls, so I'd suggest the longer trip.",
+        "reference": "You can have 3 days in Barcelona after riding day 5, with the trip ending Fri 24 Sep instead of Tue 21 Sep. Keeping your end date instead would leave 4 riding days, with a 114 km day 2 and 3 new decisions, so I'd suggest the longer trip.",
         "phrasings": [
           "3 days off in barcelona please"
         ]
@@ -3115,7 +3115,7 @@
     ]
   },
   {
-    "id": "d-p8a-calls",
+    "id": "d-p8a-left-to-do",
     "phase": "plan",
     "source": "drafted",
     "kind": "lookup",
@@ -3133,21 +3133,25 @@
     },
     "turns": [
       {
-        "rider": "Are there any calls I need to make?",
+        "rider": "Anything left to do?",
+        "phrasings": [
+          "what else do I need to sort out?"
+        ],
         "calls": [
           {
             "tool": "items",
             "args": {
-              "kind": "call"
+              "left": true
             }
           }
         ],
-        "reference": "No: there are no calls to make on this plan.",
-        "phrasings": [
-          "anything I need to decide?"
-        ]
+        "mustSay": [
+          "Calella"
+        ],
+        "reference": "Accommodation for each night, at near Ulldecona, l'Ametlla de Mar, Tarragona, Sitges, Esplugues de Llobregat and Calella, and your trains: to the start from Antiga estació d'Alcossebre, and home from Sils."
       }
-    ]
+    ],
+    "note": "The owner's words for it (Review 2)."
   },
   {
     "id": "d-p8a-hot",
@@ -3305,7 +3309,7 @@
         "mustSay": [
           "allowed"
         ],
-        "reference": "You can: the night of Sat 16 Oct, 20 km from Cabo de Gata, would be a wild camp. It's your call whether it's allowed and feasible there.",
+        "reference": "You can: the night of Sat 16 Oct, 20 km from Cabo de Gata, would be a wild camp. Check that it's allowed and feasible there before you go.",
         "phrasings": [
           "I'd like to wild camp after day 2"
         ]
@@ -3476,7 +3480,7 @@
           "call": 0,
           "option": 0
         },
-        "reference": "In rooms instead of camping, day 6 becomes 53 km instead of 60, days 3 and 5 change too, and there's a new call: rest in Almería instead of Roquetas de Mar?",
+        "reference": "In rooms instead of camping, day 5 ends at Castell de Ferro, 81 km instead of La Mamola's 74, and day 6 becomes 53 km instead of 60.",
         "phrasings": [
           "switch to rooms"
         ]
@@ -3654,7 +3658,7 @@
     ]
   },
   {
-    "id": "d-ptct-calls",
+    "id": "d-ptct-decisions",
     "phase": "plan",
     "source": "drafted",
     "kind": "lookup",
@@ -3673,7 +3677,10 @@
     },
     "turns": [
       {
-        "rider": "What calls do I need to make?",
+        "rider": "What decisions do I need to make?",
+        "phrasings": [
+          "decisions to make?"
+        ],
         "calls": [
           {
             "tool": "items",
@@ -3682,12 +3689,10 @@
             }
           }
         ],
-        "reference": "Days 1, 2, 4, 7, 10 and 11 are beyond your level (Moderate): the longest is day 4, about 12 h 02 riding against your usual 4 h 25. Days 4, 7 and 11 also end after sunset at your pace: leaving at 04:00, 04:45 and 07:00 would fix that. For each, you can add a day, move the stop or keep it.",
-        "phrasings": [
-          "decisions to make?"
-        ]
+        "reference": "A few. Days 1, 2, 4, 7, 10 and 11 are beyond your selected level (Moderate), the longest day 4 at about 12 h 02 riding against your usual 4 h 25: for each you can add a day, move the stop or keep it. Days 4, 7 and 11 also end after sunset at your pace, which leaving at 04:00, 04:45 and 07:00 would fix."
       }
-    ]
+    ],
+    "note": "The plan's calls are \"decisions\" to the rider (Review 2)."
   },
   {
     "id": "d-ptct-night-7",
@@ -4256,7 +4261,7 @@
         "mustSay": [
           "packing"
         ],
-        "reference": "I can't write you a packing list: what to bring is your call. Your to-do raises what our data shows, like where water is scarce.",
+        "reference": "I can't write you a packing list, but your to-do raises what our data shows, like where water is scarce.",
         "phrasings": [
           "what should I pack?"
         ]

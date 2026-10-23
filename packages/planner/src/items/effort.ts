@@ -20,7 +20,7 @@ export function effortItems(core: PlanCore, add: Add) {
         day: d.number,
         fromM: d.fromM,
         toM: d.toM,
-        title: `Day ${d.number} is beyond your specified level (${level.name}): ${km(d.km)} km, ${Math.round(d.climbM)} m`,
+        title: `Day ${d.number} is beyond your selected level (${level.name}): ${km(d.km)} km, ${Math.round(d.climbM)} m`,
         why: `About ${hours(d.hoursSlow)} riding, against your usual ${hours(usual.hours)}.`,
         rank: 36,
         topic: "able",

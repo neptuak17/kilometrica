@@ -24,8 +24,9 @@ export type PlanAction =
   | { type: "start-earlier"; minutes: number }
   /**
    * A rest day after this riding day (1-based), or none (D74). The end date holds, so a rest day takes a riding day
-   * away and removing one gives it back. `current` is the plan's rest days in effect, which then stay where they are;
-   * `night` and `stop` keep that night's stop, so the rest day stays in that town.
+   * away and removing one gives it back. `current` is the plan's rest days in effect: the planner's nearest within 2
+   * riding days gives way to the new one, and the others stay the planner's, in their towns (D83); `night` and `stop`
+   * keep that night's stop, so the rest day stays in that town.
    */
   | { type: "rest"; afterRide: number; on: boolean; current?: number[]; night?: number; stop?: string }
   /** Move a rest day to after another riding day; the riding days stay as they are (`nights`, the plan's stops). */
@@ -59,16 +60,37 @@ const EARLIEST_START = 5 * 60;
 const without = <T>(xs: T[], x: T) => xs.filter((y) => y !== x);
 const withOne = <T>(xs: T[], x: T) => (xs.includes(x) ? xs : [...xs, x]);
 
+/** The planner's own rest days in a plan (D83): after which riding day, and the town of that night. */
+export function plannerRests(plan: PlanResult): { afterRide: number; stop: string }[] {
+  return plan.restAfter.flatMap((r) => {
+    const ride = plan.days.find((d) => d.ride === r);
+    const rest = ride && plan.days.find((d) => d.number === ride.number + 1);
+    const night = plan.nights.find((n) => n.afterRide === r);
+    return rest?.rest && !rest.rest.own && night ? [{ afterRide: r, stop: night.stop.id }] : [];
+  });
+}
+
+/** Within this many riding days, a rest day the rider places takes the place of the planner's (D83). */
+const GIVES_WAY = 2;
+
 /**
  * The new state. Changing the answers or the nights re-plans the days (locked and booked nights stay); a bed, a
- * tick or a dismissal keeps the nights as they are.
+ * tick or a dismissal keeps the nights as they are. Given the plan `before` it, a re-plan keeps the planner's own rest
+ * days in their towns as far as the new days allow (D83).
  */
-export function applyAction(state: PlanState, action: PlanAction): PlanState {
+export function applyAction(state: PlanState, action: PlanAction, before?: PlanResult): PlanState {
   const { inputs, choices } = state;
-  const replan = (next: Partial<PlanInputs>, c: PlanChoices = choices): PlanState => ({
+  const rests = before ? plannerRests(before) : null;
+  // `gone`: the planner's rest days (by riding day before the change) that no longer keep their towns.
+  const replan = (next: Partial<PlanInputs>, c: PlanChoices = choices, gone: number[] = []): PlanState => ({
     inputs: { ...inputs, ...next },
-    choices: { ...c, nights: undefined },
+    choices: { ...c, nights: undefined, ...(rests ? { restStops: rests.filter((x) => !gone.includes(x.afterRide)).map((x) => x.stop) } : {}) },
   });
+  // A rest day the rider places takes the place of the planner's nearest one within GIVES_WAY riding days (D83).
+  const givesWay = (current: number[], r: number) =>
+    current
+      .filter((x) => x !== r && !inputs.restAfter.includes(x) && Math.abs(x - r) <= GIVES_WAY)
+      .sort((a, b) => Math.abs(a - r) - Math.abs(b - r) || a - b)[0];
   const keep = (c: PlanChoices): PlanState => ({ inputs, choices: c });
   switch (action.type) {
     case "set": {
@@ -76,7 +98,9 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
       if (next.days !== undefined) next.days = Math.max(1, Math.round(next.days));
       // Choosing a number of days means planning the stops (D70): the file's nights set their own.
       if (next.days !== undefined && next.days !== inputs.days && next.stops === inputs.stops) next.stops = "ours";
-      return replan(next);
+      // Another stretch or the other way is another trip: its rest days start afresh.
+      const trip = (["fromM", "toM", "direction"] as const).some((k) => next[k] !== undefined && next[k] !== inputs[k]);
+      return trip ? { inputs: { ...inputs, ...next }, choices: { ...choices, nights: undefined, restStops: undefined } } : replan(next);
     }
     case "add-day":
     case "ride-days": {
@@ -91,17 +115,22 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
     case "rest": {
       const current = action.current ?? inputs.restAfter;
       const count = Math.max(inputs.restDays ?? 0, ownRestDays({ restAfter: current, restLength: inputs.restLength }));
+      const r = action.afterRide;
       if (!action.on) {
         // A longer stay gives all its days back (D80).
-        const len = restLengthOf(inputs, action.afterRide);
+        const len = restLengthOf(inputs, r);
         const restLength = { ...inputs.restLength };
-        delete restLength[action.afterRide];
-        return replan({ restAfter: without(current, action.afterRide), restLength, restDays: Math.max(0, count - len), days: inputs.days + len });
+        delete restLength[r];
+        return replan({ restAfter: without(inputs.restAfter, r), restLength, restDays: Math.max(0, count - len), days: inputs.days + len }, choices, [r]);
       }
       const locked = action.night !== undefined && action.stop ? { ...choices.locked, [action.night]: action.stop } : choices.locked;
+      // One more rest day, unless the planner's was here already or nearby gives way (D83).
+      const gives = current.includes(r) ? undefined : givesWay(current, r);
+      const extra = current.includes(r) || gives !== undefined ? 0 : 1;
       return replan(
-        { restAfter: withOne(current, action.afterRide).sort((a, b) => a - b), restDays: count + 1, days: Math.max(1, inputs.days - 1) },
+        { restAfter: withOne(inputs.restAfter, r).sort((a, b) => a - b), restDays: count + extra, days: Math.max(1, inputs.days - extra) },
         { ...choices, locked },
+        [r, ...(gives === undefined ? [] : [gives])],
       );
     }
     case "rest-move": {
@@ -123,13 +152,16 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
       // A rest day already there counts: one the planner placed is a single day, and becomes the rider's.
       const had = current.includes(asked) ? restLengthOf(inputs, asked) : 0;
       const len = Math.min(MAX_REST_LENGTH, Math.max(1, Math.round(action.days ?? 1)));
-      const extra = len - had;
+      // A new rest day takes the place of the planner's nearby, if there is one (D83).
+      const gives = action.type === "rest-in" && action.add && !had ? givesWay(current, asked) : undefined;
+      const extra = len - had - (gives === undefined ? 0 : 1);
       const keepEnd = !action.longer && (action.type === "rest-length" || action.add);
       // The end date holds, so there are fewer riding days: a stay that would come after the last of them comes as late
       // as it can, its night still kept at the town.
       const rides = keepEnd ? Math.max(1, inputs.days - extra) : inputs.days;
       const r = Math.max(1, Math.min(asked, rides - 1));
-      const restAfter = withOne(current.filter((x) => x < rides), r).sort((a, b) => a - b);
+      // The planner's other rest days stay the planner's, in their towns (D83).
+      const restAfter = withOne(inputs.restAfter.filter((x) => x < rides && x !== asked), r).sort((a, b) => a - b);
       const restLength = { ...inputs.restLength };
       if (r !== asked) delete restLength[asked];
       if (len > 1) restLength[r] = len;
@@ -141,6 +173,7 @@ export function applyAction(state: PlanState, action: PlanAction): PlanState {
           ? { restAfter, restLength, restDays: Math.max(0, count + extra), days: rides }
           : { restAfter, restLength, restDays: Math.max(count, ownRestDays({ restAfter, restLength })) },
         { ...choices, locked },
+        [asked, ...(gives === undefined ? [] : [gives])],
       );
     }
     case "lock-night":

@@ -41,7 +41,7 @@ import { type ReactNode, useId, useState } from "react";
 import { dayFacts, dayWeather, MAX_REST_LENGTH, restFacts, restLengthOf } from "@dpg/planner";
 import { looksUp, openPhoto } from "./photos";
 
-const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
+const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your selected level" } as const;
 
 /**
  * Handoffs to other sites (D41): each opens in a new tab. Street-level photos (D58) come last, after "See it:", and
@@ -347,7 +347,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
               </Part>
             )}
             {mine.calls.length > 0 && (
-              <Part icon={<Icons.Route />} label="Your call">
+              <Part icon={<Icons.Route />} label="Your decision">
                 <ItemList items={mine.calls} />
               </Part>
             )}

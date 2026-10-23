@@ -78,7 +78,7 @@ const OURS: [string, string, string][] = [
   ["Unknown", "bg-unknown", "no data: check yourself"],
   ["Within level", "bg-effort-within", "a day within your level"],
   ["Harder", "bg-effort-harder", "a harder day"],
-  ["Beyond", "bg-effort-beyond", "beyond your level"],
+  ["Beyond", "bg-effort-beyond", "beyond your selected level"],
   ["Route", "bg-route", "the route on the map"],
   ["Chosen", "bg-route-chosen", "the stretch or day you chose"],
 ]
@@ -340,7 +340,7 @@ function Preview() {
                   <CardTitle className="flex items-center gap-2">
                     <Bike className="size-4" /> Ready to go
                   </CardTitle>
-                  <CardDescription>A bed every night, every day within your level, 4 checks before you leave.</CardDescription>
+                  <CardDescription>Accommodation every night, every day within your level, 4 checks before you leave.</CardDescription>
                 </CardHeader>
                 <CardContent className="text-sm">
                   <p>
@@ -356,7 +356,7 @@ function Preview() {
                 </Alert>
                 <Alert variant="destructive">
                   <Info />
-                  <AlertTitle>Day 5 is beyond your level</AlertTitle>
+                  <AlertTitle>Day 5 is beyond your selected level</AlertTitle>
                   <AlertDescription>96 km and 1,140 m against your usual 65 km.</AlertDescription>
                 </Alert>
               </div>

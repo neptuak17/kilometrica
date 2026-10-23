@@ -116,7 +116,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
     question: "Can I do it?",
     answer:
       (beyond.length
-        ? `Mostly, at ${level.name}: ${beyond.length === 1 ? `day ${beyond[0]!.number} is` : `${beyond.length} days are`} beyond your level.`
+        ? `Mostly, at ${level.name}: ${beyond.length === 1 ? `day ${beyond[0]!.number} is` : `${beyond.length} days are`} beyond your selected level.`
         : `Yes, at ${level.name}${harder.length ? `, with ${plural(harder.length, "harder day")}` : ""}.`) +
       ` Day ${hardest.number} is the hardest: ${km(hardest.km)} km, about ${hours(hardest.hoursSlow)} riding.` +
       restLine(core),
@@ -164,7 +164,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
           ? `${plural(audit, "thing")} to look out for on these days: the details come with a Trip Pass.`
           : "Nothing stands out in the outline."
       : risks[0]
-      ? `${risks[0].day ? `Day ${risks[0].day}: ` : ""}${risks[0].title}${risks[0].kind === "call" ? ": your call" : ""}.` +
+      ? `${risks[0].day ? `Day ${risks[0].day}: ` : ""}${risks[0].title}${risks[0].kind === "call" ? ": your decision" : ""}.` +
         ""
       : "Nothing stands out in our data for these days.",
     more: Math.max(0, risks.length - 1),
@@ -180,7 +180,7 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
     question: "What do I sort out before I go?",
     answer: open.length
       ? [
-          calls ? plural(calls, "call") : null,
+          calls ? plural(calls, "decision") : null,
           sleepItems.length ? `accommodation for ${plural(sleepItems.length, "night")}` : null,
           checks ? plural(checks, "check") : null,
           trains === 2 ? "trains both ends" : trains === 1 ? "a train at one end" : null,
@@ -207,10 +207,10 @@ export function makeBrief(data: PlanData, core: PlanCore, items: PlanItem[]): Br
   });
 
   const readiness = calls
-    ? `${plural(calls, "thing")} ${calls === 1 ? "needs" : "need"} your call`
+    ? `${plural(calls, "decision")} to make`
     : !open.length
       ? "Ready to go: everything is taken care of"
-      : `Ready to go${noBed ? "" : ": a bed every night"}${beyond.length ? "" : `${noBed ? ": " : ", "}every day within your level`}, ${plural(open.length, "thing")} to sort out before you leave`;
+      : `Ready to go${noBed ? "" : ": accommodation every night"}${beyond.length ? "" : `${noBed ? ": " : ", "}every day within your level`}, ${plural(open.length, "thing")} to sort out before you leave`;
 
   // Things to be aware of on the trip (D75; was "how well we know these days"): in words, never a percentage (D57).
   const confidence: string[] = [];

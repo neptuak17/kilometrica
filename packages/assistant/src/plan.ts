@@ -73,8 +73,8 @@ export interface PlanApply {
   actions: PlanAction[];
 }
 
-const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
-const KIND = { call: "Your call", todo: "To do", headsup: "Heads-up", highlight: "Highlight", note: "To be aware of" } as const;
+const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your selected level" } as const;
+const KIND = { call: "Your decision", todo: "To do", headsup: "Heads-up", highlight: "Highlight", note: "To be aware of" } as const;
 const PASS = "comes with a Trip Pass";
 
 const planOf = (ctx: PlanContext) => ctx.planFor(ctx.state);
@@ -255,7 +255,7 @@ const days: Tool<PlanContext> = {
 const items: Tool<PlanContext> = {
   name: "items",
   description:
-    "What the plan raises: calls to make, things to sort out, heads-ups, highlights and things to be aware of, each with why. Filter by day or kind; 'left' gives what's still to sort out before the trip, calls first.",
+    "What the plan raises: decisions to make (kind 'call'), things to sort out, heads-ups, highlights and things to be aware of, each with why. Filter by day or kind; 'left' gives what's still to sort out before the trip, decisions first.",
   parameters: () =>
     schema({
       day: { type: "integer", minimum: 1 },
@@ -548,11 +548,11 @@ function build(ctx: PlanContext, state: PlanState, c: Record<string, unknown>): 
     }
     case "answer_call": {
       const item = p.items.find((i) => i.id === arg.str(c, "call") && i.kind === "call");
-      if (!item) return { error: "Which call? Use its id from the plan's items." };
+      if (!item) return { error: "Which decision? Use its id from the plan's items." };
       const want = arg.str(c, "option") ?? "";
       const option = item.options?.find((o) => o.id === want) ?? matchNames(want, item.options ?? [], (o) => o.label)[0];
       const out = option && optionOutcome(item, option.id);
-      if (!out) return { error: `"${want}" isn't one of that call's options.` };
+      if (!out) return { error: `"${want}" isn't one of that decision's options.` };
       return "action" in out ? out : { error: `That's done on day ${out.showDay}'s card: pick the night's stop there.` };
     }
     case "tick": {
@@ -641,7 +641,7 @@ const offerOptions: Tool<PlanContext, PlanApply> = {
         }
         actions.push(b.action);
         if (b.note) notes.push(b.note);
-        state = applyAction(state, b.action);
+        state = applyAction(state, b.action, ctx.planFor(state));
       }
       if (failed) {
         problems.push(failed);

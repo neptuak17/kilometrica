@@ -103,8 +103,8 @@ export function planChanges(before: PlanResult, after: PlanResult): PlanChanges 
   const callsB = openCalls(after);
   const raised = callsB.filter((i) => !callsA.some((x) => x.id === i.id));
   const settled = callsA.filter((i) => !callsB.some((x) => x.id === i.id));
-  if (settled.length) lines.push(settled.length === 1 ? `Settles: ${settled[0]!.title}` : `Settles ${plural(settled.length, "call")}`);
-  if (raised.length) lines.push(raised.length === 1 ? `New call: ${raised[0]!.title}` : plural(raised.length, "new call"));
+  if (settled.length) lines.push(settled.length === 1 ? `Settles: ${settled[0]!.title}` : `Settles ${plural(settled.length, "decision")}`);
+  if (raised.length) lines.push(raised.length === 1 ? `New decision: ${raised[0]!.title}` : plural(raised.length, "new decision"));
 
   const summary = lines.length <= 2 ? lines.join("; ") : `${lines.slice(0, 2).join("; ")}; and ${plural(lines.length - 2, "more change")}`;
   return {

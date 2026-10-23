@@ -129,6 +129,11 @@ export interface PlanChoices {
   bookedOn?: Record<number, string>;
   done: string[];
   dismissed: string[];
+  /**
+   * The towns (stop ids) of the planner's own rest days before the last change (D83): it keeps them there as far as
+   * the new days allow.
+   */
+  restStops?: string[];
 }
 
 export const NO_CHOICES: PlanChoices = { locked: {}, beds: {}, booked: [], done: [], dismissed: [] };

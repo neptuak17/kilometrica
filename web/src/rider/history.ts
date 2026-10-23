@@ -2,7 +2,7 @@
  * A plan's states, for undo and redo (11.7). Every change is an action (D52); the states it passes through are kept
  * in memory while the page is open. Quick edits to the same answers (typing "21" in the days) count as one step.
  */
-import { applyAction, type PlanAction, type PlanState } from "@dpg/planner";
+import { applyAction, type PlanAction, type PlanResult, type PlanState } from "@dpg/planner";
 import { useCallback, useMemo, useState } from "react";
 
 const QUICK_MS = 1500;
@@ -50,12 +50,13 @@ export function usePlanHistory() {
     at: Date.now(),
   });
 
-  const apply = useCallback((action: PlanAction) => {
+  /** `before`: the plan on screen, so the planner's rest days keep their towns (D83). */
+  const apply = useCallback((action: PlanAction, before?: PlanResult) => {
     setT((t) => {
       if (!t) return t;
       const key = keyOf(t.present, action);
       if (key === "") return t;
-      const next = applyAction(t.present, action);
+      const next = applyAction(t.present, action, before);
       if (key && key === t.key && Date.now() - t.at < QUICK_MS && t.last) {
         return { ...t, present: next, future: [], last: { before: t.last.before, after: next, undone: false }, at: Date.now() };
       }

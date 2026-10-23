@@ -1,6 +1,6 @@
 import type { Climb, DailySection, DreamSection, EffortFile, Finding, Highlight, Place, ServiceType, Stop, UserPlace } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
-import { applyAction, bookedAction, daysAnswer, optionOutcome, type PlanState, restAfterAction, restInAction, restLengthAction, restMoveAction, withRestDays, withTotalDays } from "./actions";
+import { applyAction, bookedAction, daysAnswer, optionOutcome, type PlanAction, plannerRests, type PlanState, restAfterAction, restInAction, restLengthAction, restMoveAction, withRestDays, withTotalDays } from "./actions";
 import { TripAxis } from "./axis";
 import { dayStory } from "./brief";
 import { planChanges } from "./changes";
@@ -235,7 +235,7 @@ describe("makePlan", () => {
     const p = makePlan(data(), inputs({ days: 3 }));
     expect(p.items.some((i) => i.kind === "call" && i.id.startsWith("effort:beyond:"))).toBe(true);
     expect(p.offers.some((o) => o.days === 4)).toBe(true);
-    expect(p.brief.lines[0]!.answer).toMatch(/beyond your level/);
+    expect(p.brief.lines[0]!.answer).toMatch(/beyond your selected level/);
   });
 
   it("inserts rest days and keeps locked nights", () => {
@@ -748,13 +748,39 @@ describe("rest days: placed where they help, moved as life happens (D74)", () =>
   it("keeps the end date: a rest day takes a riding day away, and a move changes only dates", () => {
     const state: PlanState = { inputs: inputs({ days: 8, restDays: 1 }), choices: NO_CHOICES };
     const added = applyAction(state, { type: "rest", afterRide: 2, on: true, current: [5], night: 1, stop: "s120" });
-    expect(added.inputs).toMatchObject({ days: 7, restDays: 2, restAfter: [2, 5] });
+    // The planner's rest day after day 5 stays the planner's (D83).
+    expect(added.inputs).toMatchObject({ days: 7, restDays: 2, restAfter: [2] });
     expect(added.choices.locked[1]).toBe("s120");
     const removed = applyAction(added, { type: "rest", afterRide: 5, on: false, current: [2, 5] });
     expect(removed.inputs).toMatchObject({ days: 8, restDays: 1, restAfter: [2] });
     const moved = applyAction(state, { type: "rest-move", from: 5, to: 3, current: [5], nights: ["a", "b"] });
     expect(moved.inputs.restAfter).toEqual([3]);
     expect(moved.choices.nights).toEqual(["a", "b"]);
+  });
+
+  it("keeps the planner's rest days in their towns when something else changes (D83)", () => {
+    const d = data({ lengthKm: 900 });
+    const state: PlanState = { inputs: inputs({ toM: 900_000, days: 12, restDays: 2 }), choices: NO_CHOICES };
+    const p = makePlan(d, state.inputs, state.choices);
+    const towns = plannerRests(p).map((x) => x.stop);
+    expect(towns).toHaveLength(2);
+    // Another level, the night after day 1 moved: the rest days stay where they were.
+    for (const action of [{ type: "set", inputs: { level: 4 } }, { type: "lock-night", night: 0, stop: p.nights[0]!.stop.id === "s70" ? "s80" : "s70" }] as PlanAction[]) {
+      const next = applyAction(state, action, p);
+      expect(next.choices.restStops).toEqual(towns);
+      expect(plannerRests(makePlan(d, next.inputs, next.choices)).map((x) => x.stop)).toEqual(towns);
+    }
+    // Another stretch is another trip.
+    expect(applyAction(state, { type: "set", inputs: { toM: 800_000 } }, p).choices.restStops).toBeUndefined();
+  });
+
+  it("lets a rest day the rider places take the place of the planner's nearby (D83)", () => {
+    const state: PlanState = { inputs: inputs({ days: 8, restDays: 1 }), choices: NO_CHOICES };
+    // Within 2 riding days: the planner's gives way, so the count and the end date hold.
+    expect(applyAction(state, { type: "rest", afterRide: 4, on: true, current: [5] }).inputs).toMatchObject({ days: 8, restDays: 1, restAfter: [4] });
+    expect(applyAction(state, { type: "rest-in", night: 2, stop: "s90", add: true, current: [5], days: 2 }).inputs).toMatchObject({ days: 7, restDays: 2, restAfter: [3], restLength: { 3: 2 } });
+    // Further away: one more, as before.
+    expect(applyAction(state, { type: "rest", afterRide: 2, on: true, current: [5] }).inputs).toMatchObject({ days: 7, restDays: 2, restAfter: [2] });
   });
 
   it("puts a booking back on the to-do when its night moves to another date", () => {

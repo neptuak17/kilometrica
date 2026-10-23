@@ -12,7 +12,7 @@ import type { Effort } from "@dpg/ui/components/km/day-row"
 const EFFORT: Record<Effort, { label: string; bar: string; strong: boolean }> = {
   within: { label: "within your level", bar: "bg-effort-within", strong: false },
   harder: { label: "a harder day", bar: "bg-effort-harder", strong: true },
-  beyond: { label: "beyond your level", bar: "bg-effort-beyond", strong: true },
+  beyond: { label: "beyond your selected level", bar: "bg-effort-beyond", strong: true },
 }
 
 export interface EffortChartDay {

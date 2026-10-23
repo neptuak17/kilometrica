@@ -47,7 +47,7 @@
           "Easy-moderate",
           "Moderate"
         ],
-        "reference": "Here is how it could look; which level is yours is your call. At Easy-moderate, with 10 days, relaxed, in September with coast and culture, 29 stretches fit: the best is Cabo de Gata → San Roque, 408 km at 51 km a day. At Moderate, 23 fit: the best is Águilas → San Roque, 519 km at 65 km a day. Choose one and I'll show you its list.",
+        "reference": "Here are two that suit a relaxed 10 days in September, both strong on beaches and towns: Cabo de Gata → San Roque, 408 km at 51 km a day, typically 20–24 °C with rain 1 day in 9; and Castellon de la Plana → Blanes, 405 km at 51 km a day, typically 18–26 °C. Both are Easy-moderate. If you'd like longer days, at Moderate the best is Águilas → San Roque, 519 km at 65 km a day.",
         "phrasings": [
           "10 days on ev8 in september, beaches and culture, fit but want it relaxed - ideas?"
         ]
@@ -140,7 +140,7 @@
         "mustSay": [
           "Leisurely"
         ],
-        "reference": "Which level fits your family is your call. At Leisurely, with 5 days, relaxed, coast and rooms, 111 stretches fit: the best is Estepona → Torre del Mar, 126 km at 31 km a day. At Easy-moderate, 66 fit: the best is Fuengirola → Adra, 192 km at 48 km a day. Each stretch shows its best month, for the sunshine.",
+        "reference": "For an easy, flat 5 days by the sea, staying in rooms: Estepona → Torre del Mar, 126 km at 31 km a day with ↑ 158 m a day, and Castell de Ferro → Malaga, 125 km at 31 km a day. Both are Leisurely, strong on beaches and best in June, when it rains about 1 day in 20. If your family is happy with a bit more, at Easy-moderate the best is Fuengirola → Adra, 192 km at 48 km a day. When you plan one, each night shows its hotels.",
         "phrasings": [
           "easy flat 5 days with the family, sunny, beaches, hotels every night"
         ]
@@ -333,7 +333,7 @@
         "mustSay": [
           "Easy-moderate"
         ],
-        "reference": "For less climbing, a lower level; whether it's yours is your call. At Easy-moderate, 42 stretches fit: the best is Torre del Mar → Conil de la Frontera, with ↑ 424 m a day. At Leisurely, 72 fit: the best is Paphos → Larnaka.",
+        "reference": "Here are stretches with less climbing: Torre del Mar → Conil de la Frontera, ↑ 424 m a day over 50 km days, and Cabo de Gata → Fuengirola, ↑ 440 m a day, both Easy-moderate. For flatter still, at 30 km a day: San Roque → Cadiz climbs ↑ 279 m a day, and Cervignano → Alberoni only ↑ 22 m a day.",
         "phrasings": [
           "too hilly - anything flatter?"
         ]
@@ -355,7 +355,7 @@
     "screen": {
       "stretch": 1
     },
-    "note": "Other routes are out of scope for now (D77); a higher level or fewer days are not.",
+    "note": "\"Other routes\" means other stretches of this one (the owner, Review 2).",
     "turns": [
       {
         "rider": "This route isn't challenging enough, suggest other routes or way to increase the challenge?",
@@ -381,7 +381,7 @@
         "mustSay": [
           "Challenging"
         ],
-        "reference": "Other routes aren't in Dream yet, but on this one you could go up a level or take fewer days. At Challenging, 21 stretches fit: the best is Trojica → Pakostane, 85 km a day with ↑ 1111 m a day. Or the same level in 5 days: 38 fit, the best Cabo de Gata → Marbella at 66 km a day.",
+        "reference": "Here are more challenging stretches: Trojica → Pakostane, 85 km a day with ↑ 1111 m a day, and Carboneras → Facinas, 84 km a day with ↑ 808 m a day, both Challenging. Or keep your level in 5 days for longer days: Cabo de Gata → Marbella is 66 km a day.",
         "phrasings": [
           "too easy, I want something harder"
         ]
@@ -420,7 +420,7 @@
         "mustSay": [
           "Moderate"
         ],
-        "reference": "Aliaga → Selcuk asks 65 km a day and ↑ 561 m a day, which grades as Moderate: 50–80 km a day with luggage, up to about 850 m of climbing. Whether that's you is your call: we have nothing to judge your fitness by.",
+        "reference": "Aliaga → Selcuk is 65 km a day with ↑ 561 m a day, which is Moderate: 50–80 km a day with luggage, up to about 850 m of climbing. You're the best judge of whether you're up to days like that.",
         "phrasings": [
           "can I manage this one?"
         ]
@@ -455,9 +455,9 @@
           }
         ],
         "mustSay": [
-          "forecast"
+          "too early"
         ],
-        "reference": "We can't forecast, but in September on Aliaga → Selcuk it usually rains 1 day in 23, at 21–26 °C.",
+        "reference": "It's too early to tell, but in September on Aliaga → Selcuk it typically rains 1 day in 23, at 21–26 °C.",
         "phrasings": [
           "how rainy is it?"
         ]
@@ -490,7 +490,7 @@
             }
           }
         ],
-        "reference": "In July, Cartagena → Almuñecar is usually 24–27 °C, and it rarely rains. Whether that's too hot for you is your call.",
+        "reference": "In July, Cartagena → Almuñecar is usually 24–27 °C, and it rarely rains. You're the best judge of how you ride in that heat.",
         "phrasings": [
           "is it going to be too hot?"
         ]
@@ -515,9 +515,9 @@
         "rider": "What should I pack for this route?",
         "calls": [],
         "mustSay": [
-          "your call"
+          "kit"
         ],
-        "reference": "We don't give kit advice: what you carry is your call. I can tell you the usual weather on a stretch, or where water and food are once you plan it.",
+        "reference": "We don't give kit advice, but I can tell you the usual weather on a stretch, and once you plan it, where water and food are each day.",
         "phrasings": [
           "packing list?"
         ]
@@ -587,7 +587,7 @@
         "mustSay": [
           "Moderate"
         ],
-        "reference": "With your 14 days (12 riding, 2 rest), Vancouver → Nakusp is 85 km a day with ↑ 889 m a day, which grades as Challenging: more than Moderate's 50–80 km a day and about 850 m of climbing. Whether you can do that is your call.",
+        "reference": "With your 14 days (12 riding, 2 rest), Vancouver → Nakusp is 85 km a day with ↑ 889 m a day, which grades as Challenging: more than Moderate's 50–80 km a day and about 850 m of climbing. You're the best judge of whether you're up to days like that.",
         "phrasings": [
           "can I do it in my time at my level?"
         ]
@@ -678,7 +678,7 @@
         "mustSay": [
           "Plan"
         ],
-        "reference": "Dream can't tell you night by night: along the route there are up to 53 km between places to stay. Plan it, and Plan shows each night's campsites.",
+        "reference": "Yes: every section of the route has a campsite, though places to stay can be up to 53 km apart. When you plan it, each of your nights shows its campsite, or where there isn't one.",
         "phrasings": [
           "can I camp every night?"
         ]
@@ -708,7 +708,7 @@
         "mustSay": [
           "Plan"
         ],
-        "reference": "Not everywhere: Dream found no rooms on 2 of the route's sections. Plan it, and Plan shows each night's places.",
+        "reference": "Not every night: we found no rooms on 2 of the route's sections, so a couple of nights may need to be camping. When you plan it, each of your nights shows its hotels, or where there aren't any.",
         "phrasings": [
           "hotels every night possible?"
         ]
@@ -812,7 +812,7 @@
         "mustSay": [
           "Leisurely"
         ],
-        "reference": "Which level is yours is your call. At Leisurely, a week by the river in rooms, 14 stretches fit: the best is Bad Salzig → Speyer, 182 km at 30 km a day. At Easy-moderate, 8 fit: the best is Millingen aan de Rijn → Koblenz, 303 km at 50 km a day.",
+        "reference": "Here are the best for a gentle week by the river in rooms: at Leisurely, Bad Salzig → Speyer, 182 km at 30 km a day; at Easy-moderate, Millingen aan de Rijn → Koblenz, 303 km at 50 km a day.",
         "phrasings": [
           "easy week by the river, hotels"
         ]
@@ -1165,7 +1165,7 @@
         "mustSay": [
           "Moderate"
         ],
-        "reference": "In 14 days (12 riding, 2 rest) it's 60 km a day but ↑ 1195 m a day, more than Moderate's 850 m, so it grades as Challenging. Whether you can do that is your call.",
+        "reference": "In 14 days (12 riding, 2 rest) it's 60 km a day but ↑ 1195 m a day, more than Moderate's 850 m, so it grades as Challenging. You're the best judge of whether you're up to that much climbing.",
         "phrasings": [
           "14 days at moderate, ok?"
         ]

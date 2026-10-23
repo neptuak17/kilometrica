@@ -172,12 +172,12 @@ function askChanges(ctx: DreamContext, a: Ask, b: Ask): string[] {
   return out;
 }
 
-/** The best three stretches a question would bring, for an option to name before it is chosen. */
+/** The best three stretches a question would bring, for an option to name before it is chosen, with why each fits. */
 function bestFor(ctx: DreamContext, a: Ask) {
   if (a.level === null || (a.days === null && !ctx.route.own)) return [];
   return stretchesFor(ctx.route, a)
     .slice(0, SHOWN)
-    .map((r) => ({ name: stretchName(dailyOf(ctx), r), facts: factsText(r, ctx.route.dream.levels, a) }));
+    .map((r) => ({ name: stretchName(dailyOf(ctx), r), facts: factsText(r, ctx.route.dream.levels, a), why: whyLines(r).slice(0, 2), when: whenText(r, a) ?? null }));
 }
 
 function fitCount(ctx: DreamContext, a: Ask): string {
@@ -279,7 +279,7 @@ const setQuestion: Tool<DreamContext, DreamApply> = {
       // A label made of the changes says them already; then only what the option would bring follows it.
       lines: options.flatMap((o, i) => [
         `${o.label}: ${o.label.endsWith(o.changes.slice(0, -1).join(" · ")) ? o.changes.at(-1) : o.changes.join("; ")}.`,
-        ...(best[i]!.length ? [`  The best: ${best[i]!.map((s) => `${s.name} (${s.facts})`).join("; ")}.`] : []),
+        ...best[i]!.map((s, k) => `  ${k + 1}. ${s.name} (${s.facts})${s.why.length ? `. Why it fits: ${s.why.join("; ")}` : ""}${s.when ? `. ${s.when}` : ""}.`),
       ]),
       facts: { ok: true, options: options.map((o, i) => ({ label: o.label, changes: o.changes, best: best[i] })) },
       options,

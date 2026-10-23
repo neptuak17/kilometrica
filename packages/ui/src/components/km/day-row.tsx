@@ -9,7 +9,7 @@ export type Effort = "within" | "harder" | "beyond"
 const EFFORT: Record<Effort, { label: string; dot: string }> = {
   within: { label: "within your level", dot: "bg-effort-within" },
   harder: { label: "a harder day", dot: "bg-effort-harder" },
-  beyond: { label: "beyond your level", dot: "bg-effort-beyond" },
+  beyond: { label: "beyond your selected level", dot: "bg-effort-beyond" },
 }
 
 export interface DayRowProps {

@@ -281,7 +281,7 @@ export function makePlan(
   const wanted = Math.min(Math.max(0, rides - 2 - rest.size), Math.max(0, (inputs.restDays ?? 0) - ownDays));
   if (wanted > 0) {
     const nights = [...stage.nights];
-    for (const p of placeRests(data, ctx, stage, usual.hours, rest, wanted, new Set(own))) {
+    for (const p of placeRests(data, ctx, stage, usual.hours, rest, wanted, new Set(own), choices.restStops)) {
       const k = p.afterRide - 1;
       if (p.move !== undefined && !own.length && !kept && !locked.has(k)) {
         moved.set(p.afterRide, { from: candidates[nights[k]!]!.stop, km: (candidates[p.move]!.t - candidates[nights[k]!]!.t) / 1000 });
@@ -314,7 +314,7 @@ export function makePlan(
     if (alt && left < beyondNow) {
       offers.push({
         days: rides + 1,
-        why: left ? `One more riding day: ${plural(beyondNow - left, "day")} fewer beyond your level` : "One more riding day keeps every day within your level",
+        why: left ? `One more riding day: ${plural(beyondNow - left, "day")} fewer beyond your selected level` : "One more riding day keeps every day within your level",
         plan: alt,
       });
     }

@@ -617,7 +617,7 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
             )}
           </Part>
           {mine.calls.length > 0 && (
-            <Part icon={<Icons.Route />} label="Your call">
+            <Part icon={<Icons.Route />} label="Your decision">
               {mine.calls.map((i) => (
                 <span key={i.id}>{i.title}</span>
               ))}
@@ -855,7 +855,7 @@ function AboutPage({ plan, attribution, auditedAt, routeName, levelName, pages }
           ))}
         </div>
         <p>
-          Each day's effort is written in words beside its colour: within your level, a harder day, or beyond your level. Route sketches are drawn from our
+          Each day's effort is written in words beside its colour: within your level, a harder day, or beyond your selected level. Route sketches are drawn from our
           route data, not a map: navigate with your GPX or a map app.
         </p>
       </section>
