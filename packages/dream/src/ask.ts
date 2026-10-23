@@ -194,6 +194,8 @@ export function planHref(route: string, r: StretchResult, a: Ask, level: number,
     gravel: a.surfaces.gravel,
     busy: a.avoidBusy ? "1" : "0",
     stay: a.stay,
+    // Trains at both ends asked for: Plan includes getting to the start and home (D79).
+    ...(a.trainBothEnds ? { train: "1" } : {}),
     ...(ours ? { stops: "ours" } : {}),
   })}`;
 }

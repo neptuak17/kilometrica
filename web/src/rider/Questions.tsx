@@ -266,6 +266,15 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
         </Field>
       </div>
 
+      {/* Both off by default: a cleaner plan for riders who don't need them (D79). Unset getting there and back is on,
+          as plans saved before it had it. */}
+      <Field label="Trains" hint="Leave them out if you're not using trains: the plan is cleaner without them.">
+        <div className="grid gap-2.5">
+          <Check label="Getting to the start and home" checked={inputs.travel !== false} disabled={readOnly} onChange={(on) => set("travel", on)} />
+          <Check label="Stations along the way for going home early" checked={!!inputs.bailouts} disabled={readOnly} onChange={(on) => set("bailouts", on)} />
+        </div>
+      </Field>
+
       <details className="group rounded-2xl border px-4 py-3">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-medium">
           Stretch and preferences
@@ -282,7 +291,6 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
           <div className="grid gap-2.5">
             <Check label="Rather avoid busy roads" checked={inputs.avoidBusy} disabled={readOnly} onChange={(on) => set("avoidBusy", on)} />
             <Check label="Rather avoid gravel" checked={inputs.avoidGravel} disabled={readOnly} onChange={(on) => set("avoidGravel", on)} />
-            <Check label="Show each day's stations for taking a train home" checked={!!inputs.bailouts} disabled={readOnly} onChange={(on) => set("bailouts", on)} />
           </div>
         </div>
       </details>

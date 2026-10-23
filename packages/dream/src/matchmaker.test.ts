@@ -213,6 +213,8 @@ describe("describeStretch", () => {
     expect(r).not.toBeNull();
     expect(r!.watch.some((w) => w.startsWith("250 km a day: more than Moderate's 80 km"))).toBe(true);
     expect(r!.watch).toContain("no bike-carrying station found at one end");
+    // Said only to riders who asked for trains at both ends (D79).
+    expect(describeStretch(dream(noStation), 1, 10, { ...base, days: 2 })!.watch).not.toContain("no bike-carrying station found at one end");
   });
 
   it("counts an unfilled gap it crosses as ridden (D50)", () => {

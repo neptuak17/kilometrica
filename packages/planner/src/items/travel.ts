@@ -1,4 +1,7 @@
-/** What do I sort out before I go? Getting to the start and home from the end (D63, D70), and borders out of Schengen. */
+/**
+ * What do I sort out before I go? Getting to the start and home from the end (D63, D70), when the rider wants it in
+ * the plan (D79), and borders out of Schengen.
+ */
 import type { PlanCore } from "../plan";
 import { country, km } from "../text";
 import type { PlanData } from "../types";
@@ -21,7 +24,8 @@ export function travelItems(data: PlanData, core: PlanCore, add: Add) {
     { id: "end", m: core.axis.endM, d: rides[rides.length - 1]!, word: "home from the end" },
   ];
   const ownWay = fewTrains(data, core);
-  for (const e of ends) {
+  // Riders who don't need it get a cleaner plan (D79); plans saved before it keep it.
+  for (const e of core.inputs.travel === false ? [] : ends) {
     const near = data.stops.stops
       .filter((s) => s.station && s.station_at_m !== null && Math.abs(s.station_at_m - e.m) <= 10_000)
       .sort((a, b) => Math.abs(a.station_at_m! - e.m) - Math.abs(b.station_at_m! - e.m))[0];

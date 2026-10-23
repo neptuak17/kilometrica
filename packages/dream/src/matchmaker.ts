@@ -321,7 +321,8 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
   const steep = Math.max(...secs.map((s) => s.max_grade_500m ?? 0));
   if (steep >= 8) watch.push(`steepest 500 m at ${steep.toFixed(0)}%`);
   for (const c of run.crossings) watch.push(c);
-  if (!stationStart || !stationEnd) watch.push("no bike-carrying station found at one end");
+  // Only for riders who asked for trains at both ends (D79): the others don't need it said.
+  if (q.trainBothEnds && (!stationStart || !stationEnd)) watch.push("no bike-carrying station found at one end");
   // What a rider would be told about (D75); an older audit has only its own warnings.
   const findings = secs.reduce((a, s) => a + (s.findings.rider ?? s.findings.warning ?? 0), 0);
   if (findings) watch.push(`${findings} ${findings === 1 ? "thing" : "things"} to look out for: details with a Trip Pass`);

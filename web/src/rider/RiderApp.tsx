@@ -130,6 +130,8 @@ function readStart(): { start: Start | null; itinerary: Itinerary | null; error:
         sleep: stay === "camping" ? "camping" : stay === "rooms" ? "rooms" : "mix",
         // Days chosen in Dream on a route whose file marks nights: our stops (D70).
         ...(q.get("stops") === "ours" ? { stops: "ours" as const } : {}),
+        // Getting to the start and home is in a new plan only when Dream asked for trains at both ends (D79).
+        travel: q.get("train") === "1",
       },
       doc: null,
       readOnly: false,
@@ -166,6 +168,8 @@ function initialInputs(files: RouteFiles, s: Start["inputs"]): { inputs: PlanInp
       avoidGravel: s.avoidGravel ?? false,
       avoidBusy: s.avoidBusy ?? false,
       ...(s.stops ? { stops: s.stops } : {}),
+      ...(s.bailouts ? { bailouts: true } : {}),
+      ...(s.travel !== undefined ? { travel: s.travel } : {}),
     },
   };
 }

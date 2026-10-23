@@ -48,6 +48,11 @@ export interface PlanInputs {
   /** Show each day's stations for taking a train home, and the long stretches without one (D75). Off by default. */
   bailouts?: boolean;
   /**
+   * Getting to the start and home by train (D79): the trip's two end lines on the to-do, with their rail links. A new
+   * plan has it off unless Dream asked for trains at both ends; unset (plans saved before D79) means on.
+   */
+  travel?: boolean;
+  /**
    * Whose nights (D70): "own" takes the nights the rider's route file marks, and the days follow from them; "ours"
    * plans the stops. Unset means the file's when it marks any.
    */

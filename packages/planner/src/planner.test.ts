@@ -892,3 +892,21 @@ describe("second thoughts: a question about an unusual choice, right after it (D
     expect(t!.options[0]!.label).toMatch(/^Rest in Town \d+ instead, after day \d+$/);
   });
 });
+
+describe("trains are the rider's choice (D79)", () => {
+  it("leaves getting to the start and home out when the rider doesn't want it, and keeps it for plans saved before", () => {
+    const d = data();
+    const travel = (p: ReturnType<typeof makePlan>) => p.items.filter((i) => i.id.startsWith("travel:"));
+    const off = makePlan(d, inputs({ travel: false }));
+    expect(travel(off)).toEqual([]);
+    expect(off.brief.lines.find((l) => l.topic === "prepare")!.answer).not.toMatch(/train/);
+    // Unset: a plan saved before the choice existed, as it was.
+    expect(travel(makePlan(d, inputs()))).toHaveLength(2);
+    expect(travel(makePlan(d, inputs({ travel: true })))).toHaveLength(2);
+    const lines = planChanges(makePlan(d, inputs()), off).lines;
+    expect(lines).toContain("Getting to the start and home is left out");
+    expect(planChanges(off, makePlan(d, inputs({ travel: false, bailouts: true }))).lines).toContain("Each day's stations for going home early are shown");
+    const doc = parseDocument(JSON.parse(JSON.stringify(toDocument(off))));
+    expect(typeof doc === "string" ? doc : doc.inputs.travel).toBe(false);
+  });
+});

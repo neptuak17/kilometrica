@@ -52,6 +52,9 @@ export function planChanges(before: PlanResult, after: PlanResult): PlanChanges 
   if (a.sleep !== b.sleep) lines.push(`Sleep: ${SLEEP[b.sleep]} (was ${SLEEP[a.sleep]})`);
   if (a.bike !== b.bike) lines.push(`Bike: ${BIKE[b.bike]} (was ${BIKE[a.bike]})`);
   if (a.stopStyle !== b.stopStyle) lines.push(`Stops: ${STOPS[b.stopStyle]} (was ${STOPS[a.stopStyle]})`);
+  // The train switches (D75, D79): unset getting there and back is on, as plans saved before it had it.
+  if ((a.travel !== false) !== (b.travel !== false)) lines.push(b.travel !== false ? "Getting to the start and home is in the plan" : "Getting to the start and home is left out");
+  if (!!a.bailouts !== !!b.bailouts) lines.push(b.bailouts ? "Each day's stations for going home early are shown" : "Stations for going home early are left out");
 
   // The days, matched by riding day: a new end, a new distance, or a day that wasn't there.
   const changed: { number: number; line: string; delta: number }[] = [];

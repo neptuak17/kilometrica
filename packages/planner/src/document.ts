@@ -96,6 +96,7 @@ export function parseDocument(raw: unknown): PlanDocument | string {
       ...(i.stops === "own" || i.stops === "ours" ? { stops: i.stops } : {}),
       ...(isNum(i.restDays) ? { restDays: Math.max(0, Math.round(i.restDays)) } : {}),
       ...(i.bailouts === true ? { bailouts: true } : {}),
+      ...(typeof i.travel === "boolean" ? { travel: i.travel } : {}),
     },
     nights: raw.nights,
     choices: {
