@@ -1,4 +1,4 @@
-import type { DailySection, DreamSection, EffortFile, Finding, Highlight, Place, ServiceType, Stop, UserPlace } from "@dpg/contracts";
+import type { Climb, DailySection, DreamSection, EffortFile, Finding, Highlight, Place, ServiceType, Stop, UserPlace } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
 import { applyAction, bookedAction, daysAnswer, optionOutcome, type PlanState, restAfterAction, restInAction, restLengthAction, restMoveAction, withRestDays, withTotalDays } from "./actions";
 import { TripAxis } from "./axis";
@@ -961,5 +961,64 @@ describe("a longer stay: several rest days in one town (D80)", () => {
     // The count of rest days and trimming them keep the longer stay's days.
     expect(daysAnswer(state.inputs, 0)).toMatchObject({ rest: 2, riding: 10, total: 12 });
     expect(withRestDays(three.inputs, 2, 0)).toMatchObject({ restDays: 2, restAfter: [5], restLength: { 5: 2 } });
+  });
+});
+
+describe("the day's big climb, a day's own part of it (D75, D82)", () => {
+  // 2% from km 30 to km 90 (+1,200 m) of a 300 km route, flat either side; mirrored for riding in reverse.
+  const climbing = (direction: "forward" | "reverse"): PlanData => {
+    const base = data();
+    const n = 3000;
+    const rise = (m: number) => Math.min(Math.max(m - 30_000, 0), 60_000) * 0.02;
+    const ele = Array.from({ length: n + 1 }, (_, i) => 100 + (direction === "forward" ? rise(i * 100) : 1200 - rise(i * 100)));
+    const climb: Climb = { from_m: 30_000, to_m: 90_000, length_m: 60_000, gain_m: 1200, avg_grade: 2, max_grade_500m: 2.4, top_m: 1300, fiets: 2.7, direction };
+    return {
+      ...base,
+      effort: { ...base.effort, parts: [{ from_m: 0, to_m: 300_000, ele, surface: "c".repeat(n) }] },
+      full: { findings: [], places: [], placesMissing: [], highlights: [], climbs: [climb], serviceTypes: [] },
+    };
+  };
+
+  it("gives each day its own part of a climb across a night stop, and says where the rest of it is", () => {
+    const p = makePlan(climbing("forward"), inputs());
+    const rides = p.days.filter((d) => d.kind === "ride");
+    const cut = rides.find((d) => d.fromM < 30_000 + 20_000 && d.toM > 30_000 && d.toM < 90_000)!;
+    const next = rides[rides.indexOf(cut) + 1]!;
+    expect(next.toM).toBeGreaterThanOrEqual(90_000); // the climb ends on the next day: two parts
+    const card = (n: number) => p.items.find((i) => i.id === `climb:${n}`);
+    const first = card(cut.number)!;
+    const upFirst = Math.round((cut.toM - 30_000) * 0.02);
+    expect(first.fromM).toBe(30_000);
+    expect(first.toM).toBeCloseTo(cut.toM, 0);
+    expect(first.title).toMatch(/^The day's big climb: [\d.]+ km at 2\.0% from km \d+, to the day's end at \d+ m$/);
+    expect(first.title.endsWith(`to the day's end at ${100 + upFirst} m`)).toBe(true);
+    expect(first.why).toBe(`${upFirst} m up today, the first part of a 60 km climb that goes on past ${cut.endName} to 1300 m; steepest 500 m 2%.`);
+    const rest = card(next.number)!;
+    expect(rest.title).toMatch(/^The day's big climb: [\d.]+ km at 2\.0% from km 0, to 1300 m$/);
+    expect(rest.why).toBe(`${1200 - upFirst} m up today, the rest of a 60 km climb that starts before ${next.startName}; steepest 500 m 2%.`);
+  });
+
+  it("leaves a whole climb as it was, and counts only the day's part against the level", () => {
+    const base = climbing("forward");
+    const short: Climb = { from_m: 30_000, to_m: 50_000, length_m: 20_000, gain_m: 400, avg_grade: 2, max_grade_500m: 2.4, top_m: 500, fiets: 0.8, direction: "forward" };
+    const whole = makePlan({ ...base, full: { ...base.full!, climbs: [short] } }, inputs());
+    const day = whole.days.find((d) => d.fromM <= 30_000 && d.toM >= 50_000)!;
+    expect(whole.items.find((i) => i.id === `climb:${day.number}`)?.why).toBe("400 m up; steepest 500 m 2%.");
+    // Under 400 m of the climb on a day isn't that day's big climb at level 3.
+    const p = makePlan(base, inputs());
+    for (const d of p.days.filter((x) => x.kind === "ride")) {
+      const lo = Math.max(d.fromM, 30_000);
+      const hi = Math.min(d.toM, 90_000);
+      expect(p.items.some((i) => i.id === `climb:${d.number}`)).toBe(hi > lo && (hi - lo) * 0.02 >= 400);
+    }
+  });
+
+  it("works the same riding the route in reverse", () => {
+    const p = makePlan(climbing("reverse"), inputs({ fromM: 0, toM: 300_000, direction: "reverse" }));
+    const cards = p.items.filter((i) => i.id.startsWith("climb:"));
+    expect(cards.length).toBeGreaterThan(0);
+    const ups = cards.map((i) => Number(/^(\d+) m up/.exec(i.why)![1]));
+    expect(ups.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(1200);
+    expect(cards.at(-1)!.title).toMatch(/to 1300 m$/);
   });
 });

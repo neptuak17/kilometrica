@@ -22,7 +22,7 @@ from dpg_audit.layers.events import build_matched_layers
 from dpg_audit.layers.gaps import classify_gaps
 from dpg_audit.match.matcher import match_lines
 from dpg_audit.match.valhalla import Valhalla
-from dpg_audit.models import EventsFile, Licence, ProfileFile, ScoresFile, SourceSnapshot
+from dpg_audit.models import ComponentKind, EventsFile, Licence, ProfileFile, ScoresFile, SourceSnapshot
 from dpg_audit.osmdata import load as load_osm
 from dpg_audit.plan import build_effort, build_highlights, build_stops
 from dpg_audit.rules.evaluate import evaluate, section_scores, stretch_stats
@@ -97,7 +97,9 @@ def run(
     elevation.mark_untrusted(profs, untrusted)
     unknown = elevation.unknown_terrain([(d.from_m, d.to_m) for d in build.daily], untrusted)
     grad = elevation.gradient_events(profs, untrusted)
-    climbs = elevation.climbs(profs, untrusted=untrusted)
+    # A climb runs on across stage ends, but not across a gap in the track (D82).
+    breaks = [c.from_m for c in build.components if c.kind == ComponentKind.GAP]
+    climbs = elevation.climbs(profs, untrusted=untrusted, breaks=breaks)
     t["terrain"] = time.perf_counter() - t0 - sum(t.values())
 
     svc_profile = load_services(services_name)

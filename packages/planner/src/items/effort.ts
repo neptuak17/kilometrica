@@ -2,6 +2,7 @@
  * Can I do it? Effort and daylight: days beyond the rider's level, late arrivals, hard runs, better rest towns, the
  * offers of another riding day, long steep stretches, unknown terrain, and with the Trip Pass the day's big climb.
  */
+import type { Climb, EffortFile } from "@dpg/contracts";
 import type { PlanCore } from "../plan";
 import { clock } from "../sun";
 import { hours, km, stopName } from "../text";
@@ -167,22 +168,97 @@ export function effortItems(core: PlanCore, add: Add) {
   }
 }
 
+/** Elevation at a route measure from the effort profile; null where the terrain is unknown or there's no profile. */
+function eleAt(effort: EffortFile, m: number): number | null {
+  const part = effort.parts.find((p) => m >= p.from_m && m <= p.to_m);
+  if (!part || part.ele.length === 0) return null;
+  const n = part.ele.length - 1;
+  if (n === 0) return part.ele[0] ?? null;
+  const i = Math.min(Math.floor((m - part.from_m) / effort.step_m), n - 1);
+  const a = part.from_m + i * effort.step_m;
+  const b = i === n - 1 ? part.to_m : a + effort.step_m;
+  const ea = part.ele[i] ?? null;
+  const eb = part.ele[i + 1] ?? null;
+  if (ea === null || eb === null) return null;
+  return b > a ? ea + ((eb - ea) * (m - a)) / (b - a) : ea;
+}
+
+/** The engine's FIETS index, for a part of a climb. */
+const fiets = (gain: number, length: number, top: number) => gain ** 2 / (length * 10) + Math.max(0, (top - 1000) / 1000);
+
+interface ClimbPart {
+  fromM: number;
+  toM: number;
+  /** Route measure where the day's part starts, in the direction of travel. */
+  startM: number;
+  lengthM: number;
+  gainM: number;
+  grade: number;
+  /** The climb's top, or the elevation at the day's end when the climb goes on past it. */
+  topM: number;
+  steepest: number | null;
+  fiets: number;
+  /** The climb starts before the day's start, or goes on past its end. */
+  before: boolean;
+  after: boolean;
+}
+
+/**
+ * The part of a climb ridden on day d (D82): a climb across a night stop counts on each day for its own part, worked
+ * out from the same profile. Null when the day holds none of it or the terrain there is unknown.
+ */
+function dayPart(effort: EffortFile, core: PlanCore, d: DayPlan, c: Climb): ClimbPart | null {
+  const fwd = core.inputs.direction === "forward";
+  const lo = Math.max(Math.min(d.fromM, d.toM), c.from_m);
+  const hi = Math.min(Math.max(d.fromM, d.toM), c.to_m);
+  if (hi - lo < 1) return null;
+  const before = fwd ? lo > c.from_m : hi < c.to_m;
+  const after = fwd ? hi < c.to_m : lo > c.from_m;
+  const [startM, endM] = fwd ? [lo, hi] : [hi, lo];
+  if (!before && !after) {
+    const { length_m, gain_m, avg_grade, top_m, max_grade_500m } = c;
+    return { fromM: lo, toM: hi, startM, lengthM: length_m, gainM: gain_m, grade: avg_grade, topM: top_m, steepest: max_grade_500m, fiets: c.fiets, before, after };
+  }
+  const e0 = eleAt(effort, startM);
+  const e1 = eleAt(effort, endM);
+  if (e0 === null || e1 === null || e1 <= e0) return null;
+  const lengthM = hi - lo;
+  const gainM = e1 - e0;
+  const topM = after ? e1 : c.top_m;
+  const steepest = core.axis.steepest(core.axis.tOf(startM), core.axis.tOf(endM))?.grade ?? null;
+  return { fromM: lo, toM: hi, startM, lengthM, gainM, grade: (100 * gainM) / lengthM, topM, steepest, fiets: fiets(gainM, lengthM, topM), before, after };
+}
+
 /** The day's biggest climb (D75): from 200 m at levels 1-2, from 400 m above that; a heads-up when it's tough for them. */
-export function bigClimb(full: FullData, core: PlanCore, d: DayPlan, add: Add) {
-  const climbs = full.climbs.filter((c) => c.direction === core.inputs.direction && inDay(core, d, c.from_m, c.to_m));
-  const big = climbs.sort((a, b) => b.fiets - a.fiets)[0];
-  if (big && big.gain_m >= (core.level.level <= 2 ? 200 : 400)) {
-    const at = Math.round(dayKm(core, d, core.inputs.direction === "forward" ? big.from_m : big.to_m));
-    const tough = core.level.level <= 2 && (big.avg_grade >= 5 || big.length_m >= 5000);
+export function bigClimb(full: FullData, effort: EffortFile, core: PlanCore, d: DayPlan, add: Add) {
+  const parts = full.climbs
+    .filter((c) => c.direction === core.inputs.direction && inDay(core, d, c.from_m, c.to_m))
+    .map((c) => ({ c, p: dayPart(effort, core, d, c) }))
+    .filter((x): x is { c: Climb; p: ClimbPart } => x.p !== null);
+  const big = parts.sort((a, b) => b.p.fiets - a.p.fiets)[0];
+  if (big && big.p.gainM >= (core.level.level <= 2 ? 200 : 400)) {
+    const { c, p } = big;
+    const at = Math.round(dayKm(core, d, p.startM));
+    const tough = core.level.level <= 2 && (p.grade >= 5 || p.lengthM >= 5000);
+    const up = Math.round(p.gainM);
+    const total = `a ${km(c.length_m / 1000)} km climb`;
+    const whole = p.before && p.after
+      ? `${up} m up today, part of ${total} that starts before ${d.startName} and goes on past ${d.endName} to ${Math.round(c.top_m)} m`
+      : p.before
+        ? `${up} m up today, the rest of ${total} that starts before ${d.startName}`
+        : p.after
+          ? `${up} m up today, the first part of ${total} that goes on past ${d.endName} to ${Math.round(c.top_m)} m`
+          : `${up} m up`;
+    const steepest = p.steepest === null ? "" : `; steepest 500 m ${p.steepest.toFixed(0)}%`;
     add({
       id: `climb:${d.number}`,
       kind: tough ? "headsup" : "highlight",
       day: d.number,
-      fromM: big.from_m,
-      toM: big.to_m,
-      title: `The day's big climb: ${km(big.length_m / 1000)} km at ${big.avg_grade.toFixed(1)}% from km ${at}, to ${Math.round(big.top_m)} m`,
-      short: `Climb ${km(big.length_m / 1000)} km ${big.avg_grade.toFixed(1)}%`,
-      why: `${Math.round(big.gain_m)} m up; steepest 500 m ${big.max_grade_500m.toFixed(0)}%.`,
+      fromM: p.fromM,
+      toM: p.toM,
+      title: `The day's big climb: ${km(p.lengthM / 1000)} km at ${p.grade.toFixed(1)}% from km ${at}, ${p.after ? "to the day's end at" : "to"} ${Math.round(p.topM)} m`,
+      short: `Climb ${km(p.lengthM / 1000)} km ${p.grade.toFixed(1)}%`,
+      why: `${whole}${steepest}.`,
       rank: tough ? 33 : 18,
       topic: tough ? "able" : "like",
       evidence: { source: "M1 climbs (FIETS)" },

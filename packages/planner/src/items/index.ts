@@ -52,7 +52,7 @@ function fullItems(data: PlanData, core: PlanCore, add: Add) {
     findingItems(full, core, d, ownWay, add);
     gaps.push(...supplyGaps(full, core, d));
     openFood(data, d, add);
-    bigClimb(full, core, d, add);
+    bigClimb(full, data.effort, core, d, add);
     highlightItems(full, core, d, add);
   }
   supplyAdvice(gaps, rides.length, add);

@@ -72,6 +72,71 @@ def test_climb_detected_with_fiets():
     assert c.fiets == pytest.approx(el.fiets(c.gain_m, c.length_m, c.top_m), abs=0.01)
 
 
+def rail_grade(km_at, gullies=(12.5, 20.0, 27.5), depth=20.0):
+    """A railway grade: 2% for 30 km from km 5 (+600 m), across gullies the terrain model sees 20 m deep."""
+
+    def sampler(lon, lat):
+        m = km_at((np.asarray(lon) - 5.0) * 78.85) * 1000
+        dips = sum(np.clip(depth - np.abs(m - g * 1000) * depth / 150, 0, None) for g in gullies)
+        return 100 + np.clip(m - 5000, 0, 30_000) * 0.02 - dips
+
+    return sampler
+
+
+def test_climb_runs_through_small_dips_on_a_gentle_grade():
+    profs = el.profiles(straight_path(40), rail_grade(lambda km: km), [])
+    [c] = el.climbs(profs)
+    assert c.direction == "forward"
+    assert c.gain_m == pytest.approx(600, abs=10)
+    assert c.from_m == pytest.approx(5000, abs=300) and c.to_m == pytest.approx(35_000, abs=300)
+    assert c.avg_grade == pytest.approx(2.0, abs=0.1)
+    # ridden the other way, the same grade is one climb in reverse
+    [r] = el.climbs(el.profiles(straight_path(40), rail_grade(lambda km: 40 - km), []))
+    assert r.direction == "reverse" and r.gain_m == pytest.approx(600, abs=10)
+
+
+def test_a_real_descent_still_ends_a_climb():
+    def pass_and_dip(dip):
+        def sampler(lon, lat):
+            m = (np.asarray(lon) - 5.0) * 78_850
+            up = np.clip(m - 2000, 0, 10_000) * 0.06  # +600 m at 6%
+            down = np.clip(m - 12_000, 0, 2000) * dip / 2000
+            again = np.clip(m - 14_000, 0, 5000) * 0.06  # +300 m more
+            return 100 + up - down + again
+
+        cs = el.climbs(el.profiles(straight_path(25), sampler, []))
+        return [round(c.gain_m, -1) for c in cs if c.direction == "forward"]
+
+    # 90 m is under a fifth of the 600 m gained: one climb. 110 m is more than the 100 m any dip may lose: two.
+    assert pass_and_dip(90) == [810]
+    assert pass_and_dip(110) == [600, 300]
+
+
+def test_climb_runs_across_stage_ends_but_not_gaps():
+    def grade(lon, lat):
+        m = (np.asarray(lon) - 5.0) * 78_850
+        return 100 + np.clip(m - 2000, 0, 16_000) * 0.02  # 2% for 16 km (+320 m), across the stage end at 10 km
+
+    a, b = 5.0 + 10 / 78.85, 5.0 + 20 / 78.85
+    path = RoutePath([MeasuredLine([5.0, a], [45.0, 45.0]), MeasuredLine([a, b], [45.0, 45.0])])
+    profs = el.profiles(path, grade, [])
+    [c] = el.climbs(profs)
+    assert c.gain_m == pytest.approx(320, abs=10)
+    # where the track stops and restarts, each side is a 160 m climb at 2%: too gentle for one that small
+    assert el.climbs(profs, breaks=[path.parts[1].from_m]) == []
+
+
+def test_flat_approach_is_not_part_of_the_climb():
+    def valley_then_pass(lon, lat):
+        m = (np.asarray(lon) - 5.0) * 78_850
+        return 100 + np.clip(m, 0, 10_000) * 0.01 + np.clip(m - 10_000, 0, 5000) * 0.06  # 1% for 10 km, then 6%
+
+    [c] = el.climbs(el.profiles(straight_path(20), valley_then_pass, []))
+    assert c.from_m == pytest.approx(10_000, abs=300)
+    assert c.gain_m == pytest.approx(300, abs=10)
+    assert c.avg_grade == pytest.approx(6.0, abs=0.3)
+
+
 def test_building_spikes_are_removed():
     def with_buildings(lon, lat):
         m = (np.asarray(lon) - 5.0) * 78_850

@@ -840,7 +840,7 @@
     "source": "owner",
     "kind": "lookup",
     "route": "user/u4a8fece911",
-    "run": "20261023T143356Z_95d7025d78",
+    "run": "20261023T200011Z_95d7025d78",
     "plan": {
       "sections": [
         1,
@@ -863,9 +863,10 @@
             }
           }
         ],
-        "reference": "Day 4, Hope to Tulameen, climbs 2,087 m in 126 km, about 12 h 02 riding: beyond your level.",
+        "reference": "Day 4, Hope to Tulameen, climbs 2,087 m in 126 km, about 12 h 02 riding: beyond your level. Its big climb starts at km 29: 28 km at 2.5% to 1115 m, 700 m up, with a steepest 500 m of 15%.",
         "mustSay": [
-          "2,087"
+          "2,087",
+          "700"
         ],
         "phrasings": [
           "what's the climb on day 4 like?"
@@ -2478,7 +2479,7 @@
         "mustSay": [
           "Villefranche-de-Conflent"
         ],
-        "reference": "Day 13, Tue 27 Jul, is L'Hospitalet-près-l'Andorre → Villefranche-de-Conflent: 86 km with 1,132 m of climbing, within your level. It starts with the day's big climb, 10 km at 5.3% to 1916 m, and 71 km is on busy roads. Leaving at 09:00 you'd be in by 16:45, and Villefranche-de-Conflent has 2 hotels and 4 guest houses nearby.",
+        "reference": "Day 13, Tue 27 Jul, is L'Hospitalet-près-l'Andorre → Villefranche-de-Conflent: 86 km with 1,132 m of climbing, within your level. It starts with the day's big climb, 9 km at 5.4% to 1916 m, and 71 km is on busy roads. Leaving at 09:00 you'd be in by 16:45, and Villefranche-de-Conflent has 2 hotels and 4 guest houses nearby.",
         "phrasings": [
           "day 13?"
         ]
@@ -2514,7 +2515,7 @@
             }
           }
         ],
-        "reference": "Day 4, Sun 18 Jul, is Eaux-Bonnes → Argelès-Gazost: 41 km but 1,194 m of climbing, in the mountains. It opens with the day's big climb, 21 km at 5.9% to 1706 m, steepest 500 m at 12%, and 30 km is on busy roads. You'd be in by 14:27.",
+        "reference": "Day 4, Sun 18 Jul, is Eaux-Bonnes → Argelès-Gazost: 41 km but 1,194 m of climbing, in the mountains. It opens with the day's big climb, 12 km at 7.9% to 1706 m, steepest 500 m at 12%, and 30 km is on busy roads. You'd be in by 14:27.",
         "phrasings": [
           "day 4?"
         ]

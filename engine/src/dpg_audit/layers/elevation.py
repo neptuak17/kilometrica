@@ -148,14 +148,19 @@ def gradient_events(profs: list[PartProfile], untrusted: list[tuple[float, float
     return events
 
 
-def _extrema(ele: np.ndarray, threshold: float) -> list[int]:
-    """Turning points of a zig-zag (hysteresis) filter: wiggles smaller than `threshold` metres are ignored.
+def _extrema(ele: np.ndarray, threshold: float, share: float = 0.0, most: float | None = None) -> list[int]:
+    """Turning points of a zig-zag (hysteresis) filter: wiggles smaller than `threshold` metres are ignored, or than
+    `share` of the leg so far when that is more (at most `most` metres).
 
     Always starts at 0 and ends at the last index.
     """
     n = ele.size
     if n < 2:
         return list(range(n))
+
+    def needs(leg: float) -> float:
+        return max(threshold, min(share * leg, most if most is not None else np.inf))
+
     pivots = [0]
     trend, cand = 0, 0
     for i in range(1, n):
@@ -167,12 +172,12 @@ def _extrema(ele: np.ndarray, threshold: float) -> list[int]:
         elif trend == 1:
             if ele[i] > ele[cand]:
                 cand = i
-            elif ele[cand] - ele[i] >= threshold:
+            elif ele[cand] - ele[i] >= needs(ele[cand] - ele[pivots[-1]]):
                 pivots.append(cand)
                 trend, cand = -1, i
         elif ele[i] < ele[cand]:
             cand = i
-        elif ele[i] - ele[cand] >= threshold:
+        elif ele[i] - ele[cand] >= needs(ele[pivots[-1]] - ele[cand]):
             pivots.append(cand)
             trend, cand = 1, i
     if trend != 0 and cand != pivots[-1]:
@@ -260,47 +265,85 @@ def fiets(gain: float, length: float, top: float) -> float:
     return gain**2 / (length * 10) + max(0.0, (top - 1000) / 1000)
 
 
+# Climbs (D82). A climb carries on through a dip of less than CLIMB_DIP_SHARE of the height gained so far (at least
+# CLIMB_DIP_MIN_M, at most CLIMB_DIP_MAX_M): railway grades cross gullies the terrain model shows as dips. It starts
+# where the road starts rising at CLIMB_STEADY_GRADE % or more and ends where it stops. A climb of CLIMB_LONG_GAIN_M
+# or more needs to average only CLIMB_STEADY_GRADE %; smaller ones need `min_grade`.
+CLIMB_DIP_MIN_M = 15.0
+CLIMB_DIP_SHARE = 0.2
+CLIMB_DIP_MAX_M = 100.0
+CLIMB_STEADY_GRADE = 1.5
+CLIMB_LONG_GAIN_M = 200.0
+
+
+def _runs(profs: list[PartProfile], breaks: list[float]) -> list[tuple[np.ndarray, np.ndarray]]:
+    """Measures and elevations of the stretches a climb can run along: consecutive parts joined where the track runs
+    on, split where it stops and restarts elsewhere (`breaks`) and around parts with no usable profile."""
+    out: list[tuple[np.ndarray, np.ndarray]] = []
+    joinable = False
+    for p in profs:
+        if p.ele.size < 3 or np.isnan(p.ele).any():
+            joinable = False
+            continue
+        if joinable and not any(abs(g - p.m[0]) < 1.0 for g in breaks):
+            m, e = out[-1]
+            out[-1] = (np.concatenate([m, p.m]), np.concatenate([e, p.ele]))
+        else:
+            out.append((p.m, p.ele))
+        joinable = True
+    return out
+
+
+def _steady(m: np.ndarray, e: np.ndarray, a: int, b: int) -> tuple[int, int]:
+    """The part of the leg a..b that gains most over a steady CLIMB_STEADY_GRADE, in the direction it climbs: from
+    where the road starts rising at that grade or more to where it stops. Returns (a, b) with a <= b."""
+    idx = np.arange(a, b + 1) if e[b] >= e[a] else np.arange(b, a - 1, -1)
+    excess = e[idx] - CLIMB_STEADY_GRADE / 100 * np.abs(m[idx] - m[idx[0]])
+    j = int(np.argmax(excess - np.minimum.accumulate(excess)))
+    i = int(np.argmin(excess[: j + 1]))
+    return min(idx[i], idx[j]), max(idx[i], idx[j])
+
+
 def climbs(
     profs: list[PartProfile],
     min_gain: float = 40.0,
     min_grade: float = 2.5,
     untrusted: list[tuple[float, float]] | None = None,
+    breaks: list[float] | None = None,
 ) -> list[Climb]:
-    """Climbs in both directions of travel, from hysteresis legs of the smoothed profile (none on `untrusted`)."""
+    """Climbs in both directions of travel, from hysteresis legs of the smoothed profile (D82), none on `untrusted`.
+    A climb runs across part boundaries except at `breaks`, the measures where the track stops and restarts
+    elsewhere."""
     untrusted = untrusted or []
     out: list[Climb] = []
     n500 = int(500 / STEP_M)
-    for p in profs:
-        e = p.ele
-        if e.size < 3 or np.isnan(e).any():
-            continue
-        ext = _extrema(e, 15.0)
+    for m, e in _runs(profs, breaks or []):
+        ext = _extrema(e, CLIMB_DIP_MIN_M, CLIMB_DIP_SHARE, CLIMB_DIP_MAX_M)
         for a, b in zip(ext[:-1], ext[1:], strict=True):
-            # Trim flat run-ins and run-outs: the climb starts where the road leaves its low point and ends
-            # where it reaches its high point (within 1 m).
-            lo, hi = (a, b) if e[b] > e[a] else (b, a)
-            low_band = np.nonzero(e[a : b + 1] <= e[lo] + 1.0)[0] + a
-            high_band = np.nonzero(e[a : b + 1] >= e[hi] - 1.0)[0] + a
-            if e[b] > e[a]:
-                a, b = int(low_band.max()), int(high_band.min())
-            else:
-                a, b = int(high_band.max()), int(low_band.min())
+            if abs(e[b] - e[a]) < min_gain:
+                continue
+            a, b = _steady(m, e, a, b)
             if b <= a:
                 continue
             gain = float(e[b] - e[a])
-            length = float(p.m[b] - p.m[a])
-            if length <= 0 or abs(gain) < min_gain or abs(gain) / length * 100 < min_grade:
+            length = float(m[b] - m[a])
+            if length <= 0 or abs(gain) < min_gain:
                 continue
-            if abs(gain) / length * 100 > IMPLAUSIBLE_GRADE * 0.8:
+            grade = abs(gain) / length * 100
+            if grade < (CLIMB_STEADY_GRADE if abs(gain) >= CLIMB_LONG_GAIN_M else min_grade):
+                continue
+            if grade > IMPLAUSIBLE_GRADE * 0.8:
                 continue  # a "climb" steeper than 20% on average is a terrain-model artefact, not a road
-            if _inside(float(p.m[a]), float(p.m[b]), untrusted):
+            if _inside(float(m[a]), float(m[b]), untrusted):
                 continue
             seg = e[a : b + 1] if gain > 0 else e[a : b + 1][::-1]
-            ms = p.m[a : b + 1]
+            ms = m[a : b + 1]
             if seg.size > n500:
-                mg = float(((seg[n500:] - seg[:-n500]) / (n500 * STEP_M) * 100).max())
+                # Measured, not counted: where two parts join, the samples are further apart.
+                d = ms if gain > 0 else ms[::-1]
+                mg = float(((seg[n500:] - seg[:-n500]) / np.abs(d[n500:] - d[:-n500]) * 100).max())
             else:
-                mg = abs(gain) / length * 100
+                mg = grade
             top = float(max(e[a], e[b]))
             out.append(
                 Climb(
