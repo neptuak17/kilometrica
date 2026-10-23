@@ -12,6 +12,7 @@ import { restPlace } from "./rest";
 import { dayIndex, monthOf } from "./sun";
 import { hours, km, listable, MONTHS_LONG, placeKind, placeTitle, stopName } from "./text";
 import { type DayPlan, type NightPlan, type PlanData, placesMissing } from "./types";
+import { usualWeather, weatherSentence } from "./weather";
 
 export interface DayFacts {
   /** The night after this day; none on a rest day or the last day. */
@@ -123,6 +124,19 @@ export function restFacts(plan: PlanResult, data: PlanData, d: DayPlan): RestFac
     })
     .sort((a, b) => b.score - a.score);
   return { afterRide, stop, sights: restPlace(data, stop, plan.inputs.sleep, month).sights.slice(0, 6), food, services, moves };
+}
+
+/**
+ * A day's usual weather as a sentence (D77): "Typically 12–21 °C, rain 1 day in 5, little wind along the way." Over
+ * the sections the day rides, in its month; a rest day's is its town's, with no wind along the way. Null with no data.
+ */
+export function dayWeather(data: PlanData, d: DayPlan): string | null {
+  const at = d.stop?.at_m ?? d.fromM;
+  const sections = d.sections.length
+    ? data.dream.sections.filter((s) => d.sections.includes(s.number))
+    : data.dream.sections.filter((s) => at >= s.from_m && at <= s.to_m).slice(0, 1);
+  const text = usualWeather(sections, monthOf(d.date), d.kind === "ride" ? d.tailwindMs : null);
+  return text ? weatherSentence(text) : null;
 }
 
 /** What Compare sets side by side for a plan (11.6): days, the hardest day, total hours, nights, calls, busy km. */

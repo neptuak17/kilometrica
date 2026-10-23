@@ -38,7 +38,7 @@ import {
 } from "@dpg/planner";
 import { Badge, Button, Card, CardContent, Checkbox, cn, Icons, Label, LinkButton } from "@dpg/ui";
 import { type ReactNode, useId, useState } from "react";
-import { dayFacts, restFacts } from "@dpg/planner";
+import { dayFacts, dayWeather, restFacts } from "@dpg/planner";
 import { looksUp, openPhoto } from "./photos";
 
 const EFFORT = { within: "within your level", harder: "a harder day", beyond: "beyond your level" } as const;
@@ -171,6 +171,8 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   // Only a long steep stretch is worth a line (D75).
   const steepShown = !!d.steepest && d.steepest.grade > STEEP(plan.level.level).grade;
   const rest = d.kind === "rest" && !free ? restFacts(plan, data, d) : null;
+  // The usual weather (D77): climate normals, free like the rest of Dream's data.
+  const weather = dayWeather(data, d);
   const next = plan.days.find((x) => x.number === d.number + 1);
   const unloadedText = unloaded.map(([a, b]) => `km ${a}–${b}`).join(", ");
   // The place chosen for the night, while it is still one of this town's (D64).
@@ -244,6 +246,7 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
 
         {/* A rest day's card says why it's there instead (D74). */}
         {!rest && <p className="text-base leading-relaxed">{dayStory(data, d, plan.items)}</p>}
+        {weather && <p className={cn("text-sm text-muted-foreground", !rest && "-mt-3")}>{weather}</p>}
 
         {free ? (
           <div className="flex items-start gap-2 rounded-2xl border border-dashed px-4 py-3 text-muted-foreground">

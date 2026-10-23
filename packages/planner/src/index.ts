@@ -14,4 +14,6 @@ export * from "./share";
 export * from "./stages";
 export * from "./sun";
 export * from "./text";
+export * from "./thoughts";
 export * from "./types";
+export * from "./weather";

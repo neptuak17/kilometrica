@@ -35,6 +35,7 @@ import {
   type PlanState,
   placesMissing,
   readFragment,
+  secondThoughts,
   shareFragment,
   type Itinerary,
   toDocument,
@@ -485,6 +486,11 @@ function PlanPage({ start }: { start: Start }) {
     return history.last ? planChanges(planFor(history.last.before), planFor(history.last.after)) : null;
   }, [plan, data, preview, history.last, planFor]);
   const doc = useMemo(() => (plan ? toDocument(plan, { ...meta, name: meta.name || plan.brief.title }) : null), [plan, meta]);
+  // A second thought about the change just made (D77): one at a time, until the rider answers or makes another change.
+  const thought = useMemo(() => {
+    if (!data || preview || !history.last || history.last.undone) return null;
+    return secondThoughts(data, planFor(history.last.before), planFor(history.last.after))[0] ?? null;
+  }, [data, preview, history.last, planFor]);
 
   // Plans stay on this device (principle 5); a shared plan is kept only when the rider asks.
   useEffect(() => {
@@ -659,6 +665,21 @@ function PlanPage({ start }: { start: Start }) {
               lines={changes!.lines}
               onUndo={back}
               onHide={() => setHidden(history.last)}
+              thought={
+                thought && history.present
+                  ? {
+                      question: thought.question,
+                      why: thought.why,
+                      // Each way to change it is previewed first, as a call's option is (D77).
+                      options: thought.options.map((o) => ({
+                        label: o.label,
+                        onPress: () => setPreview({ label: o.label, state: applyAction(history.present!, o.action), callId: thought.id, optionId: o.label }),
+                      })),
+                      keep: thought.keep,
+                      onKeep: () => apply({ type: "dismiss", item: thought.id }),
+                    }
+                  : undefined
+              }
             />
           )}
         </div>

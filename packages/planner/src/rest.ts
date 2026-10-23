@@ -11,7 +11,8 @@ import { km, plural, stopName } from "./text";
 import type { PlanData, Sleep } from "./types";
 
 const SIGHTS_M = 5000;
-const MIN_APART = 3;
+/** Rest days are at least this many riding days apart when the planner places them (D74). */
+export const MIN_APART = 3;
 /** A better town for a rest day is looked for this far either way of the night, and must score this much higher. */
 const BETTER_M = 25_000;
 const BETTER_BY = 0.25;

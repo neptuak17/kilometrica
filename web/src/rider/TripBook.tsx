@@ -730,6 +730,7 @@ function RestDayPage({ plan, data, d, page, pages, pageOf }: { plan: PlanResult;
   const month = monthOf(d.date);
   const sec = stop ? data.dream.sections.find((s) => stop.at_m >= s.from_m && stop.at_m <= s.to_m) : undefined;
   const tmax = sec?.climate?.tmax_c[month] ?? null;
+  const tmin = sec?.climate?.tmin_c[month] ?? null;
   const rain = sec?.climate?.rain_days[month] ?? null;
   const near = (m: number, r: number) => !!stop && Math.abs(m - stop.at_m) <= r;
   const sights = (data.full?.highlights ?? []).filter((h) => near(h.at_m, 5000) && h.offset_m <= 3000).slice(0, 3);
@@ -761,7 +762,8 @@ function RestDayPage({ plan, data, d, page, pages, pageOf }: { plan: PlanResult;
       </header>
       <dl className="grid grid-cols-3 rounded-lg border">
         {[
-          ["Typically", tmax !== null ? `${Math.round(tmax)} °C` : "No data: check the forecast"],
+          // Night lows to day highs, as on the screen (D77).
+          ["Typically", tmax !== null ? `${tmin !== null ? `${Math.round(tmin)}–` : ""}${Math.round(tmax)} °C` : "No data: check the forecast"],
           ["Rain", rain !== null ? cap(oneIn(rain)) : "No data"],
           ["Sunset", d.sunset !== null ? clock(d.sunset) : "–"],
         ].map(([k, v], i) => (

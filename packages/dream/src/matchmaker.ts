@@ -5,6 +5,7 @@
  * Missing data never lowers a stretch's rank; it is listed under "check yourself" instead (D37).
  */
 import type { DreamFile, DreamSection, RiderLevel } from "@dpg/contracts";
+import { usualWeather } from "@dpg/planner";
 
 export type Pref = "prefer" | "ok" | "avoid";
 export type Way = "forward" | "reverse";
@@ -48,6 +49,8 @@ export interface StretchResult {
   /** Fewer km a day than the rider's usual: an easier, more relaxed trip (D76). */
   easier: boolean;
   month: number | null;
+  /** The usual weather in `month`, in the words used everywhere (D77): "typically 12–21 °C, rain 1 day in 5". */
+  weather: string | null;
   comfort: number | null;
   bestTime: number | null;
   surfaces: Record<SurfaceKind | "unknown", number>;
@@ -340,6 +343,7 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
     gradeAtLeast: partly,
     easier,
     month,
+    weather: month === null ? null : usualWeather(secs, month),
     comfort: comfort === null ? null : Math.round(comfort),
     bestTime: bestTime === null ? null : Math.round(bestTime),
     surfaces,

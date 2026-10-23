@@ -171,7 +171,9 @@ export const factsText = (r: StretchResult, levels: Level[], a: Ask) =>
 export function whenText(r: StretchResult, a: Ask): string | undefined {
   if (r.month === null) return undefined;
   const score = r.bestTime === null ? "" : `: best-time ${r.bestTime} of 100`;
-  return a.month === null ? `Best in ${MONTHS_LONG[r.month]}${score}` : `In ${MONTHS_LONG[r.month]}${score}`;
+  // The usual weather that month, as the plan's brief and day cards say it (D77).
+  const weather = r.weather ? ` · ${r.weather}` : "";
+  return a.month === null ? `Best in ${MONTHS_LONG[r.month]}${score}${weather}` : `In ${MONTHS_LONG[r.month]}${score}${weather}`;
 }
 
 /**

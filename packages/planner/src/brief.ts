@@ -6,8 +6,9 @@
 import type { PlanCore } from "./plan";
 import { monthOf } from "./sun";
 import { foodOnDay, isNightLine, toDo } from "./items";
-import { dayList, hours, KNOWN_ENOUGH, km, MONTHS_LONG, numberList, oneIn, plural, range, shareOf, sleepNoun } from "./text";
+import { dayList, hours, KNOWN_ENOUGH, km, MONTHS_LONG, numberList, plural, range, shareOf, sleepNoun } from "./text";
 import type { Brief, BriefLine, DayPlan, PlanData, PlanItem } from "./types";
+import { usualWeather } from "./weather";
 
 const THEME_PHRASE: Record<string, string> = {
   coast: "along the coast",
@@ -60,22 +61,10 @@ export function dayStory(data: PlanData, d: DayPlan, items: PlanItem[]): string 
 function weather(data: PlanData, core: PlanCore): string {
   const month = monthOf(core.inputs.startDate);
   const secs = new Set(core.days.flatMap((d) => d.sections));
-  const clim = data.dream.sections.filter((s) => secs.has(s.number) && s.climate).map((s) => s.climate!);
-  if (!clim.length) return "Typical weather: no data for these days.";
-  const avg = (xs: (number | null | undefined)[]) => {
-    const v = xs.filter((x): x is number => typeof x === "number");
-    return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
-  };
-  const tmax = avg(clim.map((c) => c.tmax_c[month]));
-  const rain = avg(clim.map((c) => c.rain_days[month]));
   const winds = core.days.filter((d) => d.tailwindMs !== null).map((d) => d.tailwindMs!);
   const wind = winds.length ? winds.reduce((a, b) => a + b, 0) / winds.length : null;
-  const parts = [];
-  if (tmax !== null) parts.push(`typically ${Math.round(tmax)} °C highs`);
-  if (rain !== null) parts.push(`rain ${oneIn(rain)}`);
-  if (wind !== null) parts.push(wind >= 1 ? "a light tailwind on average" : wind <= -1 ? "a headwind on average" : "little wind along the way");
-  const text = parts.join(", ");
-  return `In ${MONTHS_LONG[month]}: ${text}.`;
+  const text = usualWeather(data.dream.sections.filter((s) => secs.has(s.number)), month, wind);
+  return text ? `In ${MONTHS_LONG[month]}: ${text}.` : "Typical weather: no data for these days.";
 }
 
 function themes(data: PlanData, core: PlanCore): string[] {

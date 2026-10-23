@@ -6,14 +6,17 @@ import { dayStory } from "./brief";
 import { planChanges } from "./changes";
 import { choicesOf, parseDocument, toDocument } from "./document";
 import { calendarFile, dayGpx, tripGpx } from "./exports";
+import { dayWeather } from "./facts";
 import { bearing, type Geometry } from "./geometry";
 import { bookingSearches, dayItems, isNightLine, mapsSearch, nightOptions, nightStay, railLinks, streetPhotos, toDo, WILD_CAMP, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan } from "./plan";
 import { ridingDays, suggestedRest, suggestedRestDays } from "./rest";
+import { secondThoughts } from "./thoughts";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
 import { addDays, clock, sunTimes, weekday } from "./sun";
+import { usualWeather } from "./weather";
 import { bedKinds, bedsKnown, listable, placeKind, placeTitle, stayDates } from "./text";
 import { NO_CHOICES, type NightPlan, type PlanData, type PlanInputs } from "./types";
 
@@ -828,5 +831,64 @@ describe("Dream and Plan agree (2026-10-23)", () => {
     expect(suggestedRest(6)).toBe(0);
     // The rider's file sets the riding days (D70): by those.
     expect(suggestedRest(13, 11)).toBe(1);
+  });
+});
+
+describe("the usual weather, one wording everywhere (D77)", () => {
+  it("says night lows to day highs, how often it rains and the wind along the way", () => {
+    const d = data();
+    const p = makePlan(d, inputs({ restAfter: [2] }));
+    const like = p.brief.lines.find((l) => l.topic === "like")!.answer;
+    expect(like.startsWith("In October: typically 12–21 °C, rain 1 day in 5, little wind along the way.")).toBe(true);
+    expect(dayWeather(d, p.days[0]!)).toBe("Typically 12–21 °C, rain 1 day in 5, little wind along the way.");
+    // A rest day stays in town: no wind along the way.
+    expect(dayWeather(d, p.days.find((x) => x.kind === "rest")!)).toBe("Typically 12–21 °C, rain 1 day in 5.");
+    expect(usualWeather([], 9)).toBeNull();
+  });
+});
+
+describe("second thoughts: a question about an unusual choice, right after it (D77)", () => {
+  const d = data({ lengthKm: 900 });
+  const at = (over: Partial<PlanInputs>, choices = NO_CHOICES) => makePlan(d, inputs({ toM: 900_000, days: 12, ...over }), choices);
+
+  it("asks about two rest days close together, offering to space them, and only when the change brought it up", () => {
+    const before = at({ restAfter: [4] });
+    const after = at({ restAfter: [4, 5] });
+    const [t, ...more] = secondThoughts(d, before, after);
+    expect(more).toEqual([]);
+    expect(t!.question).toBe("Two rest days close together?");
+    expect(t!.why).toMatch(/^Only 1 riding day between your rest days in Town \d+ and Town \d+\. /);
+    expect(t!.options).toHaveLength(1);
+    expect(t!.options[0]!.label).toMatch(/^Rest in Town \d+ instead, after day \d+$/);
+    expect(t!.keep).toBe("Keep both");
+    // The option spaces them; the plan it makes asks nothing more.
+    const moved = applyAction({ inputs: after.inputs, choices: after.choices }, t!.options[0]!.action);
+    expect(moved.inputs.restAfter).toEqual([4, 7]);
+    expect(secondThoughts(d, after, makePlan(d, moved.inputs, moved.choices))).toEqual([]);
+    // Already so before the change: nothing new to ask. Dismissed ("Keep both"): never again.
+    expect(secondThoughts(d, after, at({ restAfter: [4, 5], startMinutes: 8 * 60 }))).toEqual([]);
+    expect(secondThoughts(d, before, at({ restAfter: [4, 5] }, { ...NO_CHOICES, dismissed: [t!.id] }))).toEqual([]);
+  });
+
+  it("asks about a rest day straight after day 1, and never about the planner's own rest days", () => {
+    const [t] = secondThoughts(d, at({}), at({ restAfter: [1] }));
+    expect(t!.question).toBe("A rest day straight after day 1?");
+    expect(applyAction({ inputs: inputs({ restAfter: [1] }), choices: NO_CHOICES }, t!.options[0]!.action).inputs.restAfter).toEqual([2]);
+    expect(secondThoughts(d, at({}), at({ restDays: 2 }))).toEqual([]);
+  });
+
+  it("asks about a rest day at a spot with nothing there, offering a better town nearby", () => {
+    const stops = Array.from({ length: 89 }, (_, i) => stop((i + 1) * 10, (i + 1) * 10 === 230 ? { name: null } : {}));
+    const sparse = data({ lengthKm: 900, stops });
+    const plain = makePlan(sparse, inputs({ toM: 900_000, days: 12 }));
+    const night = plain.nights.find((n) => n.stop.at_m === 230_000) ?? plain.nights[2]!;
+    const locked = { ...NO_CHOICES, locked: { [night.index]: "s230" } };
+    const before = makePlan(sparse, inputs({ toM: 900_000, days: 12 }), locked);
+    const after = makePlan(sparse, inputs({ toM: 900_000, days: 12, restAfter: [night.afterRide] }), locked);
+    const t = secondThoughts(sparse, before, after).find((x) => x.id.startsWith("thought:place:"));
+    // A spot with no name is named by where it is (here the fixture has no "near"); real stops say "12 km past Tulameen".
+    expect(t!.question).toBe("A rest day near km 230?");
+    expect(t!.why).toBe("It's a spot between towns, with nothing we know of for a day off.");
+    expect(t!.options[0]!.label).toMatch(/^Rest in Town \d+ instead, after day \d+$/);
   });
 });
