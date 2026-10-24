@@ -3,9 +3,9 @@
  * link that opens one in Plan. Dream's page and the assistant's tools (A2, D77) both work from these, so the chat and
  * the screen always agree.
  */
-import type { DailySection, DreamFile, UserPlace } from "@dpg/contracts";
-import { ownNights, ridingDays } from "@dpg/planner";
-import { type Ask, planHref, type Point, pointsOf } from "./ask";
+import type { DailySection, DreamFile, StopsFile, UserPlace } from "@dpg/contracts";
+import { ownNightBeds, ownNights, ridingDays } from "@dpg/planner";
+import { and, type Ask, planHref, type Point, pointsOf } from "./ask";
 import { describeStretch, findStretches, type StretchResult } from "./matchmaker";
 
 /** A route's Dream files: what Dream's page loads, and what the assistant's Dream tools see. */
@@ -19,6 +19,8 @@ export interface DreamRoute {
   userPlaces: UserPlace[];
   /** A rider's own file is the trip (D76). */
   own: boolean;
+  /** Its stops, for a rider's own file: whether its nights have a place to stay (D86). */
+  stops?: StopsFile | null;
 }
 
 export const sectionsOf = (r: DreamRoute) => [...r.dream.sections].sort((x, y) => x.from_m - y.from_m);
@@ -99,6 +101,24 @@ export function daysNote(r: DreamRoute, a: Ask, s: StretchResult): string {
   return nightsIn(r, fromM, toM) && usual !== null
     ? `Your file's nights: ${s.days} riding days · at a usual ${level} day: ${usual}. Set your days above and we find the stops instead.`
     : "The days are those of a usual day at your level; set your days above to change them.";
+}
+
+/**
+ * For a file that marks its nights, on its own stops (D70, D86): which have a place of the rider's kind, as Plan will
+ * find them. "Campsites near 6 of your 10 nights; none known near Tulameen, Bankeir, Beaverdell and New Denver."
+ */
+export function nightsNote(r: DreamRoute, a: Ask, s: StretchResult): string | null {
+  if (!r.own || !r.stops || a.days !== null) return null;
+  const { fromM, toM } = spanOf(r, s);
+  const sleep = a.stay === "camping" ? "camping" : a.stay === "rooms" ? "rooms" : "mix";
+  const nights = ownNightBeds({ userPlaces: r.userPlaces, stops: r.stops }, fromM, toM, sleep, a.month ?? s.month ?? 6);
+  if (!nights.length) return null;
+  const what = sleep === "camping" ? "Campsites" : sleep === "rooms" ? "Rooms" : "Places to stay";
+  const none = nights.filter((n) => n.count === 0).map((n) => n.name ?? `km ${Math.round(n.at_m / 1000)}`);
+  if (!none.length) return `${what} near every one of your ${nights.length} nights.`;
+  const names = none.length <= 4 ? and(none) : `${none.slice(0, 3).join(", ")} and ${none.length - 3} more`;
+  if (none.length === nights.length) return `No ${what.toLowerCase()} known near any of your ${nights.length} nights.`;
+  return `${what} near ${nights.length - none.length} of your ${nights.length} nights; none known near ${names}.`;
 }
 
 /** Plan's address for a stretch; days chosen on a stretch the rider's file marks nights on mean our stops (D70). */

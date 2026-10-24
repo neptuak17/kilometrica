@@ -678,7 +678,7 @@
         "mustSay": [
           "Plan"
         ],
-        "reference": "Yes: every section of the route has a campsite, though places to stay can be up to 53 km apart. When you plan it, each of your nights shows its campsite, or where there isn't one.",
+        "reference": "Campsites are near 6 of your 10 nights; none are known near Tulameen, Naramata, Greenwood and Ootischenia, so those nights need another plan. When you plan it, each of them shows what else is nearby.",
         "phrasings": [
           "can I camp every night?"
         ]
@@ -708,7 +708,7 @@
         "mustSay": [
           "Plan"
         ],
-        "reference": "Not every night: we found no rooms on 2 of the route's sections, so a couple of nights may need to be camping. When you plan it, each of your nights shows its hotels, or where there aren't any.",
+        "reference": "Rooms are near 8 of your 10 nights; none are known near Bankeir and Beaverdell. When you plan it, those nights show what else is nearby.",
         "phrasings": [
           "hotels every night possible?"
         ]

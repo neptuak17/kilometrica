@@ -134,6 +134,11 @@ export interface PlanChoices {
    * the new days allow.
    */
   restStops?: string[];
+  /**
+   * The nights (stop ids) before the rider moved one (D85): the others stay while the days either side of the moved
+   * night stay within the level.
+   */
+  keepNights?: string[];
 }
 
 export const NO_CHOICES: PlanChoices = { locked: {}, beds: {}, booked: [], done: [], dismissed: [] };

@@ -84,8 +84,10 @@ export function applyAction(state: PlanState, action: PlanAction, before?: PlanR
   // `gone`: the planner's rest days (by riding day before the change) that no longer keep their towns.
   const replan = (next: Partial<PlanInputs>, c: PlanChoices = choices, gone: number[] = []): PlanState => ({
     inputs: { ...inputs, ...next },
-    choices: { ...c, nights: undefined, ...(rests ? { restStops: rests.filter((x) => !gone.includes(x.afterRide)).map((x) => x.stop) } : {}) },
+    choices: { ...c, nights: undefined, keepNights: undefined, ...(rests ? { restStops: rests.filter((x) => !gone.includes(x.afterRide)).map((x) => x.stop) } : {}) },
   });
+  // A night the rider moves leaves the others where they were (D85), when the plan before it is known.
+  const holding = (s: PlanState): PlanState => (before ? { ...s, choices: { ...s.choices, keepNights: before.nights.map((n) => n.stop.id) } } : s);
   // A rest day the rider places takes the place of the planner's nearest one within GIVES_WAY riding days (D83).
   const givesWay = (current: number[], r: number) =>
     current
@@ -100,7 +102,7 @@ export function applyAction(state: PlanState, action: PlanAction, before?: PlanR
       if (next.days !== undefined && next.days !== inputs.days && next.stops === inputs.stops) next.stops = "ours";
       // Another stretch or the other way is another trip: its rest days start afresh.
       const trip = (["fromM", "toM", "direction"] as const).some((k) => next[k] !== undefined && next[k] !== inputs[k]);
-      return trip ? { inputs: { ...inputs, ...next }, choices: { ...choices, nights: undefined, restStops: undefined } } : replan(next);
+      return trip ? { inputs: { ...inputs, ...next }, choices: { ...choices, nights: undefined, keepNights: undefined, restStops: undefined } } : replan(next);
     }
     case "add-day":
     case "ride-days": {
@@ -177,7 +179,7 @@ export function applyAction(state: PlanState, action: PlanAction, before?: PlanR
       );
     }
     case "lock-night":
-      return replan({}, { ...choices, locked: { ...choices.locked, [action.night]: action.stop } });
+      return holding(replan({}, { ...choices, locked: { ...choices.locked, [action.night]: action.stop } }));
     case "release-night": {
       const locked = { ...choices.locked };
       delete locked[action.night];
@@ -190,10 +192,10 @@ export function applyAction(state: PlanState, action: PlanAction, before?: PlanR
       const bookedOn = { ...choices.bookedOn };
       if (action.on && action.date) bookedOn[action.night] = action.date;
       else delete bookedOn[action.night];
-      return replan({}, { ...choices, booked, locked, bookedOn });
+      return holding(replan({}, { ...choices, booked, locked, bookedOn }));
     }
     case "stay":
-      return replan({}, { ...choices, locked: { ...choices.locked, [action.night]: action.stop }, beds: { ...choices.beds, [action.night]: action.place } });
+      return holding(replan({}, { ...choices, locked: { ...choices.locked, [action.night]: action.stop }, beds: { ...choices.beds, [action.night]: action.place } }));
     case "bed": {
       const beds = { ...choices.beds };
       if (action.place) beds[action.night] = action.place;

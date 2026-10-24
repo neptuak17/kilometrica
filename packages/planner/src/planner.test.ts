@@ -10,7 +10,7 @@ import { dayWeather } from "./facts";
 import { bearing, type Geometry } from "./geometry";
 import { bookingSearches, dayItems, isNightLine, mapsSearch, nightOptions, nightStay, railLinks, streetPhotos, toDo, WILD_CAMP, wikiLinks } from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
-import { makePlan } from "./plan";
+import { makePlan, ownNightBeds } from "./plan";
 import { ridingDays, suggestedRest, suggestedRestDays } from "./rest";
 import { secondThoughts } from "./thoughts";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
@@ -652,6 +652,11 @@ describe("sparse country and the rider's own stops (D69, D70)", () => {
     const state: PlanState = { inputs: inputs(), choices: NO_CHOICES };
     expect(applyAction(state, { type: "set", inputs: { ...inputs(), days: 6 } }).inputs.stops).toBe("ours");
     expect(applyAction(state, { type: "set", inputs: { ...inputs(), bike: "gravel" } }).inputs.stops).toBeUndefined();
+    // What Dream says of those nights (D86): as Plan finds them, by the stop's town or the rider's own name.
+    expect(ownNightBeds(own(), 0, 300_000, "camping", 9)).toEqual([
+      { name: "Town 60", at_m: 61_000, count: p.nights[0]!.beds.count },
+      { name: "Cabins", at_m: 135_000, count: 0 },
+    ]);
   });
 
   it("lets a rider who camps wild camp only where no campsite is in reach, with pushing on as the other choice", () => {
@@ -772,6 +777,26 @@ describe("rest days: placed where they help, moved as life happens (D74)", () =>
     }
     // Another stretch is another trip.
     expect(applyAction(state, { type: "set", inputs: { toM: 800_000 } }, p).choices.restStops).toBeUndefined();
+  });
+
+  it("leaves the other nights where they were when the rider moves one (D85)", () => {
+    const d = data({ lengthKm: 900 });
+    const state: PlanState = { inputs: inputs({ toM: 900_000, days: 12 }), choices: NO_CHOICES };
+    const p = makePlan(d, state.inputs, state.choices);
+    const ids = p.nights.map((n) => n.stop.id);
+    const stopAt = (m: number) => p.candidates.find((c) => c.stop.at_m === m)!.stop.id;
+    const at = p.nights[4]!.stop.at_m;
+    // 10 km earlier: only the days either side of it change.
+    const near = applyAction(state, { type: "lock-night", night: 4, stop: stopAt(at - 10_000) }, p);
+    expect(near.choices.keepNights).toEqual(ids);
+    expect(makePlan(d, near.inputs, near.choices).nights.map((n) => n.stop.id)).toEqual(ids.map((id, k) => (k === 4 ? stopAt(at - 10_000) : id)));
+    // 60 km earlier would make the next day beyond the level: the days are planned again around it.
+    const far = applyAction(state, { type: "lock-night", night: 4, stop: stopAt(at - 60_000) }, p);
+    const q = makePlan(d, far.inputs, far.choices);
+    expect(q.nights[4]!.stop.id).toBe(stopAt(at - 60_000));
+    expect(q.nights.map((n) => n.stop.id).filter((id, k) => k !== 4 && id !== ids[k]).length).toBeGreaterThan(0);
+    // Anything else plans the days afresh.
+    expect(applyAction(near, { type: "set", inputs: { level: 4 } }, makePlan(d, near.inputs, near.choices)).choices.keepNights).toBeUndefined();
   });
 
   it("lets a rest day the rider places take the place of the planner's nearby (D83)", () => {

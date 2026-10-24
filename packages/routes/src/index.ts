@@ -121,6 +121,8 @@ export interface DreamFiles {
   geometry: Geometry;
   /** Waypoints from the rider's own file, for the nights it marks (D70); none on a network route. */
   userPlaces: UserPlace[];
+  /** The stops, for a rider's own file only: whether its nights have a place to stay (D86). */
+  stops: StopsFile | null;
 }
 
 /** What Dream needs: all free files (D35). */
@@ -129,13 +131,15 @@ export async function loadDreamFiles(network: string, ref: string, options: Load
   const { base, run } = where(network, ref, options);
   const manifest = await get<BundleManifest>(`${base}${run}`);
   if (!("dream" in manifest.files)) throw new Error("This route's audit has no Dream data yet: re-run its audit.");
-  const [dream, sections, path, user] = await Promise.all([
+  const own = "user_places" in manifest.files;
+  const [dream, sections, path, user, stops] = await Promise.all([
     get<DreamFile>(`${base}/dream${run}`),
     get<SectionsFile>(`${base}/sections${run}`),
     get<PathLike>(`${base}/path${run}`),
-    "user_places" in manifest.files ? get<UserPlacesFile>(`${base}/user_places${run}`) : Promise.resolve(null),
+    own ? get<UserPlacesFile>(`${base}/user_places${run}`) : Promise.resolve(null),
+    own && "stops" in manifest.files ? get<StopsFile>(`${base}/stops${run}`) : Promise.resolve(null),
   ]);
-  return { manifest, dream, daily: sections.daily, geometry: geometryOf(path), userPlaces: user?.places ?? [] };
+  return { manifest, dream, daily: sections.daily, geometry: geometryOf(path), userPlaces: user?.places ?? [], stops };
 }
 
 export interface FullFiles {

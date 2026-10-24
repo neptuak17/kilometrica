@@ -40,6 +40,8 @@ import {
 const END_MARGIN_M = 1000;
 /** The rider's waypoint and one of our stops this close along the route are the same night (D70). */
 const OWN_NEAR_M = 3000;
+/** When a moved night makes a day beyond the level, up to this many nights each side of it are planned again (D85). */
+const NEAR_NIGHTS = 3;
 /** A waypoint the rider's file types as somewhere to sleep marks a night (D70). */
 const NIGHT_WAYPOINT = /\b(lodging|hotel|motel|inn|hostel|camp|campsite|campground|camping|shelter|cabin|hut|bivouac|bivvy|overnight|accommodation)\b/i;
 /** For a rider who camps, a stretch this long without a stop gets spots to wild camp about every 10 km (D70). */
@@ -139,6 +141,28 @@ export function ownNights(data: Pick<FreeData, "userPlaces">, fromM: number, toM
     out.push(w);
   }
   return out;
+}
+
+/**
+ * The nights a rider's own file marks (D70), each with how many places of the rider's kind are known there (D86): as
+ * Plan finds them, at the stop within OWN_NEAR_M of the waypoint, so Dream says what Plan will.
+ */
+export function ownNightBeds(
+  data: Pick<FreeData, "userPlaces" | "stops">,
+  fromM: number,
+  toM: number,
+  sleep: PlanInputs["sleep"],
+  month: number,
+): { name: string | null; at_m: number; count: number }[] {
+  return ownNights(data, fromM, toM).map((w) => {
+    let best: Stop | null = null;
+    for (const s of data.stops.stops) {
+      const d = Math.abs(s.at_m - w.at_m);
+      if (d <= OWN_NEAR_M && (!best || d < Math.abs(best.at_m - w.at_m))) best = s;
+    }
+    // Named as Plan names the night: the stop's town, else the rider's own name for it.
+    return { name: best?.name ?? w.name ?? null, at_m: w.at_m, count: best ? bedsFor(best, sleep, month).count : 0 };
+  });
 }
 
 function pseudoStop(id: string, m: number, near: Stop | null): Stop {
@@ -250,6 +274,44 @@ export function makePlan(
   let stage: StagePlan | null = null;
   const fixed = choices.nights?.map((id) => index.get(id));
   const kept = !!fixed && fixed.length === rides - 1 && fixed.every((i) => i !== undefined);
+  // The nights before the rider moved one (D85): the others stay where they were, as long as that leaves no more days
+  // beyond the level than planning them all again would. Failing that, the nights nearest it are planned again, one
+  // more each side at a time; then those after it, or those before it; and only then all of them.
+  let held = false;
+  const prior = kept || own.length ? undefined : choices.keepNights?.map((id) => index.get(id));
+  if (prior && prior.length === rides - 1 && prior.every((i) => i !== undefined)) {
+    const nights = (prior as number[]).map((i, k) => locked.get(k) ?? i);
+    const moved = nights.flatMap((i, k) => (i !== prior[k] ? [k] : []));
+    if (moved.length && nights.every((i, k) => k === 0 || candidates[i]!.t > candidates[nights[k - 1]!]!.t)) {
+      const beyond = (s: StagePlan) => s.days.filter((d) => d.effort === "beyond").length;
+      // Planning them all again is worked out only when a try leaves a day beyond the level.
+      let all: StagePlan | null | undefined;
+      const allBeyond = () => {
+        if (all === undefined) all = planStages(ctx, rides, locked);
+        return all ? beyond(all) : Infinity;
+      };
+      const hold = (stays: (k: number) => boolean) => {
+        const lock = new Map(locked);
+        nights.forEach((i, k) => stays(k) && lock.set(k, i));
+        return planStages(ctx, rides, lock);
+      };
+      const tries = [
+        () => fixedStages(ctx, nights),
+        ...Array.from({ length: NEAR_NIGHTS }, (_, j) => () => hold((k) => !moved.some((m) => Math.abs(m - k) <= j + 1))),
+        () => hold((k) => k < Math.min(...moved)),
+        () => hold((k) => k > Math.max(...moved)),
+      ];
+      for (const t of tries) {
+        const s = t();
+        if (s && (beyond(s) === 0 || beyond(s) <= allBeyond())) {
+          stage = s;
+          held = true;
+          break;
+        }
+      }
+      stage ??= all ?? null;
+    }
+  }
   if (own.length) {
     // The rider's nights, unless they moved one on its day card.
     const moved = own.map((i, k) => locked.get(k) ?? i);
@@ -283,7 +345,7 @@ export function makePlan(
     const nights = [...stage.nights];
     for (const p of placeRests(data, ctx, stage, usual.hours, rest, wanted, new Set(own), choices.restStops)) {
       const k = p.afterRide - 1;
-      if (p.move !== undefined && !own.length && !kept && !locked.has(k)) {
+      if (p.move !== undefined && !own.length && !kept && !held && !locked.has(k)) {
         moved.set(p.afterRide, { from: candidates[nights[k]!]!.stop, km: (candidates[p.move]!.t - candidates[nights[k]!]!.t) / 1000 });
         nights[k] = p.move;
       } else if (p.offer) {

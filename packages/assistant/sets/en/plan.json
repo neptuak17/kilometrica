@@ -182,7 +182,7 @@
         "mustSay": [
           "Barcelona"
         ],
-        "reference": "Yes: day 5 would end in Barcelona, 52 km instead of 48 km to Esplugues de Llobregat, and days 6–7 change too.",
+        "reference": "Yes: day 5 would end in Barcelona, 52 km instead of 48 km to Esplugues de Llobregat, and day 6 becomes 55 km instead of 58. The rest of your trip stays as it is.",
         "phrasings": [
           "stop in barcelona instead of esplugues please"
         ]
@@ -354,7 +354,7 @@
         "mustSay": [
           "Sant Adrià de Besòs"
         ],
-        "reference": "Two stops further on: Sant Adrià de Besòs makes day 5 59 km, or Barcelona 52 km; days 6–7 change too.",
+        "reference": "You can go further: Sant Adrià de Besòs makes day 5 59 km and day 6 48 km, or Barcelona makes them 52 km and 55 km. The rest of your trip stays as it is.",
         "phrasings": [
           "I want to ride further on day 5"
         ]
@@ -2322,7 +2322,7 @@
         "mustSay": [
           "Luz-Saint-Sauveur"
         ],
-        "reference": "You can: the night after day 5 would be at Luz-Saint-Sauveur. Your rest days stay close to where they were, at Estensan and Massat, but most days change, and days 12–14 would all be harder than your usual.",
+        "reference": "You can: the night after day 5 would be at Luz-Saint-Sauveur. The days before it stay as they are; the days after it move on, your rest days staying close to where they were, at Estensan and Massat, and days 12–14 would all be harder than your usual.",
         "phrasings": [
           "stop at luz-saint-sauveur on day 5"
         ]

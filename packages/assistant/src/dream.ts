@@ -10,6 +10,7 @@ import {
   countriesText,
   countryRows,
   daysNote,
+  nightsNote,
   type DreamRoute,
   factsText,
   keyOf,
@@ -308,9 +309,14 @@ const stretches: Tool<DreamContext> = {
     const shown = results.slice(from - 1, from - 1 + (from === 1 ? SHOWN : MORE));
     const list = shown.map((r, i) => stretchFacts(ctx, r, from + i));
     const head = ctx.route.own ? "Your route:" : `${plural(results.length, "stretch", "stretches")} fit${from === 1 && results.length > SHOWN ? `; the best ${SHOWN}` : ""}:`;
-    // A rider's own route: where its days come from, the file's nights beside a usual day at the level (D80).
+    // A rider's own route: where its days come from, the file's nights beside a usual day at the level (D80), and
+    // which nights have a place to stay of the rider's kind (D86).
     const note = ctx.route.own && a.days === null && results[0] ? [daysNote(ctx.route, a, results[0])] : [];
-    return { lines: [head, ...list.flatMap(stretchLines), ...note], facts: { ok: true, fit: results.length, stretches: list, ...(note.length ? { days: note[0] } : {}) } };
+    const nights = results[0] ? nightsNote(ctx.route, a, results[0]) : null;
+    return {
+      lines: [head, ...list.flatMap(stretchLines), ...note, ...(nights ? [nights] : [])],
+      facts: { ok: true, fit: results.length, stretches: list, ...(note.length ? { days: note[0] } : {}), ...(nights ? { nights } : {}) },
+    };
   },
 };
 

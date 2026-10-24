@@ -7,7 +7,7 @@
  * for us (D43). The question lives in the address, so a search can be shared or reopened.
  */
 import type { DreamSection } from "@dpg/contracts";
-import { daysNote, type DreamRoute, pickedStretch, planLink, stretchesFor, type StretchResult } from "@dpg/dream";
+import { daysNote, type DreamRoute, nightsNote, pickedStretch, planLink, stretchesFor, type StretchResult } from "@dpg/dream";
 import { km } from "@dpg/planner";
 import {
   Button,
@@ -276,7 +276,7 @@ function DreamRoute({ route }: { route: string }) {
   const examples = useMemo(() => examplesFor(sections), [sections]);
   // The route as Dream's tools see it (D77): the page and the assistant work from the same functions.
   const dr: DreamRoute | null = useMemo(
-    () => (files ? { id: route, name: files.manifest.route.name, dream: files.dream, daily: files.daily, userPlaces: files.userPlaces, own: files.manifest.visibility === "private" } : null),
+    () => (files ? { id: route, name: files.manifest.route.name, dream: files.dream, daily: files.daily, userPlaces: files.userPlaces, own: files.manifest.visibility === "private", stops: files.stops } : null),
     [files, route],
   );
   // A rider's own file is the trip (D76); until the rider sets their days, the nights it marks set them (D70, D78).
@@ -421,7 +421,9 @@ function DreamRoute({ route }: { route: string }) {
               />
             )}
             {ownResult && a.days === null && (
-              <p className="text-xs text-muted-foreground">{dr && daysNote(dr, a, ownResult)}</p>
+              <p className="text-xs text-muted-foreground">
+                {dr && daysNote(dr, a, ownResult)} {dr && nightsNote(dr, a, ownResult)}
+              </p>
             )}
           </section>
           <section aria-label="Map of your stretch" className="min-w-0 flex-[999_1_560px] lg:sticky lg:top-6">
@@ -480,7 +482,9 @@ function DreamRoute({ route }: { route: string }) {
               </p>
             )}
             {ownRoute && a.days === null && results.length > 0 && (
-              <p className="text-xs text-muted-foreground">{dr && daysNote(dr, a, results[0]!)}</p>
+              <p className="text-xs text-muted-foreground">
+                {dr && daysNote(dr, a, results[0]!)} {dr && nightsNote(dr, a, results[0]!)}
+              </p>
             )}
             {shown.map((r, i) => (
               <StretchCard

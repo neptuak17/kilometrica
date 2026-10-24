@@ -29,6 +29,7 @@ export class World {
           daily: f.daily,
           userPlaces: f.userPlaces,
           own: f.manifest.visibility === "private",
+          stops: f.stops,
         })),
       );
     }
