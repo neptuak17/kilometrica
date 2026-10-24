@@ -25,6 +25,8 @@ function section(n: number, over: Partial<DreamSection> = {}): DreamSection {
     ascent_known_rev_m: null,
     climb_unknown_m: 0,
     max_grade_500m: 4,
+    steepest_fwd: { "2": 3, "5": 2 },
+    steepest_rev: { "2": 3, "5": 2 },
     grade_fwd: 2,
     grade_rev: 2,
     surfaces: { road: 0.5, cycle_path: 0.5, gravel: 0, unknown: 0 },
@@ -242,10 +244,34 @@ describe("mergeChecks", () => {
 describe("a stretch's card", () => {
   it("keeps the count of things to look out for when the lines run over", () => {
     const count = "6 things to look out for: details with a Trip Pass";
-    const r = { watch: ["104 km on busy roads", "up to 53 km between places to stay", "steepest 500 m at 18%", "no bike-carrying station found at one end", count], lookOut: 6 };
-    expect(watchLines(r as StretchResult)).toEqual(["104 km on busy roads", "up to 53 km between places to stay", "steepest 500 m at 18%", count]);
+    const r = { watch: ["104 km on busy roads", "up to 53 km between places to stay", "a steep 2 km at 9%", "no bike-carrying station found at one end", count], lookOut: 6 };
+    expect(watchLines(r as StretchResult)).toEqual(["104 km on busy roads", "up to 53 km between places to stay", "a steep 2 km at 9%", count]);
     expect(watchLines({ watch: ["a", "b", "c", "d", "e"], lookOut: 0 } as StretchResult)).toEqual(["a", "b", "c", "d"]);
     expect(watchLines({ watch: ["a", count], lookOut: 6 } as StretchResult)).toEqual(["a", count]);
+  });
+});
+
+describe("a long steep stretch (D75, D87)", () => {
+  const hilly = Array.from({ length: 4 }, (_, i) =>
+    section(i + 1, i === 1 ? { max_grade_500m: 14, steepest_fwd: { "2": 7.4, "5": 6.2 }, steepest_rev: { "2": 5, "5": 4 } } : {}),
+  );
+  const watch = (q: Partial<DreamQuery>) => describeStretch(dream(hilly), 1, 4, { ...base, days: 4, ...q })!;
+
+  it("is raised at the selected level's length, in the direction ridden", () => {
+    expect(watch({}).watch).toContain("a steep 2 km at 7%");
+    expect(watch({}).steepest).toEqual({ km: 2, grade: 7.4 });
+    // Riding back, the same stretch is a descent; the climb that way is gentler.
+    expect(describeStretch(dream(hilly), 4, 1, { ...base, days: 4 })!.watch.join()).not.toContain("steep");
+    // At levels 4-5 only 5 km over 8% counts; a short ramp of 14% never does.
+    expect(watch({ level: 4 }).watch.join()).not.toContain("steep");
+    expect(watch({ level: 4 }).steepest).toEqual({ km: 5, grade: 6.2 });
+  });
+
+  it("is unknown on an audit older than D87, and never guessed from the 500 m", () => {
+    const old = hilly.map((s) => ({ ...s, steepest_fwd: undefined, steepest_rev: undefined }) as unknown as DreamSection);
+    const r = describeStretch(dream(old), 1, 4, { ...base, days: 4 })!;
+    expect(r.steepest).toEqual({ km: 2, grade: null });
+    expect(r.watch.join()).not.toContain("steep");
   });
 });
 

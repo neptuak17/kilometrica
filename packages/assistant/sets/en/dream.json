@@ -1178,7 +1178,7 @@
     "source": "drafted",
     "kind": "lookup",
     "route": "user/u4ad6e50f59",
-    "run": "20261022T205520Z_2f48b23061",
+    "run": "20261024T133128Z_2f48b23061",
     "ask": {
       "level": 4
     },
@@ -1197,7 +1197,7 @@
         "mustSay": [
           "Hendaye"
         ],
-        "reference": "Hendaye → Bagnères-de-Luchon is 362 km: 5 days at 72 km a day, with ↑ 1792 m a day, which grades as Tough. It has 241 km on busy roads, a steepest 500 m at 24%, and 17 things to look out for, detailed with a Trip Pass.",
+        "reference": "Hendaye → Bagnères-de-Luchon is 362 km: 5 days at 72 km a day, with ↑ 1792 m a day, which grades as Tough. It has 241 km on busy roads, a steep 5 km at 11%, and 17 things to look out for, detailed with a Trip Pass.",
         "phrasings": [
           "hendaye to bagnères-de-luchon?"
         ]

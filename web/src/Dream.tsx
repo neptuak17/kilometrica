@@ -10,6 +10,7 @@ import {
   mergeChecks,
   MONTH_NAMES,
   type Pref,
+  steepestOf,
   type StretchResult,
   type SurfaceKind,
 } from "@dpg/dream";
@@ -135,6 +136,7 @@ function RealityCard({
   sections,
   way,
   month,
+  level,
   result,
   planHref,
 }: {
@@ -143,6 +145,8 @@ function RealityCard({
   sections: DreamSection[];
   way: "forward" | "reverse";
   month: number | null;
+  /** The rider's selected level: the steepest stretch is measured at its length (D75, D87). */
+  level: number;
   result: StretchResult | null;
   /** Where Plan opens this stretch (M4), when there is a stretch to plan. */
   planHref?: string | null;
@@ -166,8 +170,7 @@ function RealityCard({
   // Climbing that is partly unknown (placeholder track) is shown as a minimum, never as the whole (D37).
   const climb = climbOf(sections, way);
   const partly = climb.unknownM > 0;
-  const steeps = sections.flatMap((s) => (s.max_grade_500m === null ? [] : [s.max_grade_500m]));
-  const steep = steeps.length ? Math.max(...steeps) : null;
+  const steep = result?.steepest ?? steepestOf(sections, way, level);
   const surf = { road: w((s) => s.surfaces.road), cycle_path: w((s) => s.surfaces.cycle_path), gravel: w((s) => s.surfaces.gravel), unknown: w((s) => s.surfaces.unknown) };
   const titles = Object.fromEntries(dream.themes.map((t) => [t.id, t.title]));
   const themes = Object.keys(first.themes)
@@ -198,8 +201,8 @@ function RealityCard({
           {climb.metres === null ? "unknown" : `${partly ? "at least " : ""}${Math.round(climb.metres).toLocaleString("en-GB")} m`}
           {partly && climb.metres !== null ? ` (unknown for ${km(climb.unknownM, 1)} km)` : ""}
           {result?.climbPerDay != null ? ` · ${result.climbPerDay} m/day` : result?.climbMinPerDay != null ? ` · at least ${result.climbMinPerDay} m/day` : ""}
-          {" · steepest 500 m "}
-          {steep === null ? "unknown" : `${steep.toFixed(0)}%${partly ? " where the terrain is known" : ""}`}
+          {` · steepest ${steep.km} km `}
+          {steep.grade === null ? "unknown" : `${Math.round(steep.grade)}%${partly ? " where the terrain is known" : ""}`}
         </b>
         <span>Grade</span>
         <b>
@@ -332,6 +335,7 @@ export function Dream({
           sections={shown}
           way={result?.way ?? "forward"}
           month={month}
+          level={query.level}
           result={result}
           planHref={
             routeKey && shown.length

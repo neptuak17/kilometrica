@@ -165,6 +165,22 @@ def test_max_grade_ignores_untrusted_and_implausible():
     assert (el.max_grade_window(profs, 0, 10_000) or 0) < 1.0
 
 
+def test_steep_windows_both_ways_and_across_sections():
+    profs = el.profiles(straight_path(), ramp_sampler, [])  # 5% from 2 to 4 km
+    w = el.windows(profs, 2000)
+    fwd, rev = w.steepest(0, 10_000)
+    assert fwd == pytest.approx(5.0, abs=0.6)
+    assert rev is not None and rev < 0.5  # riding back, the ramp is a descent
+    # A section ending at 3 km keeps the 2 km window that starts in it and runs on past its end.
+    assert (w.steepest(0, 3000)[0] or 0) > 4.0
+    assert (w.steepest(3000, 10_000)[0] or 0) < 4.0
+    # Nothing 5 km long climbs 5%; a section shorter than nothing has no window.
+    assert (el.windows(profs, 5000).steepest(0, 10_000)[0] or 0) < 2.5
+    assert w.steepest(9500, 10_000)[0] is None
+    el.mark_untrusted(profs, [(1500.0, 4500.0)])
+    assert (el.windows(profs, 2000).steepest(0, 10_000)[0] or 0) < 1.0
+
+
 def test_structures_are_interpolated_not_sampled():
     def bridge_dip(lon, lat):
         m = (np.asarray(lon) - 5.0) * 78_850

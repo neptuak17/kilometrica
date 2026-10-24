@@ -261,6 +261,61 @@ def max_grade_window(profs: list[PartProfile], m0: float, m1: float, window_m: f
     return None if best is None else round(best, 1)
 
 
+@dataclass
+class Windows:
+    """Every clean `window_m` stretch of the profile: where it starts and ends (path measures) and its average gradient
+    riding forward (%). Riding in reverse, the same stretch starts at `hi` and climbs at `-grade`."""
+
+    lo: np.ndarray
+    hi: np.ndarray
+    grade: np.ndarray
+
+    def steepest(self, m0: float, m1: float) -> tuple[float | None, float | None]:
+        """The steepest window that starts within [m0, m1] riding forward, and riding in reverse. A window may run on
+        past m1 (or before m0 in reverse), so a climb across two sections still counts for the one it starts in."""
+        f = (self.lo >= m0) & (self.lo < m1)
+        r = (self.hi > m0) & (self.hi <= m1)
+        fwd = round(float(self.grade[f].max()), 1) if f.any() else None
+        rev = round(float(-self.grade[r].min()), 1) if r.any() else None
+        return fwd, rev
+
+
+def windows(profs: list[PartProfile], window_m: float, breaks: list[float] | None = None) -> Windows:
+    """Long steep stretches (D75, D87): windows of `window_m` along the profile, across part boundaries except at
+    `breaks` (as climbs do, D82). Windows touching unknown or untrusted samples, or with an implausible grade, are
+    left out."""
+    breaks = breaks or []
+    runs: list[list[PartProfile]] = []
+    for p in profs:
+        if p.m.size == 0:
+            continue
+        if runs and not any(abs(g - p.m[0]) < 1.0 for g in breaks):
+            runs[-1].append(p)
+        else:
+            runs.append([p])
+    lo, hi, grade = [], [], []
+    for run in runs:
+        m = np.concatenate([p.m for p in run])
+        e = np.concatenate([p.ele for p in run])
+        bad = np.concatenate([~p.trusted if p.trusted is not None else np.zeros(p.m.size, bool) for p in run])
+        bad |= np.isnan(e)
+        j = np.searchsorted(m, m + window_m - 1e-6)
+        i = np.flatnonzero(j < m.size)
+        j = j[i]
+        nbad = np.concatenate(([0], np.cumsum(bad)))
+        d = m[j] - m[i]
+        ok = (nbad[j + 1] - nbad[i] == 0) & (d < window_m * 1.1)  # a gap in the samples is not a stretch
+        g = np.full(i.size, np.nan)
+        g[ok] = (e[j[ok]] - e[i[ok]]) / d[ok] * 100
+        ok &= np.abs(np.nan_to_num(g, nan=np.inf)) <= IMPLAUSIBLE_GRADE
+        lo.append(m[i[ok]])
+        hi.append(m[j[ok]])
+        grade.append(g[ok])
+    if not lo:
+        return Windows(np.zeros(0), np.zeros(0), np.zeros(0))
+    return Windows(np.concatenate(lo), np.concatenate(hi), np.concatenate(grade))
+
+
 def fiets(gain: float, length: float, top: float) -> float:
     return gain**2 / (length * 10) + max(0.0, (top - 1000) / 1000)
 

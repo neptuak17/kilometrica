@@ -528,6 +528,12 @@ class DreamSection(Model):
     ascent_known_rev_m: float | None
     climb_unknown_m: float = Field(description="Length whose climbing is unknown (placeholder track); 0 when complete")
     max_grade_500m: float | None = Field(description="Steepest 500 m, on real terrain only")
+    steepest_fwd: dict[str, float | None] = Field(
+        default_factory=dict,
+        description="Steepest 2 km and 5 km riding forward (D75, D87): average gradient (%) by length in km "
+        "('2', '5'), of the stretches that start in this section; real terrain only, null when none is that long",
+    )
+    steepest_rev: dict[str, float | None] = Field(default_factory=dict, description="The same, riding in reverse")
     grade_fwd: int | None = Field(
         description="Rider level (D36) needed to ride the section as one day, forward; a minimum when climbing is "
         "partly unknown"

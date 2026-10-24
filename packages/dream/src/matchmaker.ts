@@ -5,7 +5,7 @@
  * Missing data never lowers a stretch's rank; it is listed under "check yourself" instead (D37).
  */
 import type { DreamFile, DreamSection, RiderLevel } from "@dpg/contracts";
-import { country, usualWeather } from "@dpg/planner";
+import { country, STEEP, usualWeather } from "@dpg/planner";
 import { and } from "./ask";
 
 export type Pref = "prefer" | "ok" | "avoid";
@@ -53,6 +53,8 @@ export interface StretchResult {
   grade: number;
   /** The grade is a minimum, because climbing is partly unknown. */
   gradeAtLeast: boolean;
+  /** The steepest long stretch at the rider's level (D75, D87): its length in km, and grade (%) when known. */
+  steepest: { km: number; grade: number | null };
   /** Fewer km a day than the rider's usual: an easier, more relaxed trip (D76). */
   easier: boolean;
   month: number | null;
@@ -186,6 +188,17 @@ function monthOf(sections: DreamSection[], month: number | null): number | null 
     }
   }
   return best;
+}
+
+/**
+ * The steepest long stretch at the rider's level (D75, D87): 2 km at levels 1-3, 5 km at 4-5, as the planner's day
+ * cards. Its grade is null when no section has a known stretch that long (a bundle older than D87 has none).
+ */
+export function steepestOf(sections: DreamSection[], way: Way, level: number): { km: number; grade: number | null } {
+  const km = STEEP(level).km;
+  const grades = sections.map((s) => (way === "forward" ? s.steepest_fwd : s.steepest_rev)?.[String(km)]).filter(isNum);
+  // A stretch that only goes down has no climb that long: 0%, never "-0%".
+  return { km, grade: grades.length ? Math.max(0, ...grades) : null };
 }
 
 /**
@@ -342,8 +355,11 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
   if (busyKm >= 5) watch.push(`${Math.round(busyKm)} km on busy roads`);
   const worstGap = Math.max(...secs.map((s) => s.longest_gap_m.accommodation ?? 0));
   if (worstGap >= 50_000) watch.push(`up to ${km(worstGap)} km between places to stay`);
-  const steep = Math.max(...secs.map((s) => s.max_grade_500m ?? 0));
-  if (steep >= 8) watch.push(`steepest 500 m at ${steep.toFixed(0)}%`);
+  // A long steep stretch only, as Plan raises it (D75, D87); short ramps aren't worth raising.
+  const steepest = steepestOf(secs, way, level.level);
+  if (steepest.grade !== null && steepest.grade > STEEP(level.level).grade) {
+    watch.push(`a steep ${steepest.km} km at ${Math.round(steepest.grade)}%`);
+  }
   for (const c of run.crossings) watch.push(c);
   // Only for riders who asked for trains at both ends (D79): the others don't need it said.
   if (q.trainBothEnds && (!stationStart || !stationEnd)) watch.push("no bike-carrying station found at one end");
@@ -366,6 +382,7 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
     climbUnknownKm: Math.round(climb.unknownM / 100) / 10,
     grade,
     gradeAtLeast: partly,
+    steepest,
     easier,
     month,
     weather: month === null ? null : usualWeather(secs, month),

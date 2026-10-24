@@ -32,6 +32,8 @@ function section(n: number): DreamSection {
     ascent_known_rev_m: null,
     climb_unknown_m: 0,
     max_grade_500m: 4,
+    steepest_fwd: { "2": 3, "5": 2 },
+    steepest_rev: { "2": 3, "5": 2 },
     grade_fwd: 2,
     grade_rev: 2,
     surfaces: { road: 0.5, cycle_path: 0.5, gravel: 0, unknown: 0 },

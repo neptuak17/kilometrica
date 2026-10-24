@@ -642,6 +642,18 @@ export interface DreamSection {
    */
   max_grade_500m: number | null;
   /**
+   * Steepest 2 km and 5 km riding forward (D75, D87): average gradient (%) by length in km ('2', '5'), of the stretches that start in this section; real terrain only, null when none is that long
+   */
+  steepest_fwd: {
+    [k: string]: number | null;
+  };
+  /**
+   * The same, riding in reverse
+   */
+  steepest_rev: {
+    [k: string]: number | null;
+  };
+  /**
    * Rider level (D36) needed to ride the section as one day, forward; a minimum when climbing is partly unknown
    */
   grade_fwd: number | null;

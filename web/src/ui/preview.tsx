@@ -268,7 +268,7 @@ function Preview() {
                   facts: "7 days · 344 km · 49 km a day · ↑ 285 m a day · Easy-moderate",
                   when: "Best in May: best-time 87 of 100",
                   why: ["Coast & beaches: strong here", "Villages & heritage: strong here"],
-                  watch: ["steepest 500 m at 11%", "4 audit warnings: details with a Trip Pass"],
+                  watch: ["a steep 2 km at 7%", "4 audit warnings: details with a Trip Pass"],
                   checks: ["14 of 120 places to stay publish no opening season: check dates ahead.", "Climbing is unknown for 2.1 km of this stretch."],
                 },
                 {
@@ -276,7 +276,7 @@ function Preview() {
                   facts: "7 days · 356 km · 51 km a day · ↑ 374 m a day · Easy-moderate",
                   when: "Best in May: best-time 85 of 100",
                   why: ["Coast & beaches: strong here"],
-                  watch: ["14 km on busy roads", "steepest 500 m at 19%"],
+                  watch: ["14 km on busy roads", "a steep 2 km at 9%"],
                   checks: ["No climate data for part of this stretch."],
                 },
               ].map((s, i) => (

@@ -45,6 +45,8 @@ GAP_SERVICES = ("water", "food", "accommodation", "bike_shop")
 RIDER_FINDINGS = {"audit.busy_road": 5000.0, "audit.steps": 0.0, "eurovelo.undeveloped": 5000.0}
 """Findings a rider is told about whatever their answers (D75), with the length they need inside a section: the
 `rider` count Dream and the free plan give in place of the audit's own warnings."""
+STEEP_KM = (2, 5)
+"""Lengths of a long steep stretch (D75): 2 km at levels 1-3, 5 km at 4-5, as the planner's STEEP."""
 
 
 def rider_findings(findings: list[Finding], lo: float, hi: float) -> int:
@@ -195,6 +197,10 @@ def build_dream(
     bail = [p for p in coverage.bail_out_stations() if p.kind == "rail"]  # "train at both ends": not ferries
     near_end = float(profile.stations["near_end_m"])
 
+    # Long steep stretches at each level's length (D75, D87), in both directions.
+    breaks = [c.from_m for c in build.components if c.kind == ComponentKind.GAP]
+    steep_windows = {km: elevation.windows(profs, km * 1000, breaks) for km in STEEP_KM}
+
     def station_near(m: float) -> str | None:
         best = min(
             (p for p in bail if abs(p.access_at_m - m) <= near_end), key=lambda p: abs(p.access_at_m - m), default=None
@@ -270,6 +276,7 @@ def build_dream(
                 + effect
             )
         steep = sc.max_grade_500m  # measured on real terrain only (M1)
+        steepest = {km: w.steepest(d.from_m, d.to_m) for km, w in steep_windows.items()}
 
         daylight = monthly_day_length(lat, year)
         peak = max((v for v in cr.tourism_index if v is not None), default=None)
@@ -311,6 +318,8 @@ def build_dream(
                 ascent_known_rev_m=known_down,
                 climb_unknown_m=round(unknown_m, 1),
                 max_grade_500m=steep,
+                steepest_fwd={str(km): s[0] for km, s in steepest.items()},
+                steepest_rev={str(km): s[1] for km, s in steepest.items()},
                 grade_fwd=grade(profile.levels, km, up if up is not None else known_up),
                 grade_rev=grade(profile.levels, km, down if down is not None else known_down),
                 surfaces=surface_shares(infra, surface, d.from_m, d.to_m),

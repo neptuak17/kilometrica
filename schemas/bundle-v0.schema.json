@@ -974,6 +974,34 @@
           ],
           "description": "Steepest 500 m, on real terrain only"
         },
+        "steepest_fwd": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": "Steepest 2 km and 5 km riding forward (D75, D87): average gradient (%) by length in km ('2', '5'), of the stretches that start in this section; real terrain only, null when none is that long",
+          "type": "object"
+        },
+        "steepest_rev": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": "The same, riding in reverse",
+          "type": "object"
+        },
         "grade_fwd": {
           "anyOf": [
             {
@@ -1152,6 +1180,8 @@
         "ascent_known_rev_m",
         "climb_unknown_m",
         "max_grade_500m",
+        "steepest_fwd",
+        "steepest_rev",
         "grade_fwd",
         "grade_rev",
         "surfaces",
