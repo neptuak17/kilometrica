@@ -234,6 +234,7 @@ class SectionScenery:
     themes: dict[str, ThemeScore]
     remote_share: float
     longest_remote_m: float
+    protected_share: float
 
 
 def scenery(
@@ -290,6 +291,7 @@ def scenery(
     raw: dict[str, list[float | None]] = {t.id: [] for t in THEMES}
     notes: dict[str, list[str]] = {t.id: [] for t in THEMES}
     remote: list[tuple[float, float]] = []
+    protect: list[float] = []
 
     def share_of(key: str, sel: np.ndarray) -> float:
         return float(near[key][sel].mean()) if sel.any() else 0.0
@@ -337,6 +339,7 @@ def scenery(
         notes["water"].append(f"{water:.0%} within 500 m of a lake or river")
 
         forest, protected = share("forest"), share("protected")
+        protect.append(protected)
         raw["forest"].append(0.5 * forest + 0.5 * protected)
         notes["forest"].append(f"{forest:.0%} near forest; {protected:.0%} in protected areas")
 
@@ -376,5 +379,12 @@ def scenery(
             # Unknown stays unknown (D37), never a low score.
             score = None if value is None else round(0.0 if p90[k] <= 0 else min(1.0, value / p90[k]), 3)
             themes[k] = ThemeScore(score=score, note=notes[k][i])
-        out.append(SectionScenery(themes=themes, remote_share=round(remote[i][0], 3), longest_remote_m=remote[i][1]))
+        out.append(
+            SectionScenery(
+                themes=themes,
+                remote_share=round(remote[i][0], 3),
+                longest_remote_m=remote[i][1],
+                protected_share=round(protect[i], 3),
+            )
+        )
     return out

@@ -327,6 +327,7 @@ def build_dream(
                 themes=scenery[i].themes,
                 remote_share=scenery[i].remote_share,
                 longest_remote_m=scenery[i].longest_remote_m,
+                protected_share=scenery[i].protected_share,
                 climate=clim,
                 daylight_h=daylight,
                 crowding=Crowding(

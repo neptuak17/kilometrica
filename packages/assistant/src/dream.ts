@@ -17,6 +17,7 @@ import {
   PACE,
   pickedStretch,
   planLink,
+  routeDescription,
   routePoints,
   sectionsOf,
   STAY,
@@ -107,7 +108,8 @@ function stretchOf(ctx: DreamContext, args: Record<string, unknown>): StretchRes
 
 const routeOverview: Tool<DreamContext> = {
   name: "route_overview",
-  description: "The route as a whole: its length, daily sections and countries, when each country is good to ride (best-time scores out of 100 by month), and the rider levels.",
+  description:
+    "The route as a whole: its description (where it runs, terrain, landscapes, sights, best months, surface and what to know), its length, daily sections and countries, when each country is good to ride (best-time scores out of 100 by month), and the rider levels.",
   parameters: () => schema({}),
   run(ctx) {
     const secs = sectionsOf(ctx.route);
@@ -123,13 +125,16 @@ const routeOverview: Tool<DreamContext> = {
       name: l.name,
       perDay: `${l.km_min}–${l.km_max} km a day with luggage, up to about ${l.climb_max_m.toLocaleString("en-GB")} m of climbing`,
     }));
+    // The same words as the route picker's card (D89).
+    const description = ctx.route.overview ? routeDescription(ctx.route.overview) : [];
     return {
       lines: [
+        ...(description.length ? [`About the route: ${description.join(" ")}`] : []),
         `${ctx.route.name}: ${whole(total)} km in ${plural(secs.length, "daily section")}, through ${and(countries.map((c) => c.country))}.`,
         ...countries.map((c) => `${c.country}, ${c.km} km: ${c.best.length ? `best in ${and(c.best)} (best-time ${c.bestTime} of 100)` : "no data on when it's best"}.`),
         `Levels: ${levels.map((l) => `${l.level} ${l.name} (${l.perDay})`).join("; ")}.`,
       ],
-      facts: { route: ctx.route.name, km: whole(total), sections: secs.length, countries, levels },
+      facts: { route: ctx.route.name, km: whole(total), sections: secs.length, countries, levels, ...(description.length ? { description } : {}) },
     };
   },
 };

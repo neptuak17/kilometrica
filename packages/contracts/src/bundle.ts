@@ -113,6 +113,10 @@ export interface RouteSummary {
   gap_count: number;
   gap_straight_distance_m: number;
   status_breakdown: StatusShare[];
+  /**
+   * Absent in audits from before D89
+   */
+  overview: RouteOverview | null;
 }
 export interface StatusShare {
   development: DevelopmentLevel;
@@ -122,6 +126,81 @@ export interface StatusShare {
    * Fraction of ridden length, 0-1
    */
   share: number;
+}
+/**
+ * The facts a route's description is written from (D89): Dream writes the words each time it shows them.
+ */
+export interface RouteOverview {
+  start: string | null;
+  end: string | null;
+  length_m: number;
+  /**
+   * In the order the route reaches them
+   */
+  countries: OverviewCountry[];
+  /**
+   * Climbing as the route runs, on known terrain
+   */
+  climb_m: number | null;
+  climb_per_km: number | null;
+  /**
+   * Length where each landscape is strong: coast, water and wine (score 0.5 or more), and protected (inside protected areas)
+   */
+  strong_m: {
+    [k: string]: number;
+  };
+  /**
+   * Up to four World Heritage sites, spread along the route
+   */
+  unesco: OverviewSight[];
+  unesco_count: number;
+  /**
+   * Up to three of the best-known passes
+   */
+  passes: OverviewSight[];
+  /**
+   * The kinds that stand out among the top-ranked highlights
+   */
+  sight_kinds: string[];
+  surfaces_m: {
+    [k: string]: number;
+  };
+  /**
+   * Best-time score by month (0-100), weighted by length
+   */
+  best_time: (number | null)[];
+  /**
+   * Length with no developed route yet; null when not rated
+   */
+  undeveloped_m: number | null;
+  remote_m: number;
+  longest_remote_m: number;
+  /**
+   * Kept for when the busy-road rule is checked; not shown yet (D89)
+   */
+  busy_m: number;
+  ferries: number;
+}
+export interface OverviewCountry {
+  cc: string;
+  length_m: number;
+  /**
+   * Metres climbed per km as the route runs, on known terrain
+   */
+  climb_per_km: number | null;
+  /**
+   * Best-time score by month (0-100), weighted by length
+   */
+  best_time: (number | null)[];
+}
+export interface OverviewSight {
+  /**
+   * Its English Wikipedia title, or its own name for a pass
+   */
+  name: string;
+  kind: string;
+  wikidata: string | null;
+  at_m: number;
 }
 export interface RouteOverlap {
   route_id: string;
@@ -676,6 +755,10 @@ export interface DreamSection {
    */
   remote_share: number;
   longest_remote_m: number;
+  /**
+   * Share of km inside protected areas or national parks (D89)
+   */
+  protected_share: number;
   climate: ClimateMonths | null;
   daylight_h: number[];
   crowding: Crowding;

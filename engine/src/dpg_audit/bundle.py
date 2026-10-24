@@ -38,6 +38,7 @@ from dpg_audit.models import (
     PlacesFile,
     ProfileFile,
     RouteOverlap,
+    RouteOverview,
     ScoresFile,
     SectionsFile,
     ServicesFile,
@@ -160,6 +161,7 @@ def write_bundle(
     highlights: HighlightsFile | None = None,
     calendar: CalendarFile | None = None,
     overlap: list[RouteOverlap] | None = None,
+    overview: RouteOverview | None = None,
     private: bool = False,
 ) -> tuple[str, Path]:
     created = datetime.now(UTC)
@@ -210,7 +212,7 @@ def write_bundle(
         sources=sources,
         attribution=list(dict.fromkeys(s.attribution for s in sources)),
         files=files,
-        summary=build.summary(),
+        summary=build.summary().model_copy(update={"overview": overview}),
         finding_counts=dict(Counter(f.severity.value for f in findings)),
         visibility="private" if private else "public",
         overlap=overlap or [],

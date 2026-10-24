@@ -160,12 +160,53 @@ class StatusShare(Model):
     share: float = Field(description="Fraction of ridden length, 0-1")
 
 
+class OverviewCountry(Model):
+    cc: str
+    length_m: float
+    climb_per_km: float | None = Field(description="Metres climbed per km as the route runs, on known terrain")
+    best_time: list[float | None] = Field(description="Best-time score by month (0-100), weighted by length")
+
+
+class OverviewSight(Model):
+    name: str = Field(description="Its English Wikipedia title, or its own name for a pass")
+    kind: str
+    wikidata: str | None
+    at_m: float
+
+
+class RouteOverview(Model):
+    """The facts a route's description is written from (D89): Dream writes the words each time it shows them."""
+
+    start: str | None
+    end: str | None
+    length_m: float
+    countries: list[OverviewCountry] = Field(description="In the order the route reaches them")
+    climb_m: float | None = Field(description="Climbing as the route runs, on known terrain")
+    climb_per_km: float | None
+    strong_m: dict[str, float] = Field(
+        description="Length where each landscape is strong: coast, water and wine (score 0.5 or more), and "
+        "protected (inside protected areas)"
+    )
+    unesco: list[OverviewSight] = Field(description="Up to four World Heritage sites, spread along the route")
+    unesco_count: int
+    passes: list[OverviewSight] = Field(description="Up to three of the best-known passes")
+    sight_kinds: list[str] = Field(description="The kinds that stand out among the top-ranked highlights")
+    surfaces_m: dict[str, float]
+    best_time: list[float | None] = Field(description="Best-time score by month (0-100), weighted by length")
+    undeveloped_m: float | None = Field(description="Length with no developed route yet; null when not rated")
+    remote_m: float
+    longest_remote_m: float
+    busy_m: float = Field(description="Kept for when the busy-road rule is checked; not shown yet (D89)")
+    ferries: int
+
+
 class RouteSummary(Model):
     ride_length_m: float
     daily_section_count: int
     gap_count: int
     gap_straight_distance_m: float
     status_breakdown: list[StatusShare]
+    overview: RouteOverview | None = Field(None, description="Absent in audits from before D89")
 
 
 class PipelineInfo(Model):
@@ -544,6 +585,7 @@ class DreamSection(Model):
     themes: dict[str, ThemeScore]
     remote_share: float = Field(description="Share of km further than the remoteness distance from a village")
     longest_remote_m: float
+    protected_share: float = Field(0.0, description="Share of km inside protected areas or national parks (D89)")
     climate: ClimateMonths | None
     daylight_h: list[float]
     crowding: Crowding

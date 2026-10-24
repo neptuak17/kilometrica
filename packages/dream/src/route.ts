@@ -3,7 +3,7 @@
  * link that opens one in Plan. Dream's page and the assistant's tools (A2, D77) both work from these, so the chat and
  * the screen always agree.
  */
-import type { DailySection, DreamFile, StopsFile, UserPlace } from "@dpg/contracts";
+import type { DailySection, DreamFile, RouteOverview, StopsFile, UserPlace } from "@dpg/contracts";
 import { ownNightBeds, ownNights, ridingDays } from "@dpg/planner";
 import { and, type Ask, planHref, type Point, pointsOf } from "./ask";
 import { describeStretch, findStretches, type StretchResult } from "./matchmaker";
@@ -21,6 +21,8 @@ export interface DreamRoute {
   own: boolean;
   /** Its stops, for a rider's own file: whether its nights have a place to stay (D86). */
   stops?: StopsFile | null;
+  /** The facts its description is written from (D89); absent in audits from before. */
+  overview?: RouteOverview | null;
 }
 
 export const sectionsOf = (r: DreamRoute) => [...r.dream.sections].sort((x, y) => x.from_m - y.from_m);

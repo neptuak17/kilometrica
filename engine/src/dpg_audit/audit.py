@@ -14,6 +14,7 @@ from dpg_audit.build import assemble
 from dpg_audit.bundle import PROFILE_STEP_M, write_bundle
 from dpg_audit.config import work_dir
 from dpg_audit.dream import themes
+from dpg_audit.dream.overview import build_overview
 from dpg_audit.dream.pipeline import build_dream
 from dpg_audit.dream.profile import load_dream
 from dpg_audit.dream.themes import read_settlements
@@ -162,6 +163,7 @@ def run(
     effort = build_effort(build, profs, events, unknown)
     highlights, wiki_source = build_highlights(build.path, themes.prepare(pbf, build.lines, wd / "dream"), root, _log)
     _log(f"plan: {len(stops.stops):,} stops, {len(highlights.highlights):,} highlights")
+    overview = build_overview(build.daily, dream.file, highlights, build.summary().status_breakdown)
     t["plan"] = time.perf_counter() - t0 - sum(t.values())
 
     ms = np.concatenate([np.append(np.arange(p.from_m, p.to_m, PROFILE_STEP_M), p.to_m) for p in build.path.parts])
@@ -220,6 +222,7 @@ def run(
         highlights=highlights,
         calendar=dream.calendar,
         overlap=shared,
+        overview=overview,
         private=src.private,
     )
     t["rules+write"] = time.perf_counter() - t0 - sum(t.values())

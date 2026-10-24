@@ -52,8 +52,14 @@ export function bestMonths(sections: DreamSection[]): { months: number[]; score:
     }
     return len ? sum / len : null;
   });
-  const known = per.map((v, m) => ({ v, m })).filter((x): x is { v: number; m: number } => x.v !== null);
-  if (!known.length) return null;
-  const top = Math.max(...known.map((x) => x.v));
-  return { months: known.filter((x) => x.v >= top - 3).map((x) => x.m), score: Math.round(top) };
+  const months = bestIn(per);
+  return months.length ? { months, score: Math.round(Math.max(...months.map((m) => per[m]!))) } : null;
+}
+
+/** The months within 3 points of the best of these scores, in calendar order; none without data. */
+export function bestIn(scores: (number | null)[]): number[] {
+  const known = scores.filter((v): v is number => v !== null);
+  if (!known.length) return [];
+  const top = Math.max(...known);
+  return scores.flatMap((v, m) => (v !== null && v >= top - 3 ? [m] : []));
 }

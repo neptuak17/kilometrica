@@ -7,7 +7,7 @@
  * for us (D43). The question lives in the address, so a search can be shared or reopened.
  */
 import type { DreamSection } from "@dpg/contracts";
-import { daysNote, type DreamRoute, nightsNote, pickedStretch, planLink, stretchesFor, type StretchResult } from "@dpg/dream";
+import { daysNote, type DreamRoute, nightsNote, pickedStretch, planLink, routeDescription, stretchesFor, type StretchResult } from "@dpg/dream";
 import { km } from "@dpg/planner";
 import {
   Button,
@@ -276,7 +276,7 @@ function DreamRoute({ route }: { route: string }) {
   const examples = useMemo(() => examplesFor(sections), [sections]);
   // The route as Dream's tools see it (D77): the page and the assistant work from the same functions.
   const dr: DreamRoute | null = useMemo(
-    () => (files ? { id: route, name: files.manifest.route.name, dream: files.dream, daily: files.daily, userPlaces: files.userPlaces, own: files.manifest.visibility === "private", stops: files.stops } : null),
+    () => (files ? { id: route, name: files.manifest.route.name, dream: files.dream, daily: files.daily, userPlaces: files.userPlaces, own: files.manifest.visibility === "private", stops: files.stops, overview: files.manifest.summary.overview } : null),
     [files, route],
   );
   // A rider's own file is the trip (D76); until the rider sets their days, the nights it marks set them (D70, D78).
@@ -453,6 +453,9 @@ function DreamRoute({ route }: { route: string }) {
         <p className="text-base tabular-nums">
           {whole(total / 1000)} km · {sections.length} daily sections · {countries} {countries === 1 ? "country" : "countries"}
         </p>
+        {!asked && files.manifest.summary.overview && (
+          <p className="mt-1.5 max-w-[820px] text-base text-pretty text-muted-foreground">{routeDescription(files.manifest.summary.overview).join(" ")}</p>
+        )}
       </div>
 
       <div className="flex flex-col gap-2.5">
@@ -607,7 +610,7 @@ function DreamStart() {
         <h1 className="text-3xl font-bold tracking-tight">Where would you like to ride?</h1>
         <p className="text-base text-muted-foreground">Pick a route; we'll find the stretches that suit you, when and which way.</p>
       </div>
-      <div className="grid max-w-4xl gap-3 sm:grid-cols-2">
+      <div className="grid max-w-5xl gap-3 sm:grid-cols-2">
         {routes.map((r) => (
           <Card key={r.route.id} size="sm">
             <CardHeader>
@@ -616,11 +619,20 @@ function DreamStart() {
                 {km(r.summary.ride_length_m / 1000)} km{r.route.network === "user" ? " · your own route" : ""}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <LinkButton href={`/dream?route=${r.route.network}/${r.route.ref.toLowerCase()}`} size="sm">
-                Choose
-                <Icons.ArrowRight data-icon="inline-end" />
-              </LinkButton>
+            <CardContent className="flex flex-1 flex-col gap-4">
+              {r.summary.overview && <p className="text-pretty">{routeDescription(r.summary.overview).join(" ")}</p>}
+              <div className="mt-auto flex flex-wrap items-center gap-2">
+                <LinkButton href={`/dream?route=${r.route.network}/${r.route.ref.toLowerCase()}`} size="sm">
+                  Choose
+                  <Icons.ArrowRight data-icon="inline-end" />
+                </LinkButton>
+                {r.route.network !== "user" && r.route.official_url && (
+                  <LinkButton href={r.route.official_url} target="_blank" rel="noreferrer noopener" variant="outline" size="sm">
+                    Official page
+                    <Icons.ExternalLink data-icon="inline-end" />
+                  </LinkButton>
+                )}
+              </div>
             </CardContent>
           </Card>
         ))}

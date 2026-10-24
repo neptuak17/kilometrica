@@ -1047,6 +1047,11 @@
         "longest_remote_m": {
           "type": "number"
         },
+        "protected_share": {
+          "default": 0.0,
+          "description": "Share of km inside protected areas or national parks (D89)",
+          "type": "number"
+        },
         "climate": {
           "anyOf": [
             {
@@ -1189,6 +1194,7 @@
         "themes",
         "remote_share",
         "longest_remote_m",
+        "protected_share",
         "climate",
         "daylight_h",
         "crowding",
@@ -1817,6 +1823,81 @@
       "type": "object",
       "title": "MinorSection"
     },
+    "OverviewCountry": {
+      "properties": {
+        "cc": {
+          "type": "string"
+        },
+        "length_m": {
+          "type": "number"
+        },
+        "climb_per_km": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Metres climbed per km as the route runs, on known terrain"
+        },
+        "best_time": {
+          "description": "Best-time score by month (0-100), weighted by length",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "cc",
+        "length_m",
+        "climb_per_km",
+        "best_time"
+      ],
+      "type": "object",
+      "title": "OverviewCountry"
+    },
+    "OverviewSight": {
+      "properties": {
+        "name": {
+          "description": "Its English Wikipedia title, or its own name for a pass",
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "wikidata": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "at_m": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "name",
+        "kind",
+        "wikidata",
+        "at_m"
+      ],
+      "type": "object",
+      "title": "OverviewSight"
+    },
     "PipelineInfo": {
       "properties": {
         "name": {
@@ -2208,6 +2289,159 @@
       "type": "object",
       "title": "RouteOverlap"
     },
+    "RouteOverview": {
+      "description": "The facts a route's description is written from (D89): Dream writes the words each time it shows them.",
+      "properties": {
+        "start": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "end": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "length_m": {
+          "type": "number"
+        },
+        "countries": {
+          "description": "In the order the route reaches them",
+          "items": {
+            "$ref": "#/$defs/OverviewCountry"
+          },
+          "type": "array"
+        },
+        "climb_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Climbing as the route runs, on known terrain"
+        },
+        "climb_per_km": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "strong_m": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "Length where each landscape is strong: coast, water and wine (score 0.5 or more), and protected (inside protected areas)",
+          "type": "object"
+        },
+        "unesco": {
+          "description": "Up to four World Heritage sites, spread along the route",
+          "items": {
+            "$ref": "#/$defs/OverviewSight"
+          },
+          "type": "array"
+        },
+        "unesco_count": {
+          "type": "integer"
+        },
+        "passes": {
+          "description": "Up to three of the best-known passes",
+          "items": {
+            "$ref": "#/$defs/OverviewSight"
+          },
+          "type": "array"
+        },
+        "sight_kinds": {
+          "description": "The kinds that stand out among the top-ranked highlights",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "surfaces_m": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "type": "object"
+        },
+        "best_time": {
+          "description": "Best-time score by month (0-100), weighted by length",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": "array"
+        },
+        "undeveloped_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Length with no developed route yet; null when not rated"
+        },
+        "remote_m": {
+          "type": "number"
+        },
+        "longest_remote_m": {
+          "type": "number"
+        },
+        "busy_m": {
+          "description": "Kept for when the busy-road rule is checked; not shown yet (D89)",
+          "type": "number"
+        },
+        "ferries": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "length_m",
+        "countries",
+        "climb_m",
+        "climb_per_km",
+        "strong_m",
+        "unesco",
+        "unesco_count",
+        "passes",
+        "sight_kinds",
+        "surfaces_m",
+        "best_time",
+        "undeveloped_m",
+        "remote_m",
+        "longest_remote_m",
+        "busy_m",
+        "ferries"
+      ],
+      "type": "object",
+      "title": "RouteOverview"
+    },
     "RouteSummary": {
       "properties": {
         "ride_length_m": {
@@ -2227,6 +2461,18 @@
             "$ref": "#/$defs/StatusShare"
           },
           "type": "array"
+        },
+        "overview": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RouteOverview"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Absent in audits from before D89"
         }
       },
       "required": [
@@ -2234,7 +2480,8 @@
         "daily_section_count",
         "gap_count",
         "gap_straight_distance_m",
-        "status_breakdown"
+        "status_breakdown",
+        "overview"
       ],
       "type": "object",
       "title": "RouteSummary"
