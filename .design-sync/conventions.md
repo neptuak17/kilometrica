@@ -1,6 +1,6 @@
 # Building with the Kilometrica UI kit
 
-Kilometrica plans long-distance cycle trips: Dream finds a stretch of a route that suits the rider; Plan turns it into days, nights and the few calls only the rider can make. This kit is shadcn/ui on React Aria with Kilometrica's theme. Everything is on `window.KilometricaUI`.
+Kilometrica plans long-distance cycle trips: Dream finds a stretch of a route that suits the rider; Plan turns it into days, nights and the few decisions only the rider can make. This kit is shadcn/ui on React Aria with Kilometrica's theme. Everything is on `window.KilometricaUI`.
 
 ## Setup
 

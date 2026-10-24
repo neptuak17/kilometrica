@@ -11,7 +11,7 @@ export const Default = () => (
       Which stretch suits you, when, and which way.
     </TabsContent>
     <TabsContent id="plan" className="text-muted-foreground">
-      Days, nights and the calls only you can make.
+      Days, nights and the decisions only you can make.
     </TabsContent>
     <TabsContent id="go" className="text-muted-foreground">
       Your plan at a glance, on the road.

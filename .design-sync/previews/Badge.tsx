@@ -5,7 +5,7 @@ export const Variants = () => (
     <Badge>Trip Pass</Badge>
     <Badge variant="secondary">7 days</Badge>
     <Badge variant="outline">Moderate</Badge>
-    <Badge variant="destructive">Beyond your level</Badge>
+    <Badge variant="destructive">Beyond your selected level</Badge>
   </div>
 );
 

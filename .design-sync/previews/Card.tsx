@@ -4,7 +4,7 @@ export const Default = () => (
   <Card className="max-w-sm">
     <CardHeader>
       <CardTitle>Ready to go</CardTitle>
-      <CardDescription>A bed every night, every day within your level, 4 checks before you leave.</CardDescription>
+      <CardDescription>Accommodation every night, every day within your level, 4 checks before you leave.</CardDescription>
     </CardHeader>
     <CardContent>
       <p>
