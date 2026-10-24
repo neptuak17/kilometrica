@@ -1522,6 +1522,7 @@ Agreed with the owner on 2026-10-23 (D77). Still no model: A2 builds what the mo
 | Licence terms: Open-Meteo (non-commercial), MeteoAlarm redistribution, Mapillary derived data, ODbL share-alike | Licence register in `docs/`; provider interfaces allow swaps; legal review before launch |
 | Valhalla on Cloudflare Containers (production only) | Laptop: resolved, since official arm64 images exist. Production: evaluate Containers' disk limits; small VM as a fallback (10.2). |
 | Laptop capacity (RAM/disk) | Corridor clipping; start with 2–3 routes |
+| Busy roads look overcounted (2026-10-24): the Raid Pyrenean Randonneur has 529 of 725 km counted busy, likely French mountain roads given the rural default speeds (`DEFAULT_SPEED` in `engine/src/dpg_audit/layers/classify.py`); EV8's Croatia and Greece may be inflated the same way | Look at it later, as the owner asked (not now): check the rule against these routes and discuss before changing it. Until then, route descriptions leave busy roads out (D89) |
 
 **Questions for you:**
 
