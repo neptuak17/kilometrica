@@ -38,3 +38,7 @@ ds-artifact/
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/node_modules
+
+# The recorded walkthrough (D88): Playwright's ffmpeg and the videos
+/.playwright/
+/walkthrough/

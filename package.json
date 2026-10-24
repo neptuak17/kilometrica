@@ -30,11 +30,13 @@
     "design-system": "npm run build -w @dpg/ui && node .ds-sync/package-build.mjs --config .design-sync/config.json --node-modules ./node_modules --entry ./packages/ui/dist/index.js --out ./ds-bundle && node .design-sync/build-artifact.mjs",
     "design-system:setup": "npm ci --prefix .ds-sync",
     "site:dev": "npm run dev -w @dpg/site",
-    "site:build": "npm run build -w @dpg/site"
+    "site:build": "npm run build -w @dpg/site",
+    "walkthrough": "tsx scripts/walkthrough/record.mts"
   },
   "devDependencies": {
     "concurrently": "^10.0.6",
     "json-schema-to-typescript": "^16.0.0",
+    "playwright": "^1.64.1",
     "typescript": "^7.0.2"
   }
 }
