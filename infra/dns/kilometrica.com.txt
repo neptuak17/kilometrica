@@ -23,3 +23,6 @@ www.kilometrica.com.	1	IN	CNAME	neptuak17.github.io. ; cf_tags=cf-proxied:false
 ;; Verifies the domain for GitHub Pages, so no one else can claim it. Each account gets its own value: paste the one
 ;; GitHub shows (profile Settings > Pages > Add a domain) between the quotes, and remove the leading ";".
 ; _github-pages-challenge-neptuak17.kilometrica.com.	1	IN	TXT	"PASTE-THE-VALUE-FROM-GITHUB"
+
+;; files.kilometrica.com: not in this file. R2 made it (proxied) when the bucket was given this custom domain
+;; (D92, 2026-10-25); it serves the assistant's model. Leave it alone when importing this file.
