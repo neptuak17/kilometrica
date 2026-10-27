@@ -1,5 +1,5 @@
 /**
- * The recorded walkthrough of Dream and Plan on EV8 (D88): `npm run walkthrough` drives the local app in the installed
+ * The recorded walkthrough of Dream and Plan on EV8 (D88, D93): `npm run walkthrough` drives the local app in the installed
  * Edge, as a rider would, and saves a 1920×1080 WebM in `walkthrough/`. It starts the API and the web app if they
  * aren't running. The stretch is Dream's own first choice for the question asked; if a re-audit changes that, the
  * script stops and says so rather than picking one by hand. Counts in the captions are read from the screen.
@@ -25,6 +25,8 @@ const FIRST = "Ulldecona → Blanes";
 const SECOND = "Sollana → Vandellos i l'Hospitalet de l'Infant";
 const EXAMPLE = "A week of coast and villages";
 const REST_IN = "Barcelona";
+/** The days Plan opens (D93): a riding day within the level, the rest day after it, and the harder day it made longer. */
+const DAYS = { ride: 5, rest: 6, harder: 7 };
 /** Dream's link for the first stretch, for `--plan`. */
 const PLAN = "/plan?route=eurovelo%2Fev8&first=33&last=38&way=forward&days=7&rest=1&month=4&level=2&gravel=ok&busy=1&stay=rooms&train=1";
 
@@ -204,32 +206,58 @@ async function plan(page: Page, d: ReturnType<typeof director>) {
   const days = page.locator("[data-slot=card-title]", { hasText: "The days" });
   await d.show(days, "start");
   await d.caption("The days", "Every day, with its distance, time and effort. Each opens its own card.", 3000);
-  const day5 = page.getByRole("button", { name: /^Day 5\b/ });
-  await d.click(day5);
-  await d.settle();
-  const card = page.locator("h2", { hasText: "→" }).first();
-  await d.show(card, "start");
-  await d.caption("A day's card", `Day 5, ${(await card.innerText()).trim()}: the map and profile, water and food, heads-ups and highlights.`);
+  await d.click(page.getByRole("button", { name: new RegExp(`^Day ${DAYS.ride}\\b`) }));
+
+  // The card on screen, checked against the day agreed (D93): if a re-plan changes it, stop rather than caption it wrongly.
+  const card = page.locator("#day-card");
+  const dayCard = async (n: number, effort: string | null) => {
+    await card.getByText(new RegExp(`^Day ${n} · `)).waitFor();
+    await d.settle();
+    const title = (await card.locator("h2").innerText()).trim();
+    const text = await card.innerText();
+    if (effort ? !text.includes(effort) : title !== `Rest day at ${REST_IN}`)
+      throw new Error(`Day ${n} is now "${title}", not ${effort ? `"${effort}"` : `the rest day at ${REST_IN}`}: the walkthrough needs agreeing again.`);
+    await d.show(card, "start");
+    return { title, text };
+  };
+
+  const ride = await dayCard(DAYS.ride, "Within your level");
+  await d.caption("A riding day", `Day ${DAYS.ride}, ${ride.title}, within your level: the map and profile, water and food, heads-ups and highlights.`);
   const sleep = page.locator("#day-sleep");
   await d.show(sleep, "start");
-  await d.caption("A place to stay", "Every night lists places to stay, your kind first, with links to their own sites. Choose one.");
+  await d.caption("A place to stay", "Every night lists places to stay, your kind first, with links to their own sites. Here it's for two nights: the next day is a rest day.");
   await d.click(sleep.getByRole("button", { name: "Choose" }).first());
   await d.caption("", "Kilometrica doesn't navigate or book: it hands you to the apps and sites that do.", 3500);
 
-  const todo = page.getByText("To do", { exact: true });
-  await d.show(todo, "start");
+  // On to the next days with the card's own button.
+  await d.click(page.getByRole("button", { name: new RegExp(`^Day ${DAYS.rest}: `) }));
+  await dayCard(DAYS.rest, null);
+  await d.caption("A rest day", `Day ${DAYS.rest}, a day off in ${REST_IN}: what to see, food that's open that day, and what's in town.`);
+  const move = card.getByText("Move it", { exact: true });
+  await d.show(move);
+  await d.point(move);
+  await d.caption("A rest day", "Move it to another town, or stay another day, in one tap.", 3000);
+
+  await d.click(page.getByRole("button", { name: new RegExp(`^Day ${DAYS.harder}: `) }));
+  const hard = await dayCard(DAYS.harder, "A harder day");
+  const distance = (await card.locator("h2 + span").innerText()).split("·")[0]!.trim();
+  const riding = hard.text.match(/Riding\n(.+)/)?.[1]?.trim();
+  const chart = page.getByRole("group", { name: /^Riding hours per day/ });
+  const usual = (await chart.getAttribute("aria-label"))?.match(/(about .+)$/)?.[1];
+  if (!riding || !usual) throw new Error(`Day ${DAYS.harder}'s riding time or the usual day isn't on screen.`);
+  await d.caption("A harder day", `Day ${DAYS.harder}, ${hard.title}: ${distance} and ${riding} riding, against your usual day of ${usual}. It's the day the rest day made longer.`);
+  await d.show(chart);
+  await d.point(chart.locator(`button[title^="Day ${DAYS.harder}:"]`));
+  await d.caption("Effort, day by day", "Each bar is a day's riding against your usual day. Tap one to open its card.");
+
+  await d.show(page.getByRole("heading", { name: "Before you go" }), "start");
   await d.caption("Before you go", "The To do list gathers what to sort out before you leave. Each line takes you to its day.");
 
-  await d.click(page.getByRole("button", { name: "Trip book" }));
-  await page.getByRole("button", { name: "Back to the plan" }).waitFor();
-  await d.settle();
-  await d.caption("The trip book", "The brief and a page per day, to print or save as a PDF for when there's no signal.", 2500);
-  for (let i = 0; i < 4; i++) await d.scrollBy(700);
-  await d.pause(800);
-  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "smooth" }));
-  await d.pause(900);
-  await d.click(page.getByRole("button", { name: "Back to the plan" }));
-  await d.settle();
+  // The trip book is mentioned, not opened (D93).
+  const book = page.getByRole("button", { name: "Trip book" });
+  await d.show(book);
+  await d.point(book);
+  await d.caption("Take it with you", "The trip book to print or save as a PDF for when there's no signal, a starter GPX and a calendar file.");
 
   const qr = page.getByRole("button", { name: "Show a QR code" });
   await d.show(qr);
