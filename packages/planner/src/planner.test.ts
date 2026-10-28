@@ -8,7 +8,21 @@ import { choicesOf, parseDocument, toDocument } from "./document";
 import { calendarFile, dayGpx, tripGpx } from "./exports";
 import { dayWeather } from "./facts";
 import { bearing, type Geometry } from "./geometry";
-import { bookingSearches, dayItems, isNightLine, mapsSearch, nightOptions, nightStay, railLinks, streetPhotos, toDo, WILD_CAMP, wikiLinks } from "./items";
+import {
+  bookingSearches,
+  dayItems,
+  isNightLine,
+  mapsSearch,
+  nightChoice,
+  nightOfDay,
+  nightOptions,
+  nightStay,
+  railLinks,
+  streetPhotos,
+  toDo,
+  WILD_CAMP,
+  wikiLinks,
+} from "./items";
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan, ownNightBeds } from "./plan";
 import { ridingDays, suggestedRest, suggestedRestDays } from "./rest";
@@ -732,6 +746,30 @@ describe("where to sleep: a preference, with every night's options (D72)", () =>
     const line = (sleep: "camping" | "rooms") => makePlan(withBeds([]), inputs({ sleep }), wild).items.find((i) => isNightLine(i) && i.id.startsWith("bed:0:"));
     expect(line("camping")?.settled).toBe("Wild camp");
     expect(line("rooms")?.settled).toBeUndefined();
+  });
+
+  it("says what the rider chose for each night in the day list, a rest day included, and nothing while nothing is (D95)", () => {
+    const camp = inputs({ sleep: "camping", days: 4, restDays: 1, restAfter: [2] });
+    const p0 = makePlan(withBeds([]), camp);
+    const locked = Object.fromEntries(p0.nights.map((n) => [n.index, n.stop.id]));
+    const full = withBeds([bed("Camping Eins", "campsite", p0.nights[0]!.stop.at_m / 1000), bed("Camping Zwei", "campsite", p0.nights[1]!.stop.at_m / 1000)]);
+    const p = makePlan(full, camp, { ...NO_CHOICES, locked, beds: { 0: "Camping Eins", 1: "Camping Zwei" }, booked: [0, 2] });
+    expect(p.days.map((d) => d.kind)).toEqual(["ride", "ride", "rest", "ride", "ride"]);
+    const said = p.days.map((d) => {
+      const n = nightOfDay(p, d);
+      return n ? (nightChoice(full, n, p.choices, p.inputs.sleep)?.text ?? null) : null;
+    });
+    // A chosen place by name only, booked or not; Booked alone is the rider's own place; the last day has no night.
+    expect(said).toEqual(["Camping Eins", "Camping Zwei", "Camping Zwei", "Own accommodation found", null]);
+    const wild = { ...p.choices, beds: { 0: WILD_CAMP }, booked: [] };
+    expect(nightChoice(full, p.nights[0]!, wild, "camping")).toEqual({ kind: "wild-camp", text: "Wild camp" });
+    expect(nightChoice(full, p.nights[0]!, wild, "rooms")).toBeNull(); // no tent, no camping
+    expect(nightChoice(full, p.nights[1]!, wild, "camping")).toBeNull(); // nothing chosen: the To do's job
+    // A chosen place that no longer counts leaves Booked as the rider's own; one whose part didn't load isn't guessed at.
+    const gone = withBeds([]);
+    const unloaded: PlanData = { ...gone, full: { ...gone.full!, placesMissing: [{ fromM: 0, toM: 1e9 }] } };
+    expect(nightChoice(gone, p.nights[0]!, p.choices, "camping")?.kind).toBe("own");
+    expect(nightChoice(unloaded, p.nights[0]!, p.choices, "camping")).toBeNull();
   });
 });
 

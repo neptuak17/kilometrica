@@ -10,7 +10,6 @@
 import type { Place } from "@dpg/contracts";
 import {
   bedsKnown,
-  chosenBed,
   clock,
   day as dayText,
   dayIndex,
@@ -25,6 +24,8 @@ import {
   KNOWN_ENOUGH,
   locate,
   monthOf,
+  nightChoice,
+  nightOfDay,
   oneIn,
   placeKind,
   placeLinks,
@@ -531,8 +532,8 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
       return { km: (t - d.fromT) / 1000, m: eleAt(data.effort, plan.axis.mOf(t)) };
     });
   }, [plan, data.effort, d]);
-  const booked = night ? plan.choices.booked.includes(night.index) : false;
-  const chosen = night ? chosenBed(data, night, plan.choices, plan.inputs.sleep)?.id : undefined;
+  // Once the rider has chosen, the night shows only that (D95).
+  const stay = night ? nightChoice(data, night, plan.choices, plan.inputs.sleep) : null;
   const openToday = toDo(plan.items, plan.choices).open.filter((i) => i.day === d.number);
   return (
     <Sheet page={page} pages={pages} left={`${plan.brief.title} · Day ${d.number} · ${dayText(d.date)}`}>
@@ -651,26 +652,32 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
               </span>
             </Part>
           )}
-          {night && (
+          {night && stay && (
+            <Part icon={stay.kind === "wild-camp" ? <Icons.Tent /> : <Icons.Bed />} label="Sleep">
+              <span>
+                <b>{stopName(night.stop)}</b>
+                {night.own ? ` (your stop${night.own.name && night.own.name !== night.stop.name ? `: ${night.own.name}` : ""})` : ""}
+                {stay.kind === "place" ? "" : `: ${stay.text}.`}
+              </span>
+              {stay.kind === "place" && (
+                <div className="grid w-1/2 overflow-hidden rounded-lg border">
+                  <BedCell p={stay.place} month={f.month} code={stay.place.months[monthOf(night.date)]} chosen right={false} bottom={false} />
+                </div>
+              )}
+            </Part>
+          )}
+          {night && !stay && (
             <Part icon={<Icons.Bed />} label="Sleep">
-              <span className="flex flex-wrap items-center gap-x-3">
-                <span>
-                  <b>{stopName(night.stop)}</b>
-                  {night.own ? ` (your stop${night.own.name && night.own.name !== night.stop.name ? `: ${night.own.name}` : ""})` : ""}: {bedsKnown(night.beds, f.month, plan.inputs.sleep, !!night.own)}.
-                  {night.beds.count ? " Open first, then nearest." : ""}
-                  {night.wildCamp && ` ${night.wildCamp}`}
-                </span>
-                {booked && (
-                  <span className="inline-flex items-center gap-1 font-semibold">
-                    <Icons.Check className="size-3.5" />
-                    Booked
-                  </span>
-                )}
+              <span>
+                <b>{stopName(night.stop)}</b>
+                {night.own ? ` (your stop${night.own.name && night.own.name !== night.stop.name ? `: ${night.own.name}` : ""})` : ""}: {bedsKnown(night.beds, f.month, plan.inputs.sleep, !!night.own)}.
+                {night.beds.count ? " Open first, then nearest." : ""}
+                {night.wildCamp && ` ${night.wildCamp}`}
               </span>
               {f.beds.length > 0 && (
                 <div className="grid grid-cols-2 overflow-hidden rounded-lg border">
                   {f.beds.slice(0, 6).map((p, i, all) => (
-                    <BedCell key={p.id} p={p} month={f.month} code={p.months[monthOf(night.date)]} chosen={chosen === p.id} right={i % 2 === 0} bottom={i < all.length - (all.length % 2 === 0 ? 2 : 1)} />
+                    <BedCell key={p.id} p={p} month={f.month} code={p.months[monthOf(night.date)]} chosen={false} right={i % 2 === 0} bottom={i < all.length - (all.length % 2 === 0 ? 2 : 1)} />
                   ))}
                 </div>
               )}
@@ -751,6 +758,8 @@ function RestDayPage({ plan, data, d, page, pages, pageOf }: { plan: PlanResult;
     stop?.station ? `Station: ${stop.station}` : null,
   ].filter((x): x is string => !!x);
   const before = plan.days.filter((x) => x.number < d.number && x.kind === "ride").pop();
+  const night = nightOfDay(plan, d);
+  const stay = night ? nightChoice(data, night, plan.choices, plan.inputs.sleep) : null;
   return (
     <Sheet page={page} pages={pages} left={`${plan.brief.title} · Day ${d.number} · ${dayText(d.date)}`}>
       <header className="grid gap-0.5">
@@ -814,10 +823,18 @@ function RestDayPage({ plan, data, d, page, pages, pageOf }: { plan: PlanResult;
             <span>{there.join(" · ")}</span>
           </Part>
         )}
-        <Part icon={<Icons.Bed />} label="Sleep">
+        <Part icon={stay?.kind === "wild-camp" ? <Icons.Tent /> : <Icons.Bed />} label="Sleep">
+          {/* What the rider chose for the night they stay on for (D95). */}
           <span>
-            Another night at {d.endName}: ask for every night when you book.
-            {before && ` The places are on Day ${before.number}'s page, page ${pageOf(before.number)}.`}
+            {stay?.kind === "wild-camp" ? (
+              `Another night at your wild camp near ${d.endName}.`
+            ) : (
+              <>
+                Another night at {stay?.kind === "place" ? <b>{stay.text}</b> : stay?.kind === "own" ? `your own accommodation in ${d.endName}` : d.endName}: ask for every
+                night when you book.
+                {before && (stay?.kind === "place" ? ` Its details are on Day ${before.number}'s page, page ${pageOf(before.number)}.` : !stay ? ` The places are on Day ${before.number}'s page, page ${pageOf(before.number)}.` : "")}
+              </>
+            )}
           </span>
         </Part>
       </div>

@@ -22,7 +22,7 @@ import { openFood, type SupplyGap, supplyAdvice, supplyGaps } from "./supplies";
 import { travelItems } from "./travel";
 
 export { bookingSearches, mapsSearch, nightsAt, nightStay, placeLinks, RAIL, railLinks, streetPhotos, wikiLinks } from "./links";
-export { chosenBed, nightOptions, type NightOptions, WILD_CAMP } from "./nights";
+export { chosenBed, type NightChoice, nightChoice, nightOfDay, nightOptions, type NightOptions, WILD_CAMP } from "./nights";
 export { CAPS, STEEP } from "./shared";
 export { foodOnDay } from "./supplies";
 export { SCHENGEN } from "./travel";

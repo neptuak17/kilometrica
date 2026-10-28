@@ -3,10 +3,10 @@
  * and one line per night in the to-do until it's settled (D18, D64).
  */
 import type { Place, Stop } from "@dpg/contracts";
-import type { PlanCore } from "../plan";
+import type { PlanCore, PlanResult } from "../plan";
 import { monthOf } from "../sun";
 import { day as dayText, km, listable, placeTitle, sleepNoun, stopName } from "../text";
-import type { NightPlan, PlanChoices, PlanData, Sleep } from "../types";
+import { type DayPlan, type NightPlan, type PlanChoices, type PlanData, placesMissing, type Sleep } from "../types";
 import { holidayOn, schoolOn } from "./calendar";
 import { nightsAt } from "./links";
 import type { Add } from "./shared";
@@ -82,6 +82,32 @@ export function chosenBed(data: PlanData, night: NightPlan, choices: Pick<PlanCh
   const id = choices.beds[night.index];
   if (!id || !data.full) return null;
   return bedPlaces(data.full, night.stop).find((p) => p.id === id) ?? null;
+}
+
+/** What the rider chose for a night (D95), in the words the day list shows. */
+export type NightChoice =
+  | { kind: "place"; place: Place; text: string }
+  | { kind: "wild-camp"; text: string }
+  | { kind: "own"; text: string };
+
+/**
+ * The rider's choice for a night (D95): the place chosen on its day card, a wild camp, or "Own accommodation found"
+ * when Booked is ticked with no place chosen; null while nothing is, the To do's job. We make no bookings, so a chosen
+ * place is said by name only. A chosen place we can't check, its part's places not loaded, is null rather than a guess.
+ */
+export function nightChoice(data: PlanData, night: NightPlan, choices: Pick<PlanChoices, "beds" | "booked">, sleep: Sleep): NightChoice | null {
+  const id = choices.beds[night.index];
+  const chosen = chosenBed(data, night, choices);
+  if (chosen) return { kind: "place", place: chosen, text: placeTitle(chosen, stopName(night.stop)) };
+  if (id === WILD_CAMP && sleep !== "rooms") return { kind: "wild-camp", text: "Wild camp" };
+  if (id && id !== WILD_CAMP && (!data.full || placesMissing(data.full, night.stop.at_m - HERE_M, night.stop.at_m + HERE_M).length)) return null;
+  return choices.booked.includes(night.index) ? { kind: "own", text: "Own accommodation found" } : null;
+}
+
+/** The night a day ends in: a riding day's own, a rest day's the night it stays on for; null on the last day. */
+export function nightOfDay(plan: Pick<PlanResult, "days" | "nights">, d: DayPlan): NightPlan | null {
+  const ride = d.kind === "ride" ? d.ride : (plan.days.filter((x) => x.number < d.number && x.kind === "ride").pop()?.ride ?? null);
+  return plan.nights.find((n) => n.afterRide === ride) ?? null;
 }
 
 /**

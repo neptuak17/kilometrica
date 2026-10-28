@@ -2,7 +2,7 @@
  * The trip brief (11.6) in the new look (D53, D54): one screen saying what the rider is taking on. Five fixed lines,
  * one per question, the effort per day against the rider's usual day, and the day list.
  */
-import { dayItems, hours, km, type PlanResult } from "@dpg/planner";
+import { dayItems, hours, km, nightChoice, nightOfDay, type PlanData, type PlanResult } from "@dpg/planner";
 import { Card, CardContent, CardHeader, CardTitle, cn, DayRow, EffortChart as KitEffortChart, Icons } from "@dpg/ui";
 import { type ReactNode, useState } from "react";
 
@@ -100,15 +100,17 @@ export function Brief({ plan, onShowDay, free = false }: { plan: PlanResult; onS
   );
 }
 
-/** The days as the kit's day rows: a row opens its day. */
+/** The days as the kit's day rows, each with what the rider chose for its night (D95): a row opens its day. */
 export function DayList({
   plan,
+  data,
   selected,
   onPick,
   free,
   changed,
 }: {
   plan: PlanResult;
+  data: PlanData;
   selected: number | null;
   onPick: (n: number) => void;
   free: boolean;
@@ -130,6 +132,8 @@ export function DayList({
         {plan.days.map((d) => {
           const mine = dayItems(plan.items, d.number);
           const count = mine.calls.length + mine.todos.length + mine.headsups.shown.length + mine.headsups.more;
+          const night = free ? null : nightOfDay(plan, d);
+          const stay = night ? nightChoice(data, night, plan.choices, plan.inputs.sleep) : null;
           return (
             <DayRow
               key={d.number}
@@ -141,6 +145,8 @@ export function DayList({
               hours={d.kind === "ride" ? hours(d.hoursSlow) : undefined}
               effort={d.kind === "ride" ? d.effort : undefined}
               items={free ? undefined : count}
+              stay={stay?.text}
+              camp={stay?.kind === "wild-camp"}
               selected={selected === d.number}
               changed={changed?.includes(d.number)}
               onPick={() => onPick(d.number)}

@@ -825,7 +825,7 @@ function PlanPage({ start }: { start: Start }) {
               onOption={onOption}
               onShowDay={showDay}
             />
-            <DayList plan={shown} selected={selected} onPick={(n) => setSelected(selected === n ? null : n)} free={free} changed={preview ? changes?.days : undefined} />
+            <DayList plan={shown} data={data} selected={selected} onPick={(n) => setSelected(selected === n ? null : n)} free={free} changed={preview ? changes?.days : undefined} />
             <BeforeYouGo
               plan={plan}
               free={free}
