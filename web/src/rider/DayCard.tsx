@@ -18,6 +18,7 @@ import {
   isNightLine,
   km,
   monthOf,
+  nightChoice,
   nightStay,
   opening,
   placeKind,
@@ -77,6 +78,28 @@ export function Links({ links, size = "xs" }: { links: Handoff[]; size?: "xs" | 
         </span>
       )}
     </span>
+  );
+}
+
+/** A place to sleep: its name on the left, Choose top right on every row, its links on a line of their own (D96). */
+const ROW = "grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 border-b px-3.5 py-2.5 last:border-b-0";
+
+/**
+ * The rider's own decision is a filled button, a handoff an outline one (D96). Once the night is settled, the choice
+ * stays filled and the other places' Choose steps back to outline.
+ */
+function ChooseButton({ chosen, settled, onPress }: { chosen: boolean; settled: boolean; onPress: () => void }) {
+  return (
+    <Button variant={settled && !chosen ? "outline" : "default"} size="xs" onPress={onPress}>
+      {chosen ? (
+        <>
+          <Icons.Check data-icon="inline-start" />
+          Chosen
+        </>
+      ) : (
+        "Choose"
+      )}
+    </Button>
   );
 }
 
@@ -181,6 +204,8 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
   // The place chosen for the night, while it is still one of this town's (D64).
   const chosen = night ? chosenBed(data, night, choices, plan.inputs.sleep)?.id : undefined;
   const wild = !!night && choices.beds[night.index] === WILD_CAMP;
+  // Once the night has the rider's choice (D95), the other places' Choose steps back (D96).
+  const settled = !!night && !!nightChoice(data, night, choices, plan.inputs.sleep);
   // When none of our places suit: the big booking sites, searched for the stop and its nights (D60).
   const search = night ? bookingSearches(night, { ...plan.inputs, restAfter: plan.restAfter }) : [];
   const stay = night ? nightStay(night, plan.restAfter, plan.inputs) : undefined;
@@ -379,9 +404,10 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                     {beds.slice(0, 6).map((p) => {
                       const code = p.months[monthOf(night.date)];
                       const open = code === "o" || code === "p";
+                      const links = placeLinks(p);
                       return (
-                        <li key={p.id} className={cn("flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-3.5 py-2.5 last:border-b-0", chosen === p.id && "bg-primary/8")}>
-                          <div className="grid min-w-0 flex-[1_1_200px]">
+                        <li key={p.id} className={cn(ROW, chosen === p.id && "bg-primary/8")}>
+                          <div className="grid min-w-0">
                             <span className="font-semibold">
                               {placeTitle(p, stopName(night.stop))}
                               {p.detail.stars ? <span className="font-normal text-muted-foreground"> {String(p.detail.stars)}★</span> : null}
@@ -390,20 +416,13 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                               {placeKind(p)} · {km((p.access_m ?? 0) / 1000)} km off the route
                             </span>
                           </div>
-                          {/* Only what we know: an unknown month is said once, on the night's line above (D61). */}
-                          {open && <Badge variant="secondary">{code === "o" ? `Open in ${month}` : `Partly open in ${month}`}</Badge>}
-                          <Links links={placeLinks(p)} />
-                          {!readOnly && (
-                            <Button variant={chosen === p.id ? "secondary" : "ghost"} size="xs" onPress={() => onChooseBed(night.index, chosen === p.id ? null : p.id)}>
-                              {chosen === p.id ? (
-                                <>
-                                  <Icons.Check data-icon="inline-start" />
-                                  Chosen
-                                </>
-                              ) : (
-                                "Choose"
-                              )}
-                            </Button>
+                          {!readOnly && <ChooseButton chosen={chosen === p.id} settled={settled} onPress={() => onChooseBed(night.index, chosen === p.id ? null : p.id)} />}
+                          {(open || links.length > 0) && (
+                            <div className="col-span-full flex flex-wrap items-center gap-1.5">
+                              {/* Only what we know: an unknown month is said once, on the night's line above (D61). */}
+                              {open && <Badge variant="secondary">{code === "o" ? `Open in ${month}` : `Partly open in ${month}`}</Badge>}
+                              <Links links={links} />
+                            </div>
                           )}
                         </li>
                       );
@@ -425,40 +444,32 @@ export function DayCard({ plan, data, day: d, free, readOnly, choices, onLockNig
                   <div className="grid gap-1.5">
                     <span className="font-medium">Other options</span>
                     <ul className="overflow-hidden rounded-2xl border">
-                      {options.others.map(({ place: p, km: k, stop }) => (
-                        <li key={p.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-3.5 py-2.5 last:border-b-0">
-                          <div className="grid min-w-0 flex-[1_1_200px]">
-                            <span className="font-semibold">{placeTitle(p, stop ? stopName(stop) : null)}</span>
-                            <span className="text-xs text-muted-foreground tabular-nums">
-                              {placeKind(p)} · {km(Math.abs(k))} km {k >= 0 ? "on" : "back"} · this day {km(d.km + k)} km
-                            </span>
-                          </div>
-                          <Links links={placeLinks(p)} />
-                          {!readOnly && stop && (
-                            <Button variant="ghost" size="xs" onPress={() => onStay(night.index, stop.id, p.id)}>
-                              Choose
-                            </Button>
-                          )}
-                        </li>
-                      ))}
+                      {options.others.map(({ place: p, km: k, stop }) => {
+                        const links = placeLinks(p);
+                        return (
+                          <li key={p.id} className={ROW}>
+                            <div className="grid min-w-0">
+                              <span className="font-semibold">{placeTitle(p, stop ? stopName(stop) : null)}</span>
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                {placeKind(p)} · {km(Math.abs(k))} km {k >= 0 ? "on" : "back"} · this day {km(d.km + k)} km
+                              </span>
+                            </div>
+                            {!readOnly && stop && <ChooseButton chosen={false} settled={settled} onPress={() => onStay(night.index, stop.id, p.id)} />}
+                            {links.length > 0 && (
+                              <div className="col-span-full">
+                                <Links links={links} />
+                              </div>
+                            )}
+                          </li>
+                        );
+                      })}
                       {options.wildCamp && (
-                        <li className={cn("flex flex-wrap items-center gap-x-3 gap-y-2 px-3.5 py-2.5", wild && "bg-primary/8")}>
-                          <div className="grid min-w-0 flex-[1_1_200px]">
+                        <li className={cn(ROW, wild && "bg-primary/8")}>
+                          <div className="grid min-w-0">
                             <span className="font-semibold">Wild camp</span>
                             <span className="text-xs text-muted-foreground">If it's allowed and feasible here: your call.</span>
                           </div>
-                          {!readOnly && (
-                            <Button variant={wild ? "secondary" : "ghost"} size="xs" onPress={() => onChooseBed(night.index, wild ? null : WILD_CAMP)}>
-                              {wild ? (
-                                <>
-                                  <Icons.Check data-icon="inline-start" />
-                                  Chosen
-                                </>
-                              ) : (
-                                "Choose"
-                              )}
-                            </Button>
-                          )}
+                          {!readOnly && <ChooseButton chosen={wild} settled={settled} onPress={() => onChooseBed(night.index, wild ? null : WILD_CAMP)} />}
                         </li>
                       )}
                     </ul>

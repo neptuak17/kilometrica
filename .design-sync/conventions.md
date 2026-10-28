@@ -35,6 +35,7 @@ Only compiled classes work; arbitrary values such as `bg-[#123456]` or `w-[37px]
 - Missing data is shown as unknown with "check yourself", never as zero: the `unknown` colour and `Icons.CircleHelp`.
 - Warnings use `headsup` with `Icons.TriangleAlert`; reasons and sights use `highlight` with `Icons.Check`. At most 3 heads-ups and 3 highlights per day.
 - No sign-in or account screens. Kilometrica hands riders off to other sites and apps (`LinkButton` to a hotel's website or Google Maps); it never books or navigates itself.
+- The rider's own action is a filled `Button` ("Choose", "Plan this"); a hand-off is an `outline` `LinkButton` with `Icons.ExternalLink` at its end. In a list, put the action in the same place on every row and the hand-offs on a line of their own.
 
 ## Example
 
