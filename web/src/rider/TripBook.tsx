@@ -653,7 +653,7 @@ function DayPage({ plan, data, d, geometry, page, pages }: { plan: PlanResult; d
             </Part>
           )}
           {night && stay && (
-            <Part icon={stay.kind === "wild-camp" ? <Icons.Tent /> : <Icons.Bed />} label="Sleep">
+            <Part icon={stay.camp ? <Icons.Tent /> : <Icons.Bed />} label="Sleep">
               <span>
                 <b>{stopName(night.stop)}</b>
                 {night.own ? ` (your stop${night.own.name && night.own.name !== night.stop.name ? `: ${night.own.name}` : ""})` : ""}
@@ -823,7 +823,7 @@ function RestDayPage({ plan, data, d, page, pages, pageOf }: { plan: PlanResult;
             <span>{there.join(" · ")}</span>
           </Part>
         )}
-        <Part icon={stay?.kind === "wild-camp" ? <Icons.Tent /> : <Icons.Bed />} label="Sleep">
+        <Part icon={stay?.camp ? <Icons.Tent /> : <Icons.Bed />} label="Sleep">
           {/* What the rider chose for the night they stay on for (D95). */}
           <span>
             {stay?.kind === "wild-camp" ? (

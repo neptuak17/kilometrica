@@ -84,11 +84,11 @@ export function chosenBed(data: PlanData, night: NightPlan, choices: Pick<PlanCh
   return bedPlaces(data.full, night.stop).find((p) => p.id === id) ?? null;
 }
 
-/** What the rider chose for a night (D95), in the words the day list shows. */
+/** What the rider chose for a night (D95), in the words the day list shows; `camp`: a campsite or a wild camp, a tent. */
 export type NightChoice =
-  | { kind: "place"; place: Place; text: string }
-  | { kind: "wild-camp"; text: string }
-  | { kind: "own"; text: string };
+  | { kind: "place"; place: Place; text: string; camp: boolean }
+  | { kind: "wild-camp"; text: string; camp: true }
+  | { kind: "own"; text: string; camp: false };
 
 /**
  * The rider's choice for a night (D95): the place chosen on its day card, a wild camp, or "Own accommodation found"
@@ -98,10 +98,10 @@ export type NightChoice =
 export function nightChoice(data: PlanData, night: NightPlan, choices: Pick<PlanChoices, "beds" | "booked">, sleep: Sleep): NightChoice | null {
   const id = choices.beds[night.index];
   const chosen = chosenBed(data, night, choices);
-  if (chosen) return { kind: "place", place: chosen, text: placeTitle(chosen, stopName(night.stop)) };
-  if (id === WILD_CAMP && sleep !== "rooms") return { kind: "wild-camp", text: "Wild camp" };
+  if (chosen) return { kind: "place", place: chosen, text: placeTitle(chosen, stopName(night.stop)), camp: chosen.kind === "campsite" };
+  if (id === WILD_CAMP && sleep !== "rooms") return { kind: "wild-camp", text: "Wild camp", camp: true };
   if (id && id !== WILD_CAMP && (!data.full || placesMissing(data.full, night.stop.at_m - HERE_M, night.stop.at_m + HERE_M).length)) return null;
-  return choices.booked.includes(night.index) ? { kind: "own", text: "Own accommodation found" } : null;
+  return choices.booked.includes(night.index) ? { kind: "own", text: "Own accommodation found", camp: false } : null;
 }
 
 /** The night a day ends in: a riding day's own, a rest day's the night it stays on for; null on the last day. */

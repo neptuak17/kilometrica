@@ -761,8 +761,10 @@ describe("where to sleep: a preference, with every night's options (D72)", () =>
     });
     // A chosen place by name only, booked or not; Booked alone is the rider's own place; the last day has no night.
     expect(said).toEqual(["Camping Eins", "Camping Zwei", "Camping Zwei", "Own accommodation found", null]);
+    // A campsite or a wild camp is a tent; anywhere else, a bed.
+    expect(p.nights.map((n) => nightChoice(full, n, p.choices, p.inputs.sleep)?.camp)).toEqual([true, true, false]);
     const wild = { ...p.choices, beds: { 0: WILD_CAMP }, booked: [] };
-    expect(nightChoice(full, p.nights[0]!, wild, "camping")).toEqual({ kind: "wild-camp", text: "Wild camp" });
+    expect(nightChoice(full, p.nights[0]!, wild, "camping")).toEqual({ kind: "wild-camp", text: "Wild camp", camp: true });
     expect(nightChoice(full, p.nights[0]!, wild, "rooms")).toBeNull(); // no tent, no camping
     expect(nightChoice(full, p.nights[1]!, wild, "camping")).toBeNull(); // nothing chosen: the To do's job
     // A chosen place that no longer counts leaves Booked as the rider's own; one whose part didn't load isn't guessed at.

@@ -146,7 +146,7 @@ export function DayList({
               effort={d.kind === "ride" ? d.effort : undefined}
               items={free ? undefined : count}
               stay={stay?.text}
-              camp={stay?.kind === "wild-camp"}
+              camp={stay?.camp}
               selected={selected === d.number}
               changed={changed?.includes(d.number)}
               onPick={() => onPick(d.number)}

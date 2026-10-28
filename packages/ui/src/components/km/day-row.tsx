@@ -25,7 +25,7 @@ export interface DayRowProps {
   items?: number
   /** What the rider chose for that night: a place's name, "Wild camp" or "Own accommodation found". Left out while nothing is. */
   stay?: string
-  /** The stay is a wild camp: a tent instead of a bed. */
+  /** The stay is a campsite or a wild camp: a tent instead of a bed. */
   camp?: boolean
   selected?: boolean
   changed?: boolean
