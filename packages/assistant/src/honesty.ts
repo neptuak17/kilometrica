@@ -204,10 +204,10 @@ export function checkAnswer(answer: string, sources: Sources, allow: string[] = 
 /** What the model is told when its answer fails, for its one more try (D77). */
 export function retryNote(check: Check): string {
   const list = check.unsupported.map((u) => `"${u.text}"`).join(", ");
-  return `These words in your answer don't come from the tools or the rider: ${list}. Answer again using only what the tools said, written as they wrote it: no rounding, adding up, counting or converting, and no names they didn't give.`;
+  return `These words in your answer don't come from the tools or the rider: ${list}. Answer again using only what the tools said, written as they wrote it: no rounding, adding up, counting or converting, and no names they didn't give. Write the answer for the rider, without mentioning this note.`;
 }
 
 /** What the rider sees when the second try fails too: the tools' own lines, which are templates over our data (D77). */
 export function toolLines(results: ToolResult<unknown>[]): string {
-  return results.flatMap((r) => r.lines).join("\n");
+  return [...new Set(results.flatMap((r) => r.lines))].join("\n");
 }

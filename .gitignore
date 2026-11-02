@@ -42,3 +42,6 @@ ds-artifact/
 # The recorded walkthrough (D88): Playwright's ffmpeg and the videos
 /.playwright/
 /walkthrough/
+
+# A3: the model scoring runs, kept on the laptop (D97)
+packages/assistant/runs/

@@ -6,8 +6,11 @@
 import { secondThoughts } from "@dpg/planner";
 import { DREAM_TOOLS, type DreamContext } from "../dream";
 import { checkAnswer, type Unsupported } from "../honesty";
+import { toolSpecs } from "../loop";
+import type { ToolSpec } from "../model/model";
 import { fold } from "../names";
 import { PLAN_TOOLS, type PlanApply, type PlanContext } from "../plan";
+import { dreamScreen, planScreen } from "../screen";
 import type { ToolResult } from "../tool";
 import type { Call, Case, Turn } from "./cases";
 import type { World } from "./world";
@@ -20,20 +23,45 @@ export interface Session {
 /** A player's answer: what it says. The options it offers are those its calls returned (offer_options, set_question). */
 export interface Answer {
   text: string;
+  /** The first answer, before the loop's one retry (D77 scores honesty on it); null if none came. */
+  first?: string | null;
+  /** Our own words the player was given besides the tools' (what's on screen): the answer may draw on them too. */
+  context?: string[];
+  /** How the answer came about, for the run's log. */
+  trace?: Record<string, unknown>;
+}
+
+/** The phase as a player meets it: the tools' schemas, and what's on screen as it is now. */
+export interface Phase {
+  tools: ToolSpec[];
+  screen: () => string;
+}
+
+/** A change made on screen, as the change bar says it, and the second thought it raised (none: empty). */
+export interface OnScreen {
+  change: string[];
+  thought: string[];
+}
+
+/** One play of a case: a conversation from its first turn. */
+export interface Conversation {
+  answer(turn: Turn, rider: string, session: Session, onScreen: OnScreen | null): Promise<Answer>;
 }
 
 export interface Player {
   name: string;
-  answer(c: Case, turn: Turn, rider: string, session: Session): Promise<Answer>;
+  begin(c: Case, phase: Phase): Conversation;
 }
 
 /** A2's player: each case's own calls and reference answer. */
 export const referencePlayer: Player = {
   name: "reference",
-  async answer(_c, turn, _rider, session) {
-    for (const k of turn.calls) session.call(k.tool, k.args);
-    return { text: turn.reference };
-  },
+  begin: () => ({
+    async answer(turn, _rider, session) {
+      for (const k of turn.calls) session.call(k.tool, k.args);
+      return { text: turn.reference };
+    },
+  }),
 };
 
 export interface TurnScore {
@@ -43,19 +71,21 @@ export interface TurnScore {
   tools: boolean;
   option: boolean | null;
   honest: boolean;
+  /** The first answer, before any retry, was honest (D77's bar). */
+  honestFirst: boolean;
   mustSay: boolean;
   /** A decline offers nothing and says what it must. */
   decline: boolean | null;
   /** After a change on screen: the second thought the planner raised is the one expected, or none. */
   thought: boolean | null;
-  /** The change made on screen, as the change bar says it, and the second thought it raised (none: empty). */
-  onScreen: { change: string[]; thought: string[] } | null;
+  onScreen: OnScreen | null;
   pass: boolean;
   unsupported: Unsupported[];
   missing: string[];
   calls: Call[];
   results: ToolResult<unknown>[];
   answer: string;
+  trace?: Record<string, unknown>;
 }
 
 /** Whether every key the expected call gives is in the made one, with the same value (extra keys are fine). */
@@ -79,6 +109,10 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
   let plan: PlanContext | null = c.phase === "plan" ? await world.planContext(c) : null;
   const tools = (c.phase === "dream" ? DREAM_TOOLS : PLAN_TOOLS) as { name: string; run: (ctx: unknown, args: Record<string, unknown>) => ToolResult<unknown> }[];
   const ctx = () => (dream ?? plan)!;
+  const conversation = player.begin(c, {
+    tools: dream ? toolSpecs(DREAM_TOOLS, dream) : toolSpecs(PLAN_TOOLS, plan!),
+    screen: () => (dream ? dreamScreen(dream) : planScreen(plan!)),
+  });
 
   for (const [k, turn] of c.turns.entries()) {
     let thought: boolean | null = null;
@@ -113,7 +147,8 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
         return r;
       },
     };
-    const answer = await player.answer(c, turn, rider, session);
+    const answer = await conversation.answer(turn, rider, session, onScreen);
+    if (answer.context?.length) results.push({ lines: answer.context, facts: {} });
 
     const toolsRight = turn.calls.every((want) => calls.some((got) => got.tool === want.tool && subset(want.args, got.args)));
     // The options the answer offers: every one its calls returned.
@@ -126,10 +161,14 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
       option = expected !== undefined && offered.includes(JSON.stringify(expected));
     } else if (offered.length) option = false;
     const check = checkAnswer(answer.text, { results, rider: said });
+    const honestFirst = answer.first === undefined ? check.ok : answer.first !== null && checkAnswer(answer.first, { results, rider: said }).ok;
     const missing = [...(turn.mustSay ?? []).filter((p) => !has(answer.text, p)), ...(turn.mustNotSay ?? []).filter((p) => has(answer.text, p)).map((p) => `not: ${p}`)];
     const decline = c.kind === "decline" ? !offered.length && !missing.length : null;
     const pass = toolsRight && option !== false && check.ok && !missing.length && decline !== false && thought !== false;
-    out.push({ turn: k + 1, rider, tools: toolsRight, option, honest: check.ok, mustSay: !missing.length, decline, thought, onScreen, pass, unsupported: check.unsupported, missing, calls, results: made, answer: answer.text });
+    out.push({
+      turn: k + 1, rider, tools: toolsRight, option, honest: check.ok, honestFirst, mustSay: !missing.length, decline, thought, onScreen, pass,
+      unsupported: check.unsupported, missing, calls, results: made, answer: answer.text, ...(answer.trace ? { trace: answer.trace } : {}),
+    });
   }
   return out;
 }

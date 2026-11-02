@@ -6,13 +6,17 @@
  *   --print          each turn's tool calls and what they returned, to write a reference answer from
  *   --case <id>      only cases whose id contains this
  *   --current        replay on each route's current audit run, and list what no longer holds (after a re-audit)
+ *   --model <names>  A3: the model plays instead (gemma4-e2b, qwen3.5-2b; several with commas), run by Ollama (D97)
+ *   --quick          with --model: the quick set for tuning, about 30 cases covering each kind on each route (D97)
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { loadDreamFiles } from "@dpg/routes";
 import { localFetch } from "@dpg/routes/node";
+import { ollamaModel } from "../model";
 import { type Case, readCases } from "./cases";
-import { plant, playCase, referencePlayer, type TurnScore } from "./play";
+import { plant, playCase, referencePlayer } from "./play";
+import { describe, quickSet, scoreModel } from "./score";
 import { World } from "./world";
 
 const args = process.argv.slice(2);
@@ -35,6 +39,15 @@ const chosen = only ? cases.filter((c) => c.id.includes(only)) : cases;
 const fetch = localFetch();
 const world = new World(fetch);
 
+// A3: the model plays, and the report is its scores.
+const models = value("--model");
+if (models) {
+  const set = flag("--quick") ? quickSet(chosen) : chosen;
+  const label = flag("--quick") ? "quick set" : only ? `cases with ${only}` : "all cases";
+  for (const name of models.split(",")) await scoreModel(world, set, ollamaModel(name.trim()), label);
+  process.exit(0);
+}
+
 // After a re-audit: the same cases on each route's current run.
 if (flag("--current")) {
   const current = new Map<string, string>();
@@ -51,19 +64,6 @@ if (flag("--current")) {
     for (const s of failing) console.log(`         turn ${s.turn}: ${describe(s)}`);
   }
   process.exit(0);
-}
-
-function describe(s: TurnScore): string {
-  return [
-    s.tools ? "" : "tools not called",
-    s.option === false ? "option differs" : "",
-    s.honest ? "" : `unsupported: ${s.unsupported.map((u) => `"${u.text}"`).join(", ")}`,
-    s.mustSay ? "" : `missing: ${s.missing.map((m) => `"${m}"`).join(", ")}`,
-    s.decline === false ? "not a decline" : "",
-    s.thought === false ? "second thought differs" : "",
-  ]
-    .filter(Boolean)
-    .join("; ");
 }
 
 const tally = { cases: 0, passed: 0, turns: 0, phrasings: 0 };
