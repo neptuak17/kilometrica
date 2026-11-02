@@ -1437,7 +1437,7 @@
           "what about june?"
         ],
         "request": {
-          "kind": "month",
+          "kind": "another_month",
           "month": "June"
         }
       }

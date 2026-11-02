@@ -56,8 +56,8 @@ export async function scoreModel(world: World, cases: Case[], player: Player, la
   const plays = cases.reduce((a, c) => a + phrasingsOf(c), 0);
   console.log(`${player.name} · ${label} · ${cases.length} cases, ${plays} plays (each phrasing)\n`);
 
-  const marks = { honestFirst: tally(), options: tally(), plainOptions: tally(), lookups: tally(), declines: tally(), mustSay: tally(), thoughts: tally(), requests: tally() };
-  const by = { route: new Map<string, ReturnType<typeof tally>>(), kind: new Map<string, ReturnType<typeof tally>>(), phrasing: new Map<string, ReturnType<typeof tally>>() };
+  const marks = { honestFirst: tally(), options: tally(), plainOptions: tally(), lookups: tally(), declines: tally(), mustSay: tally(), thoughts: tally(), requests: tally(), ownerRequests: tally() };
+  const by = { route: new Map<string, ReturnType<typeof tally>>(), kind: new Map<string, ReturnType<typeof tally>>(), phrasing: new Map<string, ReturnType<typeof tally>>(), source: new Map<string, ReturnType<typeof tally>>() };
   const from = new Map<string, number>();
   const times = { firstWords: [] as number[], full: [] as number[] };
   let refused = 0;
@@ -77,7 +77,7 @@ export async function scoreModel(world: World, cases: Case[], player: Player, la
       }
       const ok = scores.every((s) => s.pass);
       add(passed, ok);
-      for (const [k, v] of [["route", c.route], ["kind", c.kind], ["phrasing", phrasing ? "second phrasing" : "as written"]] as const) {
+      for (const [k, v] of [["route", c.route], ["kind", c.kind], ["phrasing", phrasing ? "second phrasing" : "as written"], ["source", c.source === "owner" ? "the owner's questions" : "drafted"]] as const) {
         if (!by[k].has(v)) by[k].set(v, tally());
         add(by[k].get(v)!, ok);
       }
@@ -93,8 +93,12 @@ export async function scoreModel(world: World, cases: Case[], player: Player, la
         if (s.decline !== null) add(marks.declines, s.decline);
         if (turn.mustSay?.length || turn.mustNotSay?.length) add(marks.mustSay, s.mustSay);
         if (s.thought !== null) add(marks.thoughts, s.thought);
-        const tr = s.trace as { from?: string; refused?: string[]; request?: unknown; ms?: { firstWords: number | null; full: number } } | undefined;
-        if (turn.request) add(marks.requests, sameRequest(turn.request, tr?.request));
+        const tr = s.trace as { from?: string; refused?: string[]; request?: unknown; expected?: Record<string, unknown>; ms?: { firstWords: number | null; full: number } } | undefined;
+        if (turn.request) {
+          const same = sameRequest(tr?.expected ?? turn.request, tr?.request);
+          add(marks.requests, same);
+          if (c.source === "owner") add(marks.ownerRequests, same);
+        }
         from.set(tr?.from ?? "?", (from.get(tr?.from ?? "?") ?? 0) + 1);
         refused += tr?.refused?.length ?? 0;
         if (tr?.ms && tr.from !== "quiet") {
@@ -120,7 +124,7 @@ export async function scoreModel(world: World, cases: Case[], player: Player, la
   console.log(`  Plain questions with no option offered: ${marks.plainOptions.ok} of ${marks.plainOptions.of} (bar: all)`);
   console.log(line("Must-say facts", marks.mustSay, BARS.mustSay));
   if (marks.thoughts.of) console.log(line("Second thoughts", marks.thoughts));
-  if (marks.requests.of) console.log(line("Right requests (D99)", marks.requests));
+  if (marks.requests.of) console.log(`${line("Right requests (D99)", marks.requests)}, of which the owner's questions ${marks.ownerRequests.ok} of ${marks.ownerRequests.of}`);
   for (const [k, m] of Object.entries(by)) console.log(`By ${k}: ${[...m].map(([v, t]) => `${v} ${t.ok} of ${t.of}`).join(" · ")}`);
   console.log(`Answers: ${[...from].map(([k, n]) => `${k} ${n}`).join(" · ")}; calls refused: ${refused}`);
   console.log(

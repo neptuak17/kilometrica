@@ -4,7 +4,7 @@ import { DREAM_TOOLS, type DreamContext } from "./dream";
 import type { Model } from "./model/model";
 import { PLAN_TOOLS, type PlanContext } from "./plan";
 import { testPlan, testRoute } from "./testdata";
-import { act, clockOf, kindsOf, type Request, requestSchema, startUnderstanding, understandTurn } from "./understand";
+import { act, clockOf, kindsOf, type Request, requestSchema, startUnderstanding, tidy, understandTurn } from "./understand";
 
 const ask = (over: Partial<DreamContext["ask"]> = {}): DreamContext => ({ route: testRoute(), ask: { ...EMPTY, ...over } });
 
@@ -27,7 +27,7 @@ describe("the request's schema (D99)", () => {
     expect(night.additionalProperties).toBe(false);
     // Dream's scenery and countries are the route's own.
     const q = (requestSchema(kindsOf("dream", ask())) as typeof s).anyOf.find((k) => (k.properties.kind as { const: string }).const === "question")!;
-    expect(q.properties.only_countries).toMatchObject({ items: { enum: ["France"] } });
+    expect(q.properties.only_country).toMatchObject({ enum: ["France"] });
   });
 
   it("reads a time the way riders write it", () => {
@@ -52,7 +52,25 @@ describe("our code acting on a request (D99)", () => {
   it("offers Dream's levels from how the rider rides: easier than now is the two below", () => {
     const r = acted("dream", ask({ level: 3, days: 3 }), { kind: "question", riding: "easier" });
     expect(r.calls.map((k) => k.args)).toEqual([{ level: 2 }, { level: 1 }]);
-    expect(acted("dream", ask(), { kind: "question", level: "Tough", only_countries: ["France"] }).calls[0]!.args).toEqual({ level: 5, countries: { FR: "only" } });
+    expect(acted("dream", ask(), { kind: "question", level: "Tough", only_country: "France" }).calls[0]!.args).toEqual({ level: 5, countries: { FR: "only" } });
+  });
+});
+
+describe("a request as our code reads it (D100)", () => {
+  it("drops what's empty, a flag that's off, and what Dream is already asking", () => {
+    const ctx = ask({ level: 3, days: 7 });
+    expect(tidy("dream", ctx, { kind: "question", level: "Moderate", days: 10, themes: [], smoke: false, through: " " }, {})).toEqual({ kind: "question", days: 10 });
+    // Nothing new: our sentence, and no option that changes nothing.
+    const r = acted("dream", ctx, tidy("dream", ctx, { kind: "question", level: "Moderate", days: 7 }, {}));
+    expect(r.calls).toEqual([]);
+    expect(r.said[0]).toMatch(/^I can't see a change/);
+  });
+
+  it("names the plan's towns as it does, and keeps a decline's town only where it's used", () => {
+    const ctx = testPlan();
+    expect(tidy("plan", ctx, { kind: "decline", reason: "safety", day: 2, town: "saint-jean" }, {})).toEqual({ kind: "decline", reason: "safety" });
+    expect(tidy("plan", ctx, { kind: "find", town: "saint-jean" }, {})).toEqual({ kind: "find", town: "Saint-Jean" });
+    expect(tidy("plan", ctx, { kind: "more_days", count: 1 }, {})).toEqual({ kind: "more_days" });
   });
 });
 

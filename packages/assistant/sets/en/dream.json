@@ -236,9 +236,7 @@
         ],
         "request": {
           "kind": "question",
-          "only_countries": [
-            "Italy"
-          ]
+          "only_country": "Italy"
         }
       }
     ]
@@ -279,9 +277,7 @@
         ],
         "request": {
           "kind": "question",
-          "avoid_countries": [
-            "Greece"
-          ]
+          "avoid_country": "Greece"
         }
       }
     ]
@@ -931,9 +927,7 @@
         ],
         "request": {
           "kind": "question",
-          "only_countries": [
-            "Switzerland"
-          ]
+          "only_country": "Switzerland"
         }
       }
     ]
@@ -1488,9 +1482,7 @@
         ],
         "request": {
           "kind": "question",
-          "only_countries": [
-            "Croatia"
-          ],
+          "only_country": "Croatia",
           "days": 10
         }
       }

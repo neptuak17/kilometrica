@@ -5,13 +5,13 @@
  * anything. Its one other job, as a measured extra, is to reword the tools' lines, through the honesty check.
  */
 import { type Ask, countryRows, keyOf, sectionsOf, stretchesFor } from "@dpg/dream";
-import { country, nightOptions, placeTitle, type PlanResult, stopName } from "@dpg/planner";
+import { country, monthOf, nightOptions, placeTitle, type PlanResult, stopName } from "@dpg/planner";
 import type { DreamContext } from "./dream";
 import { checkAnswer, toolLines } from "./honesty";
 import type { Model, StepStats } from "./model/model";
 import { matchNames } from "./names";
 import type { PlanContext } from "./plan";
-import { MONTHS_ENUM, type ToolResult } from "./tool";
+import { monthIndex, MONTHS_ENUM, type ToolResult } from "./tool";
 
 export type PhaseName = "dream" | "plan";
 
@@ -83,7 +83,7 @@ const PLAN_KINDS: Kind[] = [
   { kind: "more_days", about: "More days on the trip.", details: { count: { type: "integer", minimum: 1, maximum: 5 } } },
   { kind: "day_off", about: "Take a day off the trip." },
   { kind: "level", about: "What if they rode at another level.", details: { level: LEVEL }, required: ["level"] },
-  { kind: "month", about: "What if they went in another month.", details: { month: MONTH }, required: ["month"] },
+  { kind: "another_month", about: "Move the trip to another month: a change to the plan, not a question about the weather.", details: { month: MONTH }, required: ["month"] },
   { kind: "bike", about: "The bike they ride.", details: { bike: { type: "string", enum: ["road", "touring", "gravel", "ebike", "bikepacking"] } }, required: ["bike"] },
   { kind: "sleep", about: "Camping, rooms or a mix.", details: { sleep: { type: "string", enum: ["camping", "rooms", "mix"] } }, required: ["sleep"] },
   { kind: "other_way", about: "Ride it the other way." },
@@ -96,8 +96,7 @@ const PLAN_KINDS: Kind[] = [
 ];
 
 function dreamKinds(ctx: DreamContext): Kind[] {
-  const countries = countryRows(sectionsOf(ctx.route)).map((r) => country(r.cc));
-  const COUNTRIES = { type: "array", items: { type: "string", enum: countries }, minItems: 1 };
+  const COUNTRY = { type: "string", enum: countryRows(sectionsOf(ctx.route)).map((r) => country(r.cc)) };
   return [
     { kind: "overview", about: "The route as a whole: what it's like, its countries." },
     { kind: "fit", about: "Whether they're up to it or can do it in their days, or how many days it takes at their level." },
@@ -113,7 +112,7 @@ function dreamKinds(ctx: DreamContext): Kind[] {
     {
       kind: "question",
       about:
-        "Change what they ask Dream for, giving only what they said: a level they name, or how they ride (riding: gentle, fit, strong, easier or harder than now); days; month; pace; scenery; rooms or camping; countries to stay in or avoid; a town to pass through; trains at both ends; gravel; no rest days.",
+        "Change what they ask Dream for, giving only what they said: a level they name, or how they ride (riding: gentle, fit, strong, easier or harder than now); days; month; pace; scenery; rooms or camping; a country to stay in (only_country) or to avoid (avoid_country); a town to pass through; trains at both ends; gravel; no rest days.",
       details: {
         level: LEVEL,
         riding: { type: "string", enum: ["gentle", "fit", "strong", "easier", "harder"] },
@@ -122,8 +121,8 @@ function dreamKinds(ctx: DreamContext): Kind[] {
         pace: { type: "string", enum: ["relaxed", "steady", "moving"] },
         themes: { type: "array", items: { type: "string", enum: ctx.route.dream.themes.map((t) => t.id) } },
         stay: { type: "string", enum: ["any", "rooms", "camping"] },
-        only_countries: COUNTRIES,
-        avoid_countries: COUNTRIES,
+        only_country: COUNTRY,
+        avoid_country: COUNTRY,
         through: TOWN,
         trains: { type: "boolean" },
         gravel: { type: "string", enum: ["prefer", "ok", "avoid"] },
@@ -218,10 +217,110 @@ const UNCLEAR = {
   plan: "I'm not sure what you'd like. You can ask me about a day, a night, the weather or what's left to sort out, or for a change to the plan.",
   dream: "I'm not sure what you'd like. You can ask me about the route, the stretches that fit, the weather, or for a change to your question.",
 };
+const NOTHING_NEW = "I can't see a change to what you're asking Dream for. You can ask for a level, days, a month, scenery, places to stay or a country.";
 
 /** Turn a request into the tools' calls and options, and our own sentences (D99). */
 export function act(phase: PhaseName, ctx: DreamContext | PlanContext, r: Request, memory: Memory, call: Call): Acted {
   return phase === "dream" ? actDream(ctx as DreamContext, r, memory, call) : actPlan(ctx as PlanContext, r, memory, call);
+}
+
+/** Details that are only ever said when on: off is the same as not said. */
+const FLAGS = new Set(["smoke", "no_rest"]);
+
+/**
+ * A request as our code reads it (D100): nothing empty, no flag that's off, the plan's towns as it names them, and no
+ * detail that only repeats what's already there (the stretch on screen, the trip's own month, what Dream is already
+ * asking, a number our code would take anyway) or that the kind doesn't use. Each is dropped only where our code would
+ * do the same without it, so a request acts as before; the harness compares requests after this, the expected ones too.
+ */
+export function tidy(phase: PhaseName, ctx: DreamContext | PlanContext, r: Request, memory: Memory): Request {
+  const t: Request = { kind: r.kind };
+  for (const [k, v0] of Object.entries(r)) {
+    const v = typeof v0 === "string" ? v0.trim() : Array.isArray(v0) ? [...new Set(v0)] : v0;
+    if (k === "kind" || v === null || v === undefined || v === "" || (Array.isArray(v) && !v.length) || (FLAGS.has(k) && v === false)) continue;
+    t[k] = v;
+  }
+  return phase === "dream" ? tidyDream(ctx as DreamContext, t, memory) : tidyPlan(ctx as PlanContext, t);
+}
+
+function tidyPlan(ctx: PlanContext, r: Request): Request {
+  const p = ctx.planFor(ctx.state);
+  for (const k of ["town", "to_town", "instead_of"]) if (str(r, k)) r[k] = townOf(ctx, str(r, k)!);
+  if (Array.isArray(r.towns)) r.towns = list(r, "towns").map((x) => townOf(ctx, x));
+  const night = str(r, "town") ? nightDay(p, str(r, "town")!) : undefined;
+  switch (r.kind) {
+    case "weather": {
+      const own = p.days.find((d) => d.number === int(r, "day"))?.date ?? ctx.state.inputs.startDate;
+      if (r.other_month === r.month) delete r.other_month;
+      if (r.other_month === undefined && monthIndex(str(r, "month")) === monthOf(own)) delete r.month;
+      break;
+    }
+    case "more_days":
+      if (r.count === 1) delete r.count;
+      break;
+    case "rest_in": {
+      const resting = p.days.filter((d) => d.kind === "rest" && matchNames(str(r, "town") ?? "", [d], (x) => x.endName).length).length;
+      if (r.days === (resting ? resting + 1 : 1)) delete r.days;
+      break;
+    }
+    case "booked":
+    case "to_do":
+      // The night at the town they name, not a day number.
+      if (night !== undefined) delete r.day;
+      break;
+    case "decline":
+      if (r.reason === "booking" || r.reason === "availability") {
+        if (night !== undefined) delete r.day;
+        else delete r.town;
+      } else {
+        delete r.day;
+        delete r.town;
+      }
+      if (r.reason !== "reviews") delete r.place;
+      break;
+  }
+  return r;
+}
+
+function tidyDream(ctx: DreamContext, r: Request, memory: Memory): Request {
+  const a = ctx.ask;
+  const list0 = stretchesFor(ctx.route, a);
+  const onScreen = ctx.screen?.stretch ? list0.findIndex((s) => keyOf(s) === ctx.screen!.stretch) + 1 || undefined : undefined;
+  const asked = a.month === null ? "any" : MONTHS_ENUM[a.month];
+  switch (r.kind) {
+    case "weather":
+    case "best_months":
+    case "plan_this":
+      if (r.number !== undefined && r.number === (memory.number ?? onScreen)) delete r.number;
+      if (r.kind === "weather" && r.month === asked) delete r.month;
+      break;
+    case "question": {
+      const now: Record<string, unknown> = {
+        level: a.level ? LEVELS[a.level - 1] : undefined, days: a.days ?? undefined, month: asked, pace: a.pace, stay: a.stay,
+        trains: a.trainBothEnds, gravel: a.surfaces.gravel, through: a.through ?? undefined,
+      };
+      for (const [k, v] of Object.entries(now)) if (r[k] === v) delete r[k];
+      if (Array.isArray(r.themes)) {
+        r.themes = list(r, "themes").filter((x) => !a.themes.includes(x));
+        if (!(r.themes as string[]).length) delete r.themes;
+      }
+      for (const [k, pref] of [["only_country", "only"], ["avoid_country", "avoid"]] as const) {
+        const cc = codeOf(ctx, str(r, k));
+        if (cc && a.countries[cc] === pref) delete r[k];
+      }
+      if (r.no_rest === true && a.pace === "moving") delete r.no_rest;
+      break;
+    }
+    case "decline":
+      for (const k of Object.keys(r)) if (k !== "kind" && k !== "reason") delete r[k];
+      break;
+  }
+  return r;
+}
+
+/** A country's code on the route, by its name. */
+function codeOf(ctx: DreamContext, name: string | undefined): string | undefined {
+  return name ? countryRows(sectionsOf(ctx.route)).find((x) => country(x.cc) === name)?.cc : undefined;
 }
 
 function actPlan(ctx: PlanContext, r: Request, memory: Memory, call: Call): Acted {
@@ -288,7 +387,7 @@ function actPlan(ctx: PlanContext, r: Request, memory: Memory, call: Call): Acte
       run("items", { ...(int(r, "day") ? { day: int(r, "day") } : {}), kind: r.kind === "heads_up" ? "headsup" : "note" });
       break;
     case "to_do": {
-      const at = int(r, "day") ?? (town ? nightDay(p, town) : undefined);
+      const at = (town ? nightDay(p, town) : undefined) ?? int(r, "day");
       run("items", { ...(at ? { day: at } : {}), kind: "todo" });
       break;
     }
@@ -355,7 +454,7 @@ function actPlan(ctx: PlanContext, r: Request, memory: Memory, call: Call): Acte
     case "level":
       set("level", LEVELS.indexOf(str(r, "level") ?? "") + 1);
       break;
-    case "month": {
+    case "another_month": {
       const [y, , dd] = ctx.state.inputs.startDate.split("-");
       const m = MONTHS_ENUM.indexOf(str(r, "month") ?? "") + 1;
       if (m) set("start_date", `${y}-${String(m).padStart(2, "0")}-${dd}`);
@@ -375,7 +474,7 @@ function actPlan(ctx: PlanContext, r: Request, memory: Memory, call: Call): Acte
       set("stations_for_going_home", true);
       break;
     case "booked": {
-      const at = int(r, "day") ?? (town ? nightDay(p, town) : undefined);
+      const at = (town ? nightDay(p, town) : undefined) ?? int(r, "day");
       offer({ do: "booked", ...(at ? { after_day: at } : {}) });
       break;
     }
@@ -387,8 +486,8 @@ function actPlan(ctx: PlanContext, r: Request, memory: Memory, call: Call): Acte
       const reason = (REASONS as readonly string[]).includes(str(r, "reason") ?? "") ? (str(r, "reason") as Reason) : "other";
       said.push(declined(reason, "plan"));
       // A booking or a place's room: the night's own searches, where the rider books for themselves (D41).
-      if ((reason === "booking" || reason === "availability") && (int(r, "day") || town)) {
-        const at = int(r, "day") ?? nightDay(p, town!);
+      if (reason === "booking" || reason === "availability") {
+        const at = (town ? nightDay(p, town) : undefined) ?? int(r, "day");
         if (at) run("night", { after_day: at });
       }
       // A place they ask about: the night it's listed at, with what we know of it.
@@ -471,7 +570,9 @@ function actDream(ctx: DreamContext, r: Request, memory: Memory, call: Call): Ac
       run("plan_this", number ? { number } : {});
       break;
     case "question":
-      for (const args of questionOptions(ctx, r)) run("set_question", args);
+      // Nothing left that Dream isn't already asking (see tidy): no option that changes nothing.
+      if (Object.keys(r).length === 1) said.push(NOTHING_NEW);
+      else for (const args of questionOptions(ctx, r)) run("set_question", args);
       // Days in a town along the way come in Plan, with its own "Rest in…" (D80).
       if (str(r, "through")) said.push(`Once you plan a stretch, "Rest in…" on Plan's day cards gives you days in ${str(r, "through")}.`);
       break;
@@ -499,10 +600,11 @@ function questionOptions(ctx: DreamContext, r: Request): Record<string, unknown>
   if (r.no_rest === true) base.pace = "moving";
   if (typeof r.trains === "boolean") base.train_both_ends = r.trains;
   if (str(r, "gravel")) base.surfaces = { gravel: str(r, "gravel") };
-  const codes = new Map(countryRows(sectionsOf(ctx.route)).map((x) => [country(x.cc), x.cc]));
   const countries: Record<string, string> = {};
-  for (const c of list(r, "only_countries")) if (codes.has(c)) countries[codes.get(c)!] = "only";
-  for (const c of list(r, "avoid_countries")) if (codes.has(c)) countries[codes.get(c)!] = "avoid";
+  for (const [k, pref] of [["only_country", "only"], ["avoid_country", "avoid"]] as const) {
+    const cc = codeOf(ctx, str(r, k));
+    if (cc) countries[cc] = pref;
+  }
   if (Object.keys(countries).length) base.countries = countries;
 
   const named = LEVELS.indexOf(str(r, "level") ?? "") + 1;
@@ -552,7 +654,9 @@ export interface UnderstandOut {
   from: "lines" | "words" | "lines after words";
   /** The model's rewording before the check, if any (D77 scores honesty on the first answer). */
   first: string;
+  /** The request as our code read it (tidy), and as the model wrote it. */
   request: Request;
+  raw: Request;
   said: string[];
   results: ToolResult<unknown>[];
   unsupported: string[];
@@ -573,7 +677,8 @@ export async function understandTurn(
     chat.schema,
     input.signal,
   );
-  const request: Request = understood.value && typeof understood.value === "object" && typeof (understood.value as Request).kind === "string" ? (understood.value as Request) : { kind: "unclear" };
+  const raw: Request = understood.value && typeof understood.value === "object" && typeof (understood.value as Request).kind === "string" ? (understood.value as Request) : { kind: "unclear" };
+  const request = tidy(chat.phase, input.ctx, raw, chat.memory);
   const understandMs = performance.now() - start;
   const steps = [understood.stats];
 
@@ -585,7 +690,7 @@ export async function understandTurn(
 
   if (!chat.words || !done.results.length) {
     const full = performance.now() - start;
-    return { text: lines, from: "lines", first: lines, request, said: done.said, results: done.results, unsupported: [], ms: { understand: understandMs, firstWords: full, full }, steps };
+    return { text: lines, from: "lines", first: lines, request, raw, said: done.said, results: done.results, unsupported: [], ms: { understand: understandMs, firstWords: full, full }, steps };
   }
   const worded = await model.next({ prompt: chat.words, tools: [], messages: [{ role: "user", text: `The rider: ${input.rider}\n\nThe lines:\n${lines}` }] }, undefined, input.signal);
   steps.push(worded.stats);
@@ -597,6 +702,7 @@ export async function understandTurn(
     from: check.ok && worded.text.trim() ? "words" : "lines after words",
     first: worded.text,
     request,
+    raw,
     said: done.said,
     results: done.results,
     unsupported: check.unsupported.map((u) => u.text),
