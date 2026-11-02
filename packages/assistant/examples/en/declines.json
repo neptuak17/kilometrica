@@ -1,0 +1,125 @@
+{
+  "about": "Messages we don't help with, beside Dream or Plan, by their reason (D101): each is a decline with that reason and no other details. Written in these sessions, never from riders' words or the cases' own messages.",
+  "examples": {
+    "decline/kit": [
+      ["Will I need a rain jacket?"],
+      ["What tyres should I fit for this?"],
+      ["Which tent would you take?"],
+      ["Which kit is essential for this trip?"],
+      ["Make me a kit list for the trip."],
+      ["do i need lights"],
+      ["Should I bring cycling shoes or flats?"]
+    ],
+    "decline/booking": [
+      ["Can you reserve everything for me?"],
+      ["Please book the ferry."],
+      ["Could you buy my train tickets?"],
+      ["book it all"]
+    ],
+    "decline/medical": [
+      ["My back is sore, will I manage?"],
+      ["I have asthma, is that a problem on the climbs?"],
+      ["My knee hurts after long days - what should I do?"],
+      ["Is it OK to ride while pregnant?"],
+      ["what should I take for saddle sores"]
+    ],
+    "decline/safety": [
+      ["Is this area safe at night?"],
+      ["Are the roads dangerous for cyclists here?"],
+      ["Is it safe for a woman travelling alone?"],
+      ["Should I worry about theft?"],
+      ["Is it safe to leave my bike outside the hotel?"]
+    ],
+    "decline/reviews": [
+      ["Where's the best place to eat around here?"],
+      ["Which hotel would you recommend?"],
+      ["Is that campsite nice?"],
+      ["top rated b&b?"]
+    ],
+    "decline/history": [
+      ["What's the history of this town?"],
+      ["Who built the castles along here?"],
+      ["Tell me the story behind the old bridge."],
+      ["when was the abbey built"]
+    ],
+    "decline/wildlife": [
+      ["Wolves around here?"],
+      ["Are there snakes on the trail?"],
+      ["Any dangerous animals around here?"],
+      ["Can I spot eagles on this route?"]
+    ],
+    "decline/fire": [
+      ["Are campfires allowed?"],
+      ["Is there a fire ban in summer?"],
+      ["can I use my camping stove there"],
+      ["Are fires banned at the campsites?"]
+    ],
+    "decline/forecast": [
+      ["What will the weather be next Tuesday?"],
+      ["Is it going to rain this weekend?"],
+      ["Check the forecast for the start date."],
+      ["forecast for tomorrow?"]
+    ],
+    "decline/directions": [
+      ["Which way do I turn after the bridge?"],
+      ["Can you navigate me there?"],
+      ["Give me directions to the campsite."],
+      ["guide me step by step on the bike"]
+    ],
+    "decline/cost": [
+      ["How much will it all cost?"],
+      ["What's a typical hotel price there?"],
+      ["Is this an expensive trip?"],
+      ["how much money should I bring"]
+    ],
+    "decline/insurance": [
+      ["Should I get a policy in case I crash abroad?"],
+      ["Which insurance covers cycling trips?"],
+      ["Am I covered if my bike gets damaged?"],
+      ["insurance for the trip?"]
+    ],
+    "decline/visa": [
+      ["Do I need a visa to ride here?"],
+      ["What papers do I need at the border?"],
+      ["Can I cross into the next country with my passport?"],
+      ["visa needed for serbia?"]
+    ],
+    "decline/strikes": [
+      ["Are the trains running normally next month?"],
+      ["Any industrial action on the railways?"],
+      ["Will a strike stop the ferries?"],
+      ["is there a rail strike"]
+    ],
+    "decline/water_quality": [
+      ["Can I take a dip in the river without getting sick?"],
+      ["Can I swim in the lake by the campsite?"],
+      ["Is the sea warm for a dip?"],
+      ["safe to swim there?"]
+    ],
+    "decline/availability": [
+      ["Is the hotel full that night?"],
+      ["Will there be space at the campsite?"],
+      ["Does the B&B have a room free?"],
+      ["are there beds left"]
+    ],
+    "decline/repairs": [
+      ["My chain keeps slipping - how do I fix it?"],
+      ["How do I fix a puncture?"],
+      ["My brakes are squeaking, what should I do?"],
+      ["gears not shifting right"]
+    ],
+    "decline/other": [
+      ["Can you write me a poem about cycling?"],
+      ["What's the capital of Australia?"],
+      ["Tell me a joke."],
+      ["help me with my email"]
+    ],
+    "decline/other_routes": [
+      ["Is there anything nicer in Norway?"],
+      ["Can you suggest a different route altogether?"],
+      ["What about other EuroVelo routes?"],
+      ["Is the Danube route better than this one?"],
+      ["other routes near here?"]
+    ]
+  }
+}

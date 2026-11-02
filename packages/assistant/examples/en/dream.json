@@ -1,0 +1,145 @@
+{
+  "about": "Rider messages beside Dream and the request each is understood as (D101). Written in these sessions, never from riders' words or the cases' own messages, in the owner's voice and many others, with places from routes the cases don't use. A kind's details follow it; \"decline/<reason>\" is a decline with that reason.",
+  "examples": {
+    "overview": [
+      ["Sum up this route for me."],
+      ["Tell me about the whole route."],
+      ["Which countries does it cross?"],
+      ["give me an overview"],
+      ["How long is the route and where does it go?"],
+      ["What kind of riding is this route overall - flat, hilly?"]
+    ],
+    "fit": [
+      ["Could I manage this route?"],
+      ["Is this route too much for someone like me?"],
+      ["How many days would it take me at my level?"],
+      ["Can I do it in the days I have?"],
+      ["is this beyond me?"],
+      ["Is it doable for my level and my time?"],
+      ["How long would the whole thing take at my pace?"]
+    ],
+    "stretches": [
+      ["Which parts suit me?"],
+      ["Show me the stretches that work for me."],
+      ["what's a good fit?"],
+      ["Where should I ride on this route?"],
+      ["Which bits would you suggest?"],
+      ["Can you suggest a couple of options?"]
+    ],
+    "more": [
+      ["Next ones?"],
+      ["Any others?"],
+      ["What else is there?"],
+      ["keep going with the list"],
+      ["Are there more stretches after these?"]
+    ],
+    "sleep_choice": [
+      ["Could I pitch a tent at every stop?"],
+      ["Are there hotels at every stop?"],
+      ["Is it possible to stay in rooms the whole way?"],
+      ["campsites every night on this one?"],
+      ["Will I find a bed every night?"]
+    ],
+    "weather": [
+      ["Number 2 in June - hot?", {"number": 2, "month": "June"}],
+      ["Is August scorching on this one?", {"month": "August"}],
+      ["Is it rainy in spring on this one?"],
+      ["what's april like on number 3", {"number": 3, "month": "April"}],
+      ["How cold are the nights in October?", {"month": "October"}],
+      ["Will there be smoke from wildfires?", {"smoke": true}],
+      ["Is it too hot to ride this in July?", {"month": "July"}],
+      ["What's the weather on the first stretch?", {"number": 1}],
+      ["Does it rain a lot?"]
+    ],
+    "best_months": [
+      ["When should I go?"],
+      ["What's the best season for this one?"],
+      ["Which months are best for the third stretch?", {"number": 3}],
+      ["best time of year to avoid fires and smoke?", {"smoke": true}],
+      ["When is it nicest to ride here?"],
+      ["Which months have the best weather on number 2?", {"number": 2}]
+    ],
+    "describe": [
+      ["Nantes to Angers - pretty, flat?", {"town": "Nantes", "to_town": "Angers"}],
+      ["Tell me about riding from Linz to Krems.", {"town": "Linz", "to_town": "Krems"}],
+      ["how is passau to linz", {"town": "Passau", "to_town": "Linz"}],
+      ["Describe the ride between Tours and Blois.", {"town": "Tours", "to_town": "Blois"}],
+      ["Is Dijon to Beaune hilly?", {"town": "Dijon", "to_town": "Beaune"}]
+    ],
+    "compare": [
+      ["How do the first and second compare?", {"number": 1, "other_number": 2}],
+      ["Which is better, number 2 or number 4?", {"number": 2, "other_number": 4}],
+      ["1 vs 3?", {"number": 1, "other_number": 3}],
+      ["What's the difference between the third one and the fifth?", {"number": 3, "other_number": 5}],
+      ["Put the second and third side by side.", {"number": 2, "other_number": 3}]
+    ],
+    "find": [
+      ["Do you go through Angers?", {"town": "Angers"}],
+      ["How far along is Melk?", {"town": "Melk"}],
+      ["does it reach tours", {"town": "Tours"}],
+      ["Does the route pass Ulm?", {"town": "Ulm"}],
+      ["Where's Blois?", {"town": "Blois"}]
+    ],
+    "plan_this": [
+      ["Let's plan this one."],
+      ["Plan the second one.", {"number": 2}],
+      ["I'll take number 3 - plan it.", {"number": 3}],
+      ["Can you make a plan for the first stretch?", {"number": 1}],
+      ["go with this one"],
+      ["Plan it for me"]
+    ],
+    "question": [
+      ["Something gentle, 12 days in May, camping.", {"riding": "gentle", "days": 12, "month": "May", "stay": "camping"}],
+      ["I ride at Challenging.", {"level": "Challenging"}],
+      ["This is too steep for me.", {"riding": "easier"}],
+      ["Too many hills here, I need something flatter.", {"riding": "easier"}],
+      ["I want more of a challenge.", {"riding": "harder"}],
+      ["this is too easy", {"riding": "harder"}],
+      ["I'm quite fit.", {"riding": "fit"}],
+      ["I'm a strong rider, I can do big days.", {"riding": "strong"}],
+      ["We're a family with young kids.", {"riding": "gentle"}],
+      ["I have two weeks.", {"days": 14}],
+      ["9 days is what I've got.", {"days": 9}],
+      ["a week in june", {"days": 7, "month": "June"}],
+      ["I'm going in April.", {"month": "April"}],
+      ["Any month works for me.", {"month": "any"}],
+      ["I want to take it easy and not rush.", {"pace": "relaxed"}],
+      ["I like to keep moving, no lazy days.", {"pace": "moving"}],
+      ["Steady pace is fine.", {"pace": "steady"}],
+      ["I don't need any days off.", {"no_rest": true}],
+      ["I love beaches and the sea.", {"themes": ["coast"]}],
+      ["Wine and good food, please.", {"themes": ["wine"]}],
+      ["I'd like to see castles and old towns.", {"themes": ["heritage", "culture"]}],
+      ["somewhere along a river", {"themes": ["water"]}],
+      ["Big mountain views would be great.", {"themes": ["mountains", "viewpoints"]}],
+      ["Hotels every night for us.", {"stay": "rooms"}],
+      ["We'll camp.", {"stay": "camping"}],
+      ["Can I stay in Austria the whole time?", {"only_country": "Austria"}],
+      ["I'd like to stay in France the whole way.", {"only_country": "France"}],
+      ["Leave out Hungary.", {"avoid_country": "Hungary"}],
+      ["I don't want to ride in Germany.", {"avoid_country": "Germany"}],
+      ["spain and nothing else", {"only_country": "Spain"}],
+      ["I'd like it to pass through Tours.", {"through": "Tours"}],
+      ["Can it go via Linz, with a few days there?", {"through": "Linz"}],
+      ["I'm arriving by train and leaving by train.", {"trains": true}],
+      ["I need stations at both ends that take bikes.", {"trains": true}],
+      ["I'd like plenty of gravel.", {"gravel": "prefer"}],
+      ["Please keep me off gravel.", {"gravel": "avoid"}],
+      ["Easy-moderate, 10 days, rooms.", {"level": "Easy-moderate", "days": 10, "stay": "rooms"}],
+      ["I'm reasonably fit and have 6 days in September, I like the coast.", {"riding": "fit", "days": 6, "month": "September", "themes": ["coast"]}],
+      ["Can you find me something at Leisurely?", {"level": "Leisurely"}],
+      ["Moderate suits me.", {"level": "Moderate"}],
+      ["I'm a Tough-level rider.", {"level": "Tough"}],
+      ["Rooms or camping, I don't mind.", {"stay": "any"}],
+      ["I'll drive there, so no trains needed.", {"trains": false}],
+      ["Some gravel is ok with me.", {"gravel": "ok"}]
+    ],
+    "unclear": [
+      ["Hmm."],
+      ["ok"],
+      ["the other thing"],
+      ["?"],
+      ["what about it"]
+    ]
+  }
+}

@@ -6,6 +6,7 @@
  */
 import { act, type Memory, type Request, startUnderstanding, tidy, understandTurn } from "../understand";
 import { toolLines } from "../honesty";
+import type { Example } from "../examples";
 import type { Model } from "../model/model";
 import type { Player } from "./play";
 
@@ -14,13 +15,15 @@ export interface UnderstandPrompts {
   plan: string;
   /** The rewording step's prompt; without it, the answer is the tools' lines. */
   words?: string;
+  /** Examples to pick the closest from for each message (D101). */
+  examples?: { dream: Example[]; plan: Example[] };
 }
 
 export function understandPlayer(model: Model, prompts: UnderstandPrompts): Player {
   return {
-    name: `${model.name}${prompts.words ? "-words" : ""}`,
+    name: `${model.name}${prompts.examples ? "-examples" : ""}${prompts.words ? "-words" : ""}`,
     begin(c, phase) {
-      const chat = startUnderstanding(c.phase, phase.context(), { understand: prompts[c.phase], ...(prompts.words ? { words: prompts.words } : {}) });
+      const chat = startUnderstanding(c.phase, phase.context(), { understand: prompts[c.phase], ...(prompts.words ? { words: prompts.words } : {}), ...(prompts.examples ? { examples: prompts.examples[c.phase] } : {}) });
       return {
         async answer(turn, rider, session, onScreen) {
           if (onScreen) return onScreen.thought.length ? { text: onScreen.thought.join(" "), first: onScreen.thought.join(" "), trace: { from: "thought" } } : { text: "", first: "", trace: { from: "quiet" } };

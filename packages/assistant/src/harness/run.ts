@@ -12,6 +12,9 @@
  *   --loop           with --model: the earlier free tool loop instead (D97, D98)
  *   --gold           each turn's own request through our code, for the cases that have them: all must pass (D99)
  *   --quick          with --model or --gold: the quick set for tuning, about 30 cases covering each kind on each route (D97)
+ *   --examples       with --model: the closest examples go before each message (D101)
+ *   --outside <name> with --model: a test set from outside (`outside/<name>.json`, kept out of git), scored on the request (D101)
+ *   --check-examples the examples' checks: each a request our code takes, enough of each kind, none too close to a case
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -19,7 +22,9 @@ import { loadDreamFiles } from "@dpg/routes";
 import { localFetch } from "@dpg/routes/node";
 import { ollamaModel } from "../model";
 import { type Case, readCases } from "./cases";
+import { checkExamples, loadExamples } from "./examples";
 import { modelPlayer } from "./model";
+import { scoreOutside } from "./outside";
 import { plant, playCase, referencePlayer } from "./play";
 import { describe, prompt, quickSet, scoreModel } from "./score";
 import { goldPlayer, understandPlayer } from "./understand";
@@ -45,6 +50,12 @@ const chosen = only ? cases.filter((c) => c.id.includes(only)) : cases;
 const fetch = localFetch();
 const world = new World(fetch);
 
+if (flag("--check-examples")) {
+  const { problems, report } = checkExamples(cases);
+  console.log([...report, ...(problems.length ? ["", "Problems:", ...problems] : ["", "No problems."])].join("\n"));
+  process.exit(problems.length ? 1 : 0);
+}
+
 // A3: the model plays, and the report is its scores.
 const models = value("--model");
 if (models || flag("--gold")) {
@@ -53,9 +64,14 @@ if (models || flag("--gold")) {
   if (flag("--gold")) await scoreModel(world, set.filter((c) => c.turns.every((t) => t.change || t.request)), goldPlayer, label);
   for (const name of models?.split(",") ?? []) {
     const model = ollamaModel(name.trim());
+    const outside = value("--outside");
+    if (outside) {
+      await scoreOutside(world, cases, model, outside, { dream: prompt("understand-dream"), plan: prompt("understand-plan") }, flag("--examples") ? { dream: loadExamples("dream"), plan: loadExamples("plan") } : undefined);
+      continue;
+    }
     const player = flag("--loop")
       ? modelPlayer(model, { dream: prompt("dream"), plan: prompt("plan") })
-      : understandPlayer(model, { dream: prompt("understand-dream"), plan: prompt("understand-plan"), ...(flag("--words") ? { words: prompt("words") } : {}) });
+      : understandPlayer(model, { dream: prompt("understand-dream"), plan: prompt("understand-plan"), ...(flag("--words") ? { words: prompt("words") } : {}), ...(flag("--examples") ? { examples: { dream: loadExamples("dream"), plan: loadExamples("plan") } } : {}) });
     await scoreModel(world, set, player, label);
   }
   process.exit(0);

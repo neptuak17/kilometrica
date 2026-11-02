@@ -4,9 +4,10 @@
  * and says the declines in our own words. The model chooses nothing else and claims nothing: it never says it changed
  * anything. Its one other job, as a measured extra, is to reword the tools' lines, through the honesty check.
  */
-import { type Ask, countryRows, keyOf, sectionsOf, stretchesFor } from "@dpg/dream";
+import { type Ask, countryRows, keyOf, routePoints, sectionsOf, stretchesFor } from "@dpg/dream";
 import { country, monthOf, nightOptions, placeTitle, type PlanResult, stopName } from "@dpg/planner";
 import type { DreamContext } from "./dream";
+import { closest, type Example, examplesText, type ExampleIndex, indexExamples } from "./examples";
 import { checkAnswer, toolLines } from "./honesty";
 import type { Model, StepStats } from "./model/model";
 import { matchNames } from "./names";
@@ -628,6 +629,9 @@ export interface UnderstandChat {
   schema: object;
   /** The rewording step's prompt (`prompts/<language>/words.md`), or none: the answer is the tools' lines. */
   words?: string;
+  /** Examples to pick the closest from for each message (D101), or none; and the town names a message may use. */
+  examples?: ExampleIndex;
+  places: string[];
   memory: Memory;
   last?: { rider: string; request: Request };
   /** What an answer may draw on (D81): every tool result so far, our own words, and the rider's. */
@@ -635,13 +639,30 @@ export interface UnderstandChat {
   rider: string[];
 }
 
-export function startUnderstanding(phase: PhaseName, ctx: DreamContext | PlanContext, prompts: { understand: string; words?: string }): UnderstandChat {
+/** The towns and countries a message may name, read alike when picking examples (D101). */
+function placeNames(phase: PhaseName, ctx: DreamContext | PlanContext): string[] {
+  if (phase === "dream") {
+    const route = (ctx as DreamContext).route;
+    return [...routePoints(route).flatMap((p) => (p.name ? [p.name] : [])), ...countryRows(sectionsOf(route)).map((r) => country(r.cc))];
+  }
+  const { data, state } = ctx as PlanContext;
+  const [a, b] = [Math.min(state.inputs.fromM, state.inputs.toM), Math.max(state.inputs.fromM, state.inputs.toM)];
+  return data.stops.stops.flatMap((s) => (s.at_m >= a && s.at_m <= b && s.name ? [s.name] : []));
+}
+
+export function startUnderstanding(
+  phase: PhaseName,
+  ctx: DreamContext | PlanContext,
+  prompts: { understand: string; words?: string; examples?: Example[] },
+): UnderstandChat {
   const kinds = kindsOf(phase, ctx);
   return {
     phase,
     prompt: `${prompts.understand.trim()}\n\nThe kinds of request:\n${kindLines(kinds, ctx, phase)}`,
     schema: requestSchema(kinds),
     ...(prompts.words ? { words: prompts.words } : {}),
+    ...(prompts.examples?.length ? { examples: indexExamples(prompts.examples) } : {}),
+    places: placeNames(phase, ctx),
     memory: {},
     results: [],
     rider: [],
@@ -672,8 +693,9 @@ export async function understandTurn(
 ): Promise<UnderstandOut> {
   const start = performance.now();
   const earlier = chat.last ? `Before this, the rider asked: "${chat.last.rider}" (understood as ${JSON.stringify(chat.last.request)}).\n` : "";
+  const shown = chat.examples ? examplesText(closest(chat.examples, input.rider, chat.places)) : "";
   const understood = await model.json(
-    { prompt: chat.prompt, tools: [], messages: [{ role: "user", text: `[${input.screen}]\n${earlier}The rider: ${input.rider}` }] },
+    { prompt: chat.prompt, tools: [], messages: [{ role: "user", text: `${shown}[${input.screen}]\n${earlier}The rider: ${input.rider}` }] },
     chat.schema,
     input.signal,
   );

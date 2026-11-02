@@ -44,7 +44,7 @@ const quantile = (xs: number[], q: number) => {
 };
 
 /** Whether a request is the one expected (D99): the same kind and details, names without case or accents, lists in any order. */
-function sameRequest(want: Record<string, unknown>, got: unknown): boolean {
+export function sameRequest(want: Record<string, unknown>, got: unknown): boolean {
   if (!got || typeof got !== "object") return false;
   const norm = (v: unknown): string => (Array.isArray(v) ? JSON.stringify(v.map(norm).sort()) : typeof v === "string" ? fold(v) : JSON.stringify(v));
   const g = got as Record<string, unknown>;

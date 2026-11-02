@@ -1,0 +1,346 @@
+{
+  "about": "Rider messages beside Plan and the request each is understood as (D101). Written in these sessions, never from riders' words or the cases' own messages, in the owner's voice and many others, with towns from routes the cases don't use. A kind's details follow it; \"decline/<reason>\" is a decline with that reason.",
+  "examples": {
+    "trip": [
+      ["What's this trip going to be like overall?"],
+      ["Can I actually do this trip at my level?"],
+      ["Which days will be the toughest for me?"],
+      ["is there somewhere to stay every night?"],
+      ["Give me the big picture - how hard is the whole plan?"],
+      ["Will I find a room every night on this plan, or are there gaps?"],
+      ["hardest days?"],
+      ["Is this plan realistic for me, honestly?"],
+      ["Are there campsites at all the stops?"],
+      ["which part of the trip is the most difficult"],
+      ["Tell me about the whole trip"]
+    ],
+    "day": [
+      ["Describe day 3 for me.", {"day": 3}],
+      ["How much climbing is there on day 8?", {"day": 8}],
+      ["Day 2: tarmac or dirt?", {"day": 2}],
+      ["Where can I fill my bottles on day 11?", {"day": 11}],
+      ["Is there anywhere to buy lunch on day 6?", {"day": 6}],
+      ["how long is day 9", {"day": 9}],
+      ["How hilly is this day?"],
+      ["Run me through day 4.", {"day": 4}],
+      ["day 12 - gravel or road?", {"day": 12}],
+      ["What does this day look like?"],
+      ["Any serious hills on day 5?", {"day": 5}],
+      ["Will I find water and food along the way on day 7?", {"day": 7}],
+      ["how many km on the first day", {"day": 1}]
+    ],
+    "day_why": [
+      ["Day 6 is barely any riding - how come?", {"day": 6}],
+      ["Day 3 has loads of km - what's the reason?", {"day": 3}],
+      ["Why does this day take so many hours?"],
+      ["what makes day 10 tough", {"day": 10}],
+      ["Why did the plan make day 2 such a big day?", {"day": 2}],
+      ["Why is day 7 only 30 km?", {"day": 7}],
+      ["day 4 drags on, why", {"day": 4}],
+      ["I don't understand why day 9 is longer than the others.", {"day": 9}]
+    ],
+    "water_between": [
+      ["Angers to Saumur - will I find taps or fountains?", {"town": "Angers", "to_town": "Saumur"}],
+      ["Shops or cafés from Tours to Blois?", {"town": "Tours", "to_town": "Blois"}],
+      ["any refill points from Linz to Melk?", {"town": "Linz", "to_town": "Melk"}],
+      ["How far is it without a shop between Gien and Nevers?", {"town": "Gien", "to_town": "Nevers"}],
+      ["Can I resupply between Passau and Linz?", {"town": "Passau", "to_town": "Linz"}],
+      ["lunch stops beaune to tournus?", {"town": "Beaune", "to_town": "Tournus"}],
+      ["Will I need to carry extra water from Krems to Tulln?", {"town": "Krems", "to_town": "Tulln"}]
+    ],
+    "night": [
+      ["Where am I sleeping after day 4?", {"day": 4}],
+      ["Where do I stay in Saumur?", {"town": "Saumur"}],
+      ["Accommodation options for night 9?", {"day": 9}],
+      ["I don't like the hotel options for day 3, is there anything else?", {"day": 3}],
+      ["where's the campsite tonight"],
+      ["What accommodation is there in Melk?", {"town": "Melk"}],
+      ["Is there a hostel in Blois?", {"town": "Blois"}],
+      ["Night 2 - which campsite?", {"day": 2}],
+      ["night 5 options?", {"day": 5}],
+      ["Is there anywhere better to stay at the end of day 7?", {"day": 7}]
+    ],
+    "rest_day": [
+      ["Ideas for my day off the bike?"],
+      ["Things to see in Tours while I rest?", {"town": "Tours"}],
+      ["Where can I eat on the rest day in Linz?", {"town": "Linz"}],
+      ["What is there to see on day 6, my rest day?", {"day": 6}],
+      ["anything to do in krems on the rest day", {"town": "Krems"}],
+      ["Is Angers a good place for my rest day - what's there?", {"town": "Angers"}],
+      ["rest day ideas nearby"]
+    ],
+    "weather": [
+      ["Typical conditions on this trip?"],
+      ["Should I expect heat?"],
+      ["How rainy is it in June on this route?", {"month": "June"}],
+      ["april versus june for this ride?", {"month": "April", "other_month": "June"}],
+      ["october conditions?", {"month": "October"}],
+      ["How cold are the nights on day 5?", {"day": 5}],
+      ["Is July too hot for this trip?", {"month": "July"}],
+      ["Will there be wildfire smoke in August?", {"month": "August", "smoke": true}],
+      ["How hot/windy/wet does it get?"],
+      ["What would the weather be in May instead?", {"month": "May"}],
+      ["Is it usually rainy on day 3?", {"day": 3}],
+      ["june or september, which has better weather?", {"month": "June", "other_month": "September"}],
+      ["Wildfire smoke - a problem here?", {"smoke": true}]
+    ],
+    "best_months": [
+      ["Ideal month for me to go?"],
+      ["Ideal season for this trip?"],
+      ["best months?"],
+      ["What time of year would avoid the heat and the rain?"],
+      ["When is it best to go to avoid smoke from fires?", {"smoke": true}],
+      ["Is there a better month than the one I picked?"]
+    ],
+    "left_to_do": [
+      ["Anything outstanding before I leave?"],
+      ["Show me the open to-dos."],
+      ["is there anything I haven't done yet before the trip"],
+      ["What else do I need to book or check?"],
+      ["Am I ready to go, or is something left?"],
+      ["what's still open"]
+    ],
+    "decisions": [
+      ["Which choices are still mine to make?"],
+      ["Are there any choices I need to make about the plan?"],
+      ["choices left for me?"],
+      ["Which things are up to me to choose?"],
+      ["Show me the decisions"]
+    ],
+    "heads_up": [
+      ["Anything I should be careful of on day 4, like traffic?", {"day": 4}],
+      ["Are there busy roads on day 8?", {"day": 8}],
+      ["Any hazards I should know about today?"],
+      ["is there traffic on day 2", {"day": 2}],
+      ["Any warnings for day 11?", {"day": 11}],
+      ["What are the heads-ups on the trip?"]
+    ],
+    "note": [
+      ["Explain the remark on day 5.", {"day": 5}],
+      ["Why is there a gap marked on day 3?", {"day": 3}],
+      ["What does the warning on this day mean?"],
+      ["day 9 has a note, what is it", {"day": 9}],
+      ["There's a flag on day 12 - explain?", {"day": 12}]
+    ],
+    "to_do": [
+      ["Melk has a reminder to reserve early - why?", {"town": "Melk"}],
+      ["Should I pack a way to purify water?"],
+      ["Why should I carry extra water on day 6?", {"day": 6}],
+      ["blois booking reminder - why", {"town": "Blois"}],
+      ["Why is booking ahead on the to-do for day 2?", {"day": 2}],
+      ["Should I bring a filter for this trip?"],
+      ["Why does the plan tell me to book Nevers early?", {"town": "Nevers"}]
+    ],
+    "find": [
+      ["How far into the trip is Tours?", {"town": "Tours"}],
+      ["Linz - early or late in the trip?", {"town": "Linz"}],
+      ["Do I go through Amboise?", {"town": "Amboise"}],
+      ["Am I staying in Saumur at all?", {"town": "Saumur"}],
+      ["what day do i reach melk", {"town": "Melk"}],
+      ["Is Beaune on my way?", {"town": "Beaune"}],
+      ["Will I pass through Ulm?", {"town": "Ulm"}]
+    ],
+    "add_rest": [
+      ["After day 4 I'll need a break - add one?", {"day": 4}],
+      ["I'd like a day off after day 7, somewhere with shops.", {"day": 7}],
+      ["rest day after day 3 please", {"day": 3}],
+      ["Could I take a rest after the long day 9?", {"day": 9}],
+      ["Is there a way to have a break after day 10?", {"day": 10}],
+      ["put a rest day after day 5", {"day": 5}]
+    ],
+    "rest_in": [
+      ["I'd like a rest day in Angers.", {"town": "Angers"}],
+      ["Can I spend two days in Tours?", {"town": "Tours", "days": 2}],
+      ["Linz deserves a long stop - three days off there.", {"town": "Linz", "days": 3}],
+      ["Saumur looks lovely - two nights there?", {"town": "Saumur"}],
+      ["blois for longer?", {"town": "Blois"}],
+      ["I want to explore Krems for a couple of days", {"town": "Krems", "days": 2}],
+      ["Is it possible to have a day off in Beaune?", {"town": "Beaune"}],
+      ["Could we take 2 rest days in Passau - we love it there", {"town": "Passau", "days": 2}],
+      ["Let me rest in Melk", {"town": "Melk"}],
+      ["Can I make my stay in Orléans longer?", {"town": "Orléans"}]
+    ],
+    "move_rest": [
+      ["Tours would be a nicer spot for the day off than where it is.", {"town": "Tours"}],
+      ["I'd rather have the rest day in Linz instead.", {"town": "Linz"}],
+      ["day off at melk not where it is", {"town": "Melk"}],
+      ["Could the day off be in Beaune rather than where it is now?", {"town": "Beaune"}],
+      ["I'd prefer my rest day to fall in Saumur.", {"town": "Saumur"}],
+      ["Is it possible to shift my rest day to Krems?", {"town": "Krems"}]
+    ],
+    "stop_at": [
+      ["I'd rather stop in Saumur than Angers.", {"town": "Saumur", "instead_of": "Angers"}],
+      ["Swap Tours for Amboise as a stop.", {"town": "Amboise", "instead_of": "Tours"}],
+      ["End day 5 at Melk instead.", {"town": "Melk", "day": 5}],
+      ["Gien doesn't appeal - could I sleep in Briare that night?", {"town": "Briare", "instead_of": "Gien"}],
+      ["tulln for the night instead?", {"town": "Tulln"}],
+      ["Could I overnight in Beaune?", {"town": "Beaune"}],
+      ["Let's end day 3 in Blois.", {"town": "Blois", "day": 3}],
+      ["stop at krems not melk", {"town": "Krems", "instead_of": "Melk"}],
+      ["I'd like to finish day 8 in Ulm", {"town": "Ulm", "day": 8}]
+    ],
+    "stop_at_towns": [
+      ["Nights in Angers, Saumur and Tours - does that fit?", {"towns": ["Angers", "Saumur", "Tours"]}],
+      ["Can my nights be in Linz and Melk?", {"towns": ["Linz", "Melk"]}],
+      ["stops at blois, orléans and gien please", {"towns": ["Blois", "Orléans", "Gien"]}],
+      ["Could I overnight in Passau and then Krems?", {"towns": ["Passau", "Krems"]}],
+      ["I'd like to sleep in Beaune, Tournus and Mâcon.", {"towns": ["Beaune", "Tournus", "Mâcon"]}],
+      ["Is it possible to stop at Tulln and Krems?", {"towns": ["Tulln", "Krems"]}]
+    ],
+    "easier_day": [
+      ["Day 7 scares me, can it be lighter?", {"day": 7}],
+      ["Day 4 is too long for me.", {"day": 4}],
+      ["can day 2 be shorter", {"day": 2}],
+      ["I'd like to cut day 9 down a bit.", {"day": 9}],
+      ["Day 6 looks brutal - can we make it gentler?", {"day": 6}],
+      ["Could I ride less on day 11?", {"day": 11}]
+    ],
+    "longer_day": [
+      ["Day 5 ends too early for me, I want to keep going.", {"day": 5}],
+      ["On day 3 I've got legs for more km.", {"day": 3}],
+      ["I could do more km on day 8.", {"day": 8}],
+      ["push on further on day 2?", {"day": 2}],
+      ["Day 10 is easy, can I add some distance?", {"day": 10}],
+      ["Could I go past the stop on day 6?", {"day": 6}]
+    ],
+    "be_in_by": [
+      ["Could I be done by 2pm each day?", {"time": "14:00"}],
+      ["Arriving by 5pm every day would suit me.", {"time": "17:00"}],
+      ["finish every day by 4", {"time": "16:00"}],
+      ["I'd like to arrive by 15:00 so I can set up camp.", {"time": "15:00"}],
+      ["Can all my days end before 6pm?", {"time": "18:00"}],
+      ["in by 1pm please", {"time": "13:00"}],
+      ["Is it possible to finish riding by 3:30pm?", {"time": "15:30"}]
+    ],
+    "more_days": [
+      ["I'd like the trip to be longer by a day."],
+      ["I'd like two more days on the trip.", {"count": 2}],
+      ["give me a spare day"],
+      ["What if I had 3 more days?", {"count": 3}],
+      ["Could the trip be a day longer?"],
+      ["add a couple of days", {"count": 2}],
+      ["I have more time, can we stretch it out?"]
+    ],
+    "day_off": [
+      ["Is the whole thing possible one day quicker?"],
+      ["We have to be home sooner - one day shorter?"],
+      ["I need to finish a day earlier."],
+      ["drop a day?"],
+      ["Is it possible to shorten the trip by a day?"],
+      ["I'm short on time, can we cut a day?"]
+    ],
+    "level": [
+      ["Moderate level - what would that change?", {"level": "Moderate"}],
+      ["go for challenging", {"level": "Challenging"}],
+      ["Plan it at Leisurely instead.", {"level": "Leisurely"}],
+      ["I'd like to ride at Easy-moderate.", {"level": "Easy-moderate"}],
+      ["Could you set my level to Tough?", {"level": "Tough"}],
+      ["what would it look like at easy-moderate", {"level": "Easy-moderate"}]
+    ],
+    "another_month": [
+      ["Can I move the trip to June?", {"month": "June"}],
+      ["Let's go in September instead.", {"month": "September"}],
+      ["Change the start to May please.", {"month": "May"}],
+      ["What if I went in October instead of now?", {"month": "October"}],
+      ["move it to july", {"month": "July"}],
+      ["I'd rather do the trip in April - can you change it?", {"month": "April"}],
+      ["Shift everything to August.", {"month": "August"}]
+    ],
+    "bike": [
+      ["I ride a gravel bike.", {"bike": "gravel"}],
+      ["What if I took my road bike?", {"bike": "road"}],
+      ["My bike has a motor.", {"bike": "ebike"}],
+      ["touring bike with panniers", {"bike": "touring"}],
+      ["I'll be bikepacking with frame bags.", {"bike": "bikepacking"}],
+      ["Change my bike to touring.", {"bike": "touring"}]
+    ],
+    "sleep": [
+      ["I want to camp every night.", {"sleep": "camping"}],
+      ["I'd prefer hotels.", {"sleep": "rooms"}],
+      ["Can I mix camping and rooms?", {"sleep": "mix"}],
+      ["rooms only please", {"sleep": "rooms"}],
+      ["We'll camp the whole way", {"sleep": "camping"}],
+      ["Some nights camping, some in B&Bs.", {"sleep": "mix"}]
+    ],
+    "other_way": [
+      ["Reverse the whole route for me."],
+      ["What if I did it in reverse?"],
+      ["start from the other end"],
+      ["I'd like to ride it backwards, finishing where it now starts."],
+      ["Flip the direction please."]
+    ],
+    "trains": [
+      ["Can you add trains to the start and home?", {"on": true}],
+      ["Getting back from the finish - is there a train?", {"on": true}],
+      ["Are there trains back from the finish?", {"on": true}],
+      ["I don't need trains, I'm driving to the start.", {"on": false}],
+      ["take the trains out of the plan", {"on": false}],
+      ["I'll need a train to get to the start.", {"on": true}],
+      ["What are the transport options from the end?", {"on": true}]
+    ],
+    "bail_out": [
+      ["Where can I bail out if something goes wrong?"],
+      ["Where are the stations if I need to go home early?"],
+      ["train home if I give up halfway?"],
+      ["What if I have to stop the trip early - where can I catch a train?"],
+      ["Show me the bail-out options."],
+      ["can i get a train home from the middle of the trip"]
+    ],
+    "booked": [
+      ["Got a reservation sorted for Saumur.", {"town": "Saumur"}],
+      ["Done - I reserved Melk.", {"town": "Melk"}],
+      ["I booked the campsite for day 3.", {"day": 3}],
+      ["done, the hotel in Blois is booked", {"town": "Blois"}],
+      ["I've sorted the accommodation for night 6.", {"day": 6}],
+      ["Mark Linz as booked please.", {"town": "Linz"}]
+    ],
+    "wild_camp": [
+      ["Is bivvying an option after day 4?", {"day": 4}],
+      ["Night 7 under a tarp somewhere?", {"day": 7}],
+      ["wild camping on night 2?", {"day": 2}],
+      ["What if I just camp in the wild after day 9?", {"day": 9}],
+      ["Could I sleep out under the stars after day 5?", {"day": 5}]
+    ],
+    "decline/booking": [
+      ["Please make the reservation in Saumur.", {"town": "Saumur"}],
+      ["book the hotel for day 4 please", {"day": 4}],
+      ["Please reserve the campsite in Melk.", {"town": "Melk"}],
+      ["Could you book all my rooms?"],
+      ["Could you sort out my rail tickets home?"],
+      ["Can you get me a ticket for the ferry?"]
+    ],
+    "decline/availability": [
+      ["Does the hostel in Blois have beds free on day 2?", {"day": 2}],
+      ["Is the campsite in Linz full in August?", {"town": "Linz"}],
+      ["Will there be space at the hotel in Tours?", {"town": "Tours"}],
+      ["any rooms left in krems on day 6?", {"town": "Krems"}],
+      ["Is there availability at the gîte on day 9?", {"day": 9}]
+    ],
+    "decline/reviews": [
+      ["Would you recommend the Hotel du Château?", {"place": "Hotel du Château"}],
+      ["Where's the best restaurant in Tours?"],
+      ["Does the Saumur campsite get good reviews?"],
+      ["what's the nicest hotel in melk"],
+      ["Is Camping de la Loire clean?", {"place": "Camping de la Loire"}],
+      ["Which bakery in Beaune is best?"]
+    ],
+    "decline/safety": [
+      ["Should I worry about crime in Tours?"],
+      ["Will my bike be stolen in Linz?"],
+      ["Will I be in danger riding day 5?"],
+      ["is it safe to camp alone here"]
+    ],
+    "decline/forecast": [
+      ["Is it going to be sunny tomorrow in Angers?"],
+      ["weather forecast for next week?"]
+    ],
+    "unclear": [
+      ["Hmm."],
+      ["ok"],
+      ["What about the other one?"],
+      ["can you do the thing"],
+      ["?"],
+      ["And that?"]
+    ]
+  }
+}
