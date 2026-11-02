@@ -6,10 +6,9 @@
  *   --print          each turn's tool calls and what they returned, to write a reference answer from
  *   --case <id>      only cases whose id contains this
  *   --current        replay on each route's current audit run, and list what no longer holds (after a re-audit)
- *   --model <names>  A3: the model plays instead (gemma4-e2b, qwen3.5-2b; several with commas), run by Ollama (D97):
+ *   --model <names>  A3: the model plays instead (gemma4-e2b; several with commas), run by Ollama (D97):
  *                    it understands each message as a request and our code acts on it (D99)
  *   --words          with --model: the model also rewords the tools' lines, through the honesty check (D99)
- *   --loop           with --model: the earlier free tool loop instead (D97, D98)
  *   --gold           each turn's own request through our code, for the cases that have them: all must pass (D99)
  *   --quick          with --model or --gold: the quick set for tuning, about 30 cases covering each kind on each route (D97)
  *   --examples       with --model: the closest examples go before each message (D101)
@@ -23,7 +22,6 @@ import { localFetch } from "@dpg/routes/node";
 import { ollamaModel } from "../model";
 import { type Case, readCases } from "./cases";
 import { checkExamples, loadExamples } from "./examples";
-import { modelPlayer } from "./model";
 import { scoreOutside } from "./outside";
 import { plant, playCase, referencePlayer } from "./play";
 import { describe, prompt, quickSet, scoreModel } from "./score";
@@ -69,9 +67,7 @@ if (models || flag("--gold")) {
       await scoreOutside(world, cases, model, outside, { dream: prompt("understand-dream"), plan: prompt("understand-plan") }, flag("--examples") ? { dream: loadExamples("dream"), plan: loadExamples("plan") } : undefined);
       continue;
     }
-    const player = flag("--loop")
-      ? modelPlayer(model, { dream: prompt("dream"), plan: prompt("plan") })
-      : understandPlayer(model, { dream: prompt("understand-dream"), plan: prompt("understand-plan"), ...(flag("--words") ? { words: prompt("words") } : {}), ...(flag("--examples") ? { examples: { dream: loadExamples("dream"), plan: loadExamples("plan") } } : {}) });
+    const player = understandPlayer(model, { dream: prompt("understand-dream"), plan: prompt("understand-plan"), ...(flag("--words") ? { words: prompt("words") } : {}), ...(flag("--examples") ? { examples: { dream: loadExamples("dream"), plan: loadExamples("plan") } } : {}) });
     await scoreModel(world, set, player, label);
   }
   process.exit(0);

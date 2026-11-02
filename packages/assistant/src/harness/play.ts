@@ -6,8 +6,6 @@
 import { secondThoughts } from "@dpg/planner";
 import { DREAM_TOOLS, type DreamContext } from "../dream";
 import { checkAnswer, type Unsupported } from "../honesty";
-import { toolSpecs } from "../loop";
-import type { ToolSpec } from "../model/model";
 import { fold } from "../names";
 import { PLAN_TOOLS, type PlanApply, type PlanContext } from "../plan";
 import { dreamScreen, planScreen } from "../screen";
@@ -31,9 +29,8 @@ export interface Answer {
   trace?: Record<string, unknown>;
 }
 
-/** The phase as a player meets it: the tools' schemas, what's on screen as it is now, and the state behind it. */
+/** The phase as a player meets it: what's on screen as it is now, and the state behind it. */
 export interface Phase {
-  tools: ToolSpec[];
   screen: () => string;
   /** Dream's question or the plan, as the screen has it: our code reads it to act on a request (D99). */
   context: () => DreamContext | PlanContext;
@@ -114,7 +111,6 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
   const tools = (c.phase === "dream" ? DREAM_TOOLS : PLAN_TOOLS) as { name: string; run: (ctx: unknown, args: Record<string, unknown>) => ToolResult<unknown> }[];
   const ctx = () => (dream ?? plan)!;
   const conversation = player.begin(c, {
-    tools: dream ? toolSpecs(DREAM_TOOLS, dream) : toolSpecs(PLAN_TOOLS, plan!),
     screen: () => (dream ? dreamScreen(dream) : planScreen(plan!)),
     context: ctx,
   });
