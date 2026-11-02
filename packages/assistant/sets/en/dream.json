@@ -14,34 +14,32 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "level": 2,
-                  "days": 10,
-                  "month": "September",
-                  "pace": "relaxed",
-                  "themes": [
-                    "coast",
-                    "culture"
-                  ]
-                },
-                {
-                  "level": 3,
-                  "days": 10,
-                  "month": "September",
-                  "pace": "relaxed",
-                  "themes": [
-                    "coast",
-                    "culture"
-                  ]
-                }
+              "level": 2,
+              "days": 10,
+              "month": "September",
+              "pace": "relaxed",
+              "themes": [
+                "coast",
+                "culture"
+              ]
+            }
+          },
+          {
+            "tool": "set_question",
+            "args": {
+              "level": 3,
+              "days": 10,
+              "month": "September",
+              "pace": "relaxed",
+              "themes": [
+                "coast",
+                "culture"
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 1
+          "call": 1
         },
         "mustSay": [
           "Easy-moderate",
@@ -72,18 +70,13 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "days": 7,
-                  "through": "Barcelona"
-                }
-              ]
+              "days": 7,
+              "through": "Barcelona"
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Barcelona",
@@ -110,32 +103,30 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "level": 1,
-                  "days": 5,
-                  "pace": "relaxed",
-                  "themes": [
-                    "coast"
-                  ],
-                  "stay": "rooms"
-                },
-                {
-                  "level": 2,
-                  "days": 5,
-                  "pace": "relaxed",
-                  "themes": [
-                    "coast"
-                  ],
-                  "stay": "rooms"
-                }
-              ]
+              "level": 1,
+              "days": 5,
+              "pace": "relaxed",
+              "themes": [
+                "coast"
+              ],
+              "stay": "rooms"
+            }
+          },
+          {
+            "tool": "set_question",
+            "args": {
+              "level": 2,
+              "days": 5,
+              "pace": "relaxed",
+              "themes": [
+                "coast"
+              ],
+              "stay": "rooms"
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Leisurely"
@@ -198,19 +189,14 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "countries": {
-                    "IT": "only"
-                  }
-                }
-              ]
+              "countries": {
+                "IT": "only"
+              }
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Italy"
@@ -240,19 +226,14 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "countries": {
-                    "GR": "avoid"
-                  }
-                }
-              ]
+              "countries": {
+                "GR": "avoid"
+              }
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Greece"
@@ -315,20 +296,18 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "level": 2
-                },
-                {
-                  "level": 1
-                }
-              ]
+              "level": 2
+            }
+          },
+          {
+            "tool": "set_question",
+            "args": {
+              "level": 1
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Easy-moderate"
@@ -363,20 +342,18 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "level": 4
-                },
-                {
-                  "days": 5
-                }
-              ]
+              "level": 4
+            }
+          },
+          {
+            "tool": "set_question",
+            "args": {
+              "days": 5
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Challenging"
@@ -515,7 +492,7 @@
         "rider": "What should I pack for this route?",
         "calls": [],
         "mustSay": [
-          "kit"
+          "kit / packing"
         ],
         "reference": "We don't give kit advice, but I can tell you the usual weather on a stretch, and once you plan it, where water and food are each day.",
         "phrasings": [
@@ -735,7 +712,7 @@
           }
         ],
         "mustSay": [
-          "safe"
+          "safe / dangerous"
         ],
         "reference": "We can't tell you whether it's safe. What we know: 104 km on busy roads, up to 53 km between places to stay, and 6 things to look out for, detailed with a Trip Pass.",
         "phrasings": [
@@ -784,30 +761,28 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "level": 1,
-                  "days": 7,
-                  "themes": [
-                    "water"
-                  ],
-                  "stay": "rooms"
-                },
-                {
-                  "level": 2,
-                  "days": 7,
-                  "themes": [
-                    "water"
-                  ],
-                  "stay": "rooms"
-                }
-              ]
+              "level": 1,
+              "days": 7,
+              "themes": [
+                "water"
+              ],
+              "stay": "rooms"
+            }
+          },
+          {
+            "tool": "set_question",
+            "args": {
+              "level": 2,
+              "days": 7,
+              "themes": [
+                "water"
+              ],
+              "stay": "rooms"
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Leisurely"
@@ -837,19 +812,14 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "countries": {
-                    "CH": "only"
-                  }
-                }
-              ]
+              "countries": {
+                "CH": "only"
+              }
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Switzerland"
@@ -977,17 +947,12 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "train_both_ends": true
-                }
-              ]
+              "train_both_ends": true
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "With a train at both ends, 7 stretches fit; the best is Arnhem → Bingen am Rhein, 391 km at 65 km a day.",
         "phrasings": [
@@ -1023,8 +988,7 @@
           "go with number 1"
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "Here it is to plan: Hook of Holland → Dusseldorf, 391 km at 65 km a day over 7 days, with 1 rest day."
       }
@@ -1247,17 +1211,12 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "level": 5
-                }
-              ]
+              "level": 5
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Tough"
@@ -1342,20 +1301,15 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "countries": {
-                    "HR": "only"
-                  },
-                  "days": 10
-                }
-              ]
+              "countries": {
+                "HR": "only"
+              },
+              "days": 10
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Croatia"
@@ -1466,17 +1420,12 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "pace": "moving"
-                }
-              ]
+              "pace": "moving"
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "With no rest days, 26 stretches fit; the best is Facinas → Cabo de Gata, 453 km at 65 km a day over 7 days.",
         "phrasings": [
@@ -1504,17 +1453,12 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "month": "any"
-                }
-              ]
+              "month": "any"
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "With any month, each stretch shows its own best: 31 fit, the best Conil de la Frontera → Castell de Ferro, 392 km at 65 km a day.",
         "phrasings": [
@@ -1605,17 +1549,12 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "days": 18
-                }
-              ]
+              "days": 18
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "In 18 days (16 riding, 2 rest) it's 64 km a day with ↑ 667 m a day, which grades as Moderate.",
         "phrasings": [
@@ -1706,19 +1645,14 @@
           {
             "tool": "set_question",
             "args": {
-              "options": [
-                {
-                  "surfaces": {
-                    "gravel": "avoid"
-                  }
-                }
-              ]
+              "surfaces": {
+                "gravel": "avoid"
+              }
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "I can set that, but it's your own route, so it doesn't change the stretch: Vancouver → Nakusp stays 1020 km at 93 km a day, graded Challenging.",
         "phrasings": [

@@ -78,6 +78,13 @@ describe("the honesty check (D38, D77, D81)", () => {
     expect(check("Two ways:\n1. Ride to l'Ampolla, 76 km.\n2. Stop at Benicarló.").ok).toBe(true);
   });
 
+  it("starts a sentence at a new line, a bullet or bold text, and still catches a name there (D98)", () => {
+    expect(check("Day 3 ends at l'Ampolla\nThis is 76 km.\n- You'll pass Benicarló.\n**Now** it's 444 m of climbing.").ok).toBe(true);
+    // A name on the next line doesn't run on from the line before.
+    expect(failing("Day 3 ends at l'Ampolla\nTortosa is near.")).toEqual(["Tortosa"]);
+    expect(failing("- **Hotel Miramar** is lovely.")).toEqual(["Hotel Miramar"]);
+  });
+
   it("tells the model what failed, and falls back to the tools' own lines", () => {
     const c = check("Day 3 is about 75 km.");
     expect(retryNote(c)).toMatch(/^These words in your answer don't come from the tools or the rider: "75"\./);

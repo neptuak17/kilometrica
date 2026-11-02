@@ -99,6 +99,8 @@ function subset(want: unknown, got: unknown): boolean {
 }
 
 const has = (text: string, phrase: string) => ` ${fold(text)} `.includes(` ${fold(phrase)} `);
+/** A must-say entry: any of its words with the same meaning (D98). */
+const says = (text: string, entry: string) => entry.split(" / ").some((p) => has(text, p));
 
 /** Play a case: one rider message (or one phrasing of it) per turn. */
 export async function playCase(world: World, c: Case, player: Player, phrasing = 0): Promise<TurnScore[]> {
@@ -119,7 +121,7 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
     let onScreen: TurnScore["onScreen"] = null;
     // A change made on screen (D77): it applies at once; the planner says whether it's worth a second thought.
     if (turn.change && plan) {
-      const offer = PLAN_TOOLS.find((t) => t.name === "offer_options")!.run(plan, { options: [{ changes: [turn.change] }] });
+      const offer = PLAN_TOOLS.find((t) => t.name === "offer_options")!.run(plan, { changes: [turn.change] });
       const next = (offer.options?.[0]?.apply as PlanApply | undefined)?.state;
       if (next) {
         const raised = secondThoughts(plan.data, plan.planFor(plan.state), plan.planFor(next))[0] ?? null;
@@ -157,12 +159,12 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
     if (turn.offer) {
       // The expected option, made fresh, must be among them: judged by what it would make, not how it was asked for.
       const want = turn.calls[turn.offer.call]!;
-      const expected = tools.find((x) => x.name === want.tool)!.run(ctx(), want.args).options?.[turn.offer.option]?.apply;
+      const expected = tools.find((x) => x.name === want.tool)!.run(ctx(), want.args).options?.[0]?.apply;
       option = expected !== undefined && offered.includes(JSON.stringify(expected));
     } else if (offered.length) option = false;
     const check = checkAnswer(answer.text, { results, rider: said });
     const honestFirst = answer.first === undefined ? check.ok : answer.first !== null && checkAnswer(answer.first, { results, rider: said }).ok;
-    const missing = [...(turn.mustSay ?? []).filter((p) => !has(answer.text, p)), ...(turn.mustNotSay ?? []).filter((p) => has(answer.text, p)).map((p) => `not: ${p}`)];
+    const missing = [...(turn.mustSay ?? []).filter((p) => !says(answer.text, p)), ...(turn.mustNotSay ?? []).filter((p) => has(answer.text, p)).map((p) => `not: ${p}`)];
     const decline = c.kind === "decline" ? !offered.length && !missing.length : null;
     const pass = toolsRight && option !== false && check.ok && !missing.length && decline !== false && thought !== false;
     out.push({

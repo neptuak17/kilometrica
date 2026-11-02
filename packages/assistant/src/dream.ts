@@ -109,7 +109,7 @@ function stretchOf(ctx: DreamContext, args: Record<string, unknown>): StretchRes
 const routeOverview: Tool<DreamContext> = {
   name: "route_overview",
   description:
-    "The route as a whole: its description (where it runs, terrain, landscapes, sights, best months, surface and what to know), its length, daily sections and countries, when each country is good to ride (best-time scores out of 100 by month), and the rider levels.",
+    "The route as a whole: its description (where it runs, terrain, landscapes, sights, best months, surface and what to know), its length, daily sections and countries, when each country is good to ride (best-time scores out of 100 by month), and the rider levels. Example: for \"What's this route like?\", {}.",
   parameters: () => schema({}),
   run(ctx) {
     const secs = sectionsOf(ctx.route);
@@ -141,7 +141,7 @@ const routeOverview: Tool<DreamContext> = {
 
 const findTown: Tool<DreamContext> = {
   name: "find_town",
-  description: "Where a town the rider names is on the route, among the towns where stretches start and end.",
+  description: "Where a town the rider names is on the route, among the towns where stretches start and end. Example: for \"Do you go through Nantes?\", {\"name\": \"Nantes\"}.",
   parameters: () => schema({ name: { type: "string", description: "The town, as the rider said it." } }, ["name"]),
   run(ctx, args) {
     const name = arg.str(args, "name");
@@ -197,105 +197,90 @@ const PREF = { type: "string", enum: ["prefer", "ok", "avoid"] };
 const setQuestion: Tool<DreamContext, DreamApply> = {
   name: "set_question",
   description:
-    "Offer the rider changes to Dream's question (the chips), as up to four options to choose from; nothing changes until they choose. Set a level only when the rider names one; otherwise offer the levels as options.",
+    "Offer the rider one change to Dream's question (the chips) as an option to choose; nothing changes until they choose. Give only the answers that change. For another option, call it again. Set a level only when the rider names one; otherwise offer the levels that may suit, one call each. Example: for \"10 days in June\", {\"days\": 10, \"month\": \"June\"}.",
   parameters: (ctx) =>
-    schema(
-      {
-        options: {
-          type: "array",
-          minItems: 1,
-          maxItems: 4,
-          items: schema({
-            label: { type: "string" },
-            level: { type: "integer", minimum: 1, maximum: 5 },
-            days: { type: "integer", minimum: 1, maximum: 60, description: "Days in all, rest days included." },
-            pace: { type: "string", enum: ["relaxed", "steady", "moving"] },
-            month: { type: "string", enum: [...MONTHS_ENUM, "any"] },
-            surfaces: schema({ road: PREF, cycle_path: PREF, gravel: PREF }),
-            themes: { type: "array", items: { type: "string", enum: ctx.route.dream.themes.map((t) => t.id) } },
-            train_both_ends: { type: "boolean" },
-            stay: { type: "string", enum: ["any", "rooms", "camping"] },
-            avoid_busy: { type: "boolean" },
-            direction: { type: "string", enum: ["either", "forward", "reverse"] },
-            countries: {
-              ...schema(Object.fromEntries(countryRows(sectionsOf(ctx.route)).map((r) => [r.cc, { type: "string", enum: ["only", "avoid", "ok"] }]))),
-              description: `The route's countries: ${countryRows(sectionsOf(ctx.route)).map((r) => `${r.cc} ${country(r.cc)}`).join(", ")}. "only": stay within those; "avoid": never enter.`,
-            },
-            through: { type: "string", description: "A town the stretch must pass, or 'anywhere'." },
-          }),
-        },
+    schema({
+      level: { type: "integer", minimum: 1, maximum: 5 },
+      days: { type: "integer", minimum: 1, maximum: 60, description: "Days in all, rest days included." },
+      pace: { type: "string", enum: ["relaxed", "steady", "moving"] },
+      month: { type: "string", enum: [...MONTHS_ENUM, "any"] },
+      surfaces: schema({ road: PREF, cycle_path: PREF, gravel: PREF }),
+      themes: { type: "array", items: { type: "string", enum: ctx.route.dream.themes.map((t) => t.id) } },
+      train_both_ends: { type: "boolean" },
+      stay: { type: "string", enum: ["any", "rooms", "camping"] },
+      avoid_busy: { type: "boolean" },
+      direction: { type: "string", enum: ["either", "forward", "reverse"] },
+      countries: {
+        ...schema(Object.fromEntries(countryRows(sectionsOf(ctx.route)).map((r) => [r.cc, { type: "string", enum: ["only", "avoid", "ok"] }]))),
+        description: `The route's countries: ${countryRows(sectionsOf(ctx.route)).map((r) => `${r.cc} ${country(r.cc)}`).join(", ")}. "only": stay within those; "avoid": never enter.`,
       },
-      ["options"],
-    ),
+      through: { type: "string", description: "A town the stretch must pass, or 'anywhere'." },
+    }),
   run(ctx, args) {
-    const given = (arg.list(args, "options") ?? []).filter((o): o is Record<string, unknown> => !!o && typeof o === "object").slice(0, 4);
-    const options: ToolOption<DreamApply>[] = [];
-    for (const o of given) {
-      const b: Ask = { ...ctx.ask, surfaces: { ...ctx.ask.surfaces } };
-      const level = arg.int(o, "level");
-      if (level !== undefined && level >= 1 && level <= 5) b.level = level;
-      const days = arg.int(o, "days");
-      if (days !== undefined && days >= 1 && days <= 60) b.days = days;
-      const pace = arg.str(o, "pace");
-      if (pace === "relaxed" || pace === "steady" || pace === "moving") b.pace = pace;
-      const month = arg.str(o, "month");
-      if (month === "any") b.month = null;
-      else if (monthIndex(month) !== null) b.month = monthIndex(month);
-      const surfaces = arg.obj(o, "surfaces");
-      for (const k of ["road", "cycle_path", "gravel"] as const) {
-        const v = surfaces?.[k];
-        if (v === "prefer" || v === "ok" || v === "avoid") b.surfaces[k] = v;
-      }
-      const themes = arg.list(o, "themes");
-      if (themes) b.themes = themes.filter((t): t is string => typeof t === "string" && ctx.route.dream.themes.some((x) => x.id === t));
-      const train = arg.bool(o, "train_both_ends");
-      if (train !== undefined) b.trainBothEnds = train;
-      const stay = arg.str(o, "stay");
-      if (stay === "any" || stay === "rooms" || stay === "camping") b.stay = stay;
-      const busy = arg.bool(o, "avoid_busy");
-      if (busy !== undefined) b.avoidBusy = busy;
-      const way = arg.str(o, "direction");
-      if (way === "either" || way === "forward" || way === "reverse") b.direction = way;
-      const countries = arg.obj(o, "countries");
-      if (countries) {
-        b.countries = { ...b.countries };
-        for (const [cc, v] of Object.entries(countries)) {
-          if (v === "only" || v === "avoid") b.countries[cc] = v;
-          else if (v === "ok") delete b.countries[cc];
-        }
-      }
-      const through = arg.str(o, "through");
-      if (through) {
-        if (/^any(where)?$/i.test(through)) b.through = null;
-        else {
-          const p = findPoint(ctx, through);
-          if ("lines" in p) return p;
-          b.through = p.name;
-        }
-      }
-      const changes = askChanges(ctx, ctx.ask, b);
-      if (!changes.length) continue;
-      const label = arg.str(o, "label") ?? `${given.length === 1 ? "Use these: " : ""}${changes.join(" · ")}`;
-      options.push({ id: `ask:${options.length + 1}`, label, changes: [...changes, fitCount(ctx, b)], apply: { ask: b } });
+    // One option a call (D98): the small models can't fill a list of options.
+    const b: Ask = { ...ctx.ask, surfaces: { ...ctx.ask.surfaces } };
+    const level = arg.int(args, "level");
+    if (level !== undefined && level >= 1 && level <= 5) b.level = level;
+    const days = arg.int(args, "days");
+    if (days !== undefined && days >= 1 && days <= 60) b.days = days;
+    const pace = arg.str(args, "pace");
+    if (pace === "relaxed" || pace === "steady" || pace === "moving") b.pace = pace;
+    const month = arg.str(args, "month");
+    if (month === "any") b.month = null;
+    else if (monthIndex(month) !== null) b.month = monthIndex(month);
+    const surfaces = arg.obj(args, "surfaces");
+    for (const k of ["road", "cycle_path", "gravel"] as const) {
+      const v = surfaces?.[k];
+      if (v === "prefer" || v === "ok" || v === "avoid") b.surfaces[k] = v;
     }
-    if (!options.length) return problem("Those answers are already Dream's question: nothing to change.");
-    // What each would bring, so the rider can choose knowing (D80); nothing changes until they do.
-    const best = options.map((o) => bestFor(ctx, (o.apply as { ask: Ask }).ask));
+    const themes = arg.list(args, "themes");
+    if (themes) b.themes = themes.filter((t): t is string => typeof t === "string" && ctx.route.dream.themes.some((x) => x.id === t));
+    const train = arg.bool(args, "train_both_ends");
+    if (train !== undefined) b.trainBothEnds = train;
+    const stay = arg.str(args, "stay");
+    if (stay === "any" || stay === "rooms" || stay === "camping") b.stay = stay;
+    const busy = arg.bool(args, "avoid_busy");
+    if (busy !== undefined) b.avoidBusy = busy;
+    const way = arg.str(args, "direction");
+    if (way === "either" || way === "forward" || way === "reverse") b.direction = way;
+    const countries = arg.obj(args, "countries");
+    if (countries) {
+      b.countries = { ...b.countries };
+      for (const [cc, v] of Object.entries(countries)) {
+        if (v === "only" || v === "avoid") b.countries[cc] = v;
+        else if (v === "ok") delete b.countries[cc];
+      }
+    }
+    const through = arg.str(args, "through");
+    if (through) {
+      if (/^any(where)?$/i.test(through)) b.through = null;
+      else {
+        const p = findPoint(ctx, through);
+        if ("lines" in p) return p;
+        b.through = p.name;
+      }
+    }
+    const changes = askChanges(ctx, ctx.ask, b);
+    if (!changes.length) return problem("Those answers are already Dream's question: nothing to change.");
+    // Labelled by what it changes, never by the model (D77, D98).
+    const label = changes.join(" · ");
+    const option: ToolOption<DreamApply> = { id: `ask:${label}`, label, changes: [...changes, fitCount(ctx, b)], apply: { ask: b } };
+    // What it would bring, so the rider can choose knowing (D80); nothing changes until they do.
+    const best = bestFor(ctx, b);
     return {
-      // A label made of the changes says them already; then only what the option would bring follows it.
-      lines: options.flatMap((o, i) => [
-        `${o.label}: ${o.label.endsWith(o.changes.slice(0, -1).join(" · ")) ? o.changes.at(-1) : o.changes.join("; ")}.`,
-        ...best[i]!.map((s, k) => `  ${k + 1}. ${s.name} (${s.facts})${s.why.length ? `. Why it fits: ${s.why.join("; ")}` : ""}${s.when ? `. ${s.when}` : ""}.`),
-      ]),
-      facts: { ok: true, options: options.map((o, i) => ({ label: o.label, changes: o.changes, best: best[i] })) },
-      options,
+      lines: [
+        `${label}: ${option.changes.at(-1)}.`,
+        ...best.map((s, k) => `  ${k + 1}. ${s.name} (${s.facts})${s.why.length ? `. Why it fits: ${s.why.join("; ")}` : ""}${s.when ? `. ${s.when}` : ""}.`),
+      ],
+      facts: { ok: true, options: [{ label, changes: option.changes, best }] },
+      options: [option],
     };
   },
 };
 
 const stretches: Tool<DreamContext> = {
   name: "stretches",
-  description: "The stretches that fit the rider's question, best first, each with why it fits, what to look out for and what to check; or why nothing fits. Use 'from' for more of the list.",
+  description: "The stretches that fit the rider's question, best first, each with why it fits, what to look out for and what to check; or why nothing fits. Use 'from' for more of the list. Example: for \"Which stretches fit?\", {}; for more after the first 3, {\"from\": 4}.",
   parameters: () => schema({ from: { type: "integer", minimum: 1, description: "Start the list at this number, for more." } }),
   run(ctx, args) {
     const a = ctx.ask;
@@ -327,7 +312,7 @@ const stretches: Tool<DreamContext> = {
 
 const describeStretchTool: Tool<DreamContext> = {
   name: "describe_stretch",
-  description: "Any stretch the rider names from one town to another, ridden in that order, described like the list's stretches but never ruled out.",
+  description: "Any stretch the rider names from one town to another, ridden in that order, described like the list's stretches but never ruled out. Example: for \"What about Nantes to Angers?\", {\"from\": \"Nantes\", \"to\": \"Angers\"}.",
   parameters: () => schema({ from: { type: "string" }, to: { type: "string" } }, ["from", "to"]),
   run(ctx, args) {
     if (!arg.str(args, "from") || !arg.str(args, "to")) return problem("From which town to which?");
@@ -340,7 +325,7 @@ const describeStretchTool: Tool<DreamContext> = {
 
 const compare: Tool<DreamContext> = {
   name: "compare",
-  description: "Two stretches from the list side by side, by their numbers: days, climbing, grade, when, surfaces, busy roads, scenery, trains, what to look out for and check.",
+  description: "Two stretches from the list side by side, by their numbers: days, climbing, grade, when, surfaces, busy roads, scenery, trains, what to look out for and check. Example: for \"How do the first two compare?\", {\"a\": 1, \"b\": 2}.",
   parameters: () => schema({ a: { type: "integer", minimum: 1 }, b: { type: "integer", minimum: 1 } }, ["a", "b"]),
   run(ctx, args) {
     const ra = stretchOf(ctx, { number: args.a });
@@ -377,7 +362,7 @@ export function weatherIn(secs: DreamSection[], where: string, month: number | n
 const usualWeatherTool: Tool<DreamContext> = {
   name: "usual_weather",
   description:
-    "The usual weather (averages over past years, never a forecast) on a stretch in a month: night lows to day highs and how often it rains; without a month, the best months by Dream's best-time score. A stretch by its number in the list, or by two towns; without one, the whole route. There is no smoke or wildfire data.",
+    "The usual weather (averages over past years, never a forecast) on a stretch in a month: night lows to day highs and how often it rains; without a month, the best months by Dream's best-time score. A stretch by its number in the list, or by two towns; without one, the whole route. There is no smoke or wildfire data. Example: for \"What's the second one like in June?\", {\"number\": 2, \"month\": \"June\"}.",
   parameters: () =>
     schema({
       number: { type: "integer", minimum: 1 },
@@ -399,7 +384,7 @@ const usualWeatherTool: Tool<DreamContext> = {
 
 const planThis: Tool<DreamContext, DreamApply> = {
   name: "plan_this",
-  description: "Offer to open Plan with a stretch, by its number in the list or two towns; Plan opens only when the rider chooses it.",
+  description: "Offer to open Plan with a stretch, by its number in the list or two towns; Plan opens only when the rider chooses it. Example: for \"Let's plan the second one\", {\"number\": 2}.",
   parameters: () => schema({ number: { type: "integer", minimum: 1 }, from: { type: "string" }, to: { type: "string" } }),
   run(ctx, args) {
     if (ctx.ask.level === null) return problem("Plan needs your level first: set it in Dream's question.");

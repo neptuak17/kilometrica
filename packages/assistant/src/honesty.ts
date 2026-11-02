@@ -59,7 +59,7 @@ leave start add move book bring carry take make get come consider expect enjoy w
 does do did is are was were be been has have had there's that's here's what's it'll i'm i'd i'll i've you've they're day days night
 nights trip route stretch stretches option options water food morning afternoon evening today tomorrow typically usually mostly roughly
 about nothing everything something anything search find call visit cycle head follow use set switch turn open tell remember allow
-whether although though besides beyond within except done sorry certainly absolutely right local`
+whether although though besides beyond within except done sorry certainly absolutely right local now again important hello hi`
     .split(/\s+/)
     .map(fold),
 );
@@ -111,8 +111,12 @@ function allowed(sources: Sources) {
 /** The names in an answer: runs of capitalised words, with the small words that join a place's name. */
 function names(answer: string): { text: string; start: boolean }[] {
   const out: { text: string; start: boolean }[] = [];
-  // Words, keeping the punctuation that ends a sentence or a clause as its own token.
-  const tokens = answer.replace(/[“”"()[\]]/g, " ").split(/\s+/).filter(Boolean);
+  // Words, with a line break as a token of its own: a new line starts a sentence, as a list's items do (D98).
+  const tokens = answer
+    .replace(/[“”"()[\]]/g, " ")
+    .replace(/\n/g, " \n ")
+    .split(/[ \t\r]+/)
+    .filter(Boolean);
   let run: string[] = [];
   let runStart = false;
   let sentenceStart = true;
@@ -124,8 +128,16 @@ function names(answer: string): { text: string; start: boolean }[] {
     run = [];
   };
   for (const raw of tokens) {
-    const ends = /[.!?:;]$/.test(raw);
-    const breaks = ends || /,$/.test(raw);
+    // A line break, or a bullet or other markup on its own ("-", "•", "**"): no word, and a new line starts a sentence.
+    if (!/[\p{L}\d]/u.test(raw)) {
+      flush();
+      if (raw === "\n" || /[.!?:;]$/.test(raw)) sentenceStart = true;
+      continue;
+    }
+    // Bold text starts like a sentence: "**Note** that…".
+    if (/^(\*\*|__)/.test(raw)) sentenceStart = true;
+    const ends = /[.!?:;][*_]*$/.test(raw);
+    const breaks = ends || /,[*_]*$/.test(raw);
     const word = raw.replace(/^[^\p{L}\d]+|[^\p{L}\d.'’-]+$/gu, "").replace(/\.$/, "");
     // "l'Ampolla", "d'Arrossa": the capital comes after the apostrophe. "°C" is a unit.
     const capital = (/^\p{Lu}/u.test(word) || /^[ld]['’]\p{Lu}/u.test(word)) && !raw.startsWith("°");

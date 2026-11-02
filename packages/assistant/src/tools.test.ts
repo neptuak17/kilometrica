@@ -41,15 +41,16 @@ describe("Dream's tools", () => {
 
   it("offer the question's changes as options, changing nothing until one is chosen", () => {
     const ctx = ask();
-    const r = dream("set_question").run(ctx, { options: [{ level: 3, days: 4, month: "October" }] });
+    const r = dream("set_question").run(ctx, { level: 3, days: 4, month: "October" });
     expect(r.options).toHaveLength(1);
-    expect(r.options![0]!.label).toBe("Use these: Level: Moderate · 4 days · October");
+    // Labelled by what it changes (D98).
+    expect(r.options![0]!.label).toBe("Level: Moderate · 4 days · October");
     expect(r.options![0]!.changes.at(-1)).toMatch(/^\d+ stretches fit$/);
     expect(r.options![0]!.apply).toMatchObject({ ask: { level: 3, days: 4, month: 9 } });
     expect(ctx.ask.level).toBeNull();
-    // Levels offered side by side, each its own option.
-    expect(dream("set_question").run(ctx, { options: [{ level: 2 }, { level: 3 }] }).options!.map((o) => o.label)).toEqual(["Level: Easy-moderate", "Level: Moderate"]);
-    expect(dream("set_question").run(ctx, { options: [{ stay: "any" }] }).facts.ok).toBe(false);
+    // Levels offered side by side, a call each.
+    expect([2, 3].map((level) => dream("set_question").run(ctx, { level }).options![0]!.label)).toEqual(["Level: Easy-moderate", "Level: Moderate"]);
+    expect(dream("set_question").run(ctx, { stay: "any" }).facts.ok).toBe(false);
   });
 
   it("describe a stretch between two towns, compare two, give the usual weather and offer to plan one", () => {
@@ -93,12 +94,12 @@ describe("Plan's tools", () => {
 
   it("offer changes as options built with the screen's own actions, applying none of them", () => {
     const ctx: PlanContext = testPlan();
-    const more = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "set", total_days: 6 }] }] });
+    const more = plan("offer_options").run(ctx, { changes: [{ do: "set", total_days: 6 }] });
     expect(more.options![0]!.changes[0]).toBe("One riding day more (6)");
     expect(more.options![0]!.apply.state.inputs.days).toBe(6);
     expect(ctx.state.inputs.days).toBe(5);
     // "Rest in Saint-Jean": the same action as the screen's "Rest in…".
-    const rest = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "rest_in", town: "saint-jean" }] }] });
+    const rest = plan("offer_options").run(ctx, { changes: [{ do: "rest_in", town: "saint-jean" }] });
     const stop = ctx.data.stops.stops.find((s) => s.name === "Saint-Jean")!;
     expect(rest.options![0]!.apply.actions).toEqual([restInAction(ctx.planFor(ctx.state), stop)]);
     const after = ctx.planFor(rest.options![0]!.apply.state);
@@ -106,7 +107,7 @@ describe("Plan's tools", () => {
     // A rest day's tool then has it.
     expect(plan("rest_day").run({ ...ctx, state: rest.options![0]!.apply.state }, { town: "Saint-Jean" }).lines[0]).toMatch(/^Day \d, .+: rest day at Saint-Jean\./);
     // What can't be built is said, and no option is made of it.
-    const bad = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "rest_in", town: "Atlantis" }] }] });
+    const bad = plan("offer_options").run(ctx, { changes: [{ do: "rest_in", town: "Atlantis" }] });
     expect(bad.facts).toMatchObject({ ok: false });
     expect(bad.lines[0]).toBe('"Atlantis" isn\'t a town on this stretch.');
   });
@@ -115,10 +116,10 @@ describe("Plan's tools", () => {
     const ctx = testPlan({ sleep: "camping" });
     const night = ctx.planFor(ctx.state).nights[0]!;
     const km = night.stop.at_m / 1000;
-    const r = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "stay_at", after_day: 1, place: `camping ${km}` }] }] });
+    const r = plan("offer_options").run(ctx, { changes: [{ do: "stay_at", after_day: 1, place: `camping ${km}` }] });
     expect(r.options![0]!.apply.actions).toEqual([{ type: "bed", night: 0, place: `c${km}` }]);
     const rooms = testPlan();
-    expect(plan("offer_options").run(rooms, { options: [{ changes: [{ do: "stay_at", after_day: 1, place: "wild camp" }] }] }).lines[0]).toBe(
+    expect(plan("offer_options").run(rooms, { changes: [{ do: "stay_at", after_day: 1, place: "wild camp" }] }).lines[0]).toBe(
       "A wild camp needs a tent: you sleep in rooms.",
     );
   });
@@ -126,13 +127,13 @@ describe("Plan's tools", () => {
 
 describe("what the owner's questions asked of the tools (D80)", () => {
   it("names the best stretches each option of Dream's question would bring, and keeps to a town to pass through", () => {
-    const r = dream("set_question").run(ask({ level: 3, days: 3 }), { options: [{ through: "charlie" }] });
-    expect(r.options![0]!.label).toBe("Use these: Through Charlie");
+    const r = dream("set_question").run(ask({ level: 3, days: 3 }), { through: "charlie" });
+    expect(r.options![0]!.label).toBe("Through Charlie");
     const best = (r.facts.options as { best: { name: string }[] }[])[0]!.best;
     expect(best.length).toBeGreaterThan(0);
     // Every stretch it brings passes Charlie, at km 100.
     for (const s of best) expect(s.name).toMatch(/^(Alpha|Bravo|Charlie) → (Charlie|Delta|Echo|Foxtrot|Golf)$/);
-    expect(dream("set_question").run(ask(), { options: [{ through: "Atlantis" }] }).facts.ok).toBe(false);
+    expect(dream("set_question").run(ask(), { through: "Atlantis" }).facts.ok).toBe(false);
   });
 
   it("gives the best months when no month is asked, in Dream and in Plan", () => {
@@ -152,15 +153,15 @@ describe("what the owner's questions asked of the tools (D80)", () => {
 
   it("offers a longer stay, being in by a time, and a night at a town without naming its day", () => {
     const ctx = testPlan({ days: 7, toM: 300_000 });
-    const stay = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "rest_in", town: "Saint-Jean", days: 2 }] }] });
+    const stay = plan("offer_options").run(ctx, { changes: [{ do: "rest_in", town: "Saint-Jean", days: 2 }] });
     const after = ctx.planFor(stay.options![0]!.apply.state);
     expect(after.days.filter((d) => d.kind === "rest").map((d) => d.endName)).toEqual(["Saint-Jean", "Saint-Jean"]);
-    const longer = plan("offer_options").run({ ...ctx, state: stay.options![0]!.apply.state }, { options: [{ changes: [{ do: "rest_length", town: "Saint-Jean", days: 3 }] }] });
+    const longer = plan("offer_options").run({ ...ctx, state: stay.options![0]!.apply.state }, { changes: [{ do: "rest_length", town: "Saint-Jean", days: 3 }] });
     expect(longer.options![0]!.changes).toContain("3 rest days in a row at Saint-Jean (was 2)");
-    const early = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "be_in_by", time: "13:00" }] }] });
+    const early = plan("offer_options").run(ctx, { changes: [{ do: "be_in_by", time: "13:00" }] });
     expect(early.options![0]!.changes[0]).toMatch(/^Leave at \d\d:\d\d \(was 09:00\)$/);
     expect(early.options![0]!.changes.at(-1)).toMatch(/^(Every day in by 13:00|Days? .+ still ends? after 13:00)$/);
-    const night = plan("offer_options").run(ctx, { options: [{ changes: [{ do: "stop_at", town: "Saint-Jean" }] }] });
+    const night = plan("offer_options").run(ctx, { changes: [{ do: "stop_at", town: "Saint-Jean" }] });
     expect(ctx.planFor(night.options![0]!.apply.state).nights.some((n) => n.stop.name === "Saint-Jean")).toBe(true);
   });
 });

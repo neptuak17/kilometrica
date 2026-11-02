@@ -15,22 +15,13 @@ const offer: ToolSpec = {
   description: "Offer changes.",
   parameters: {
     type: "object",
-    properties: {
-      options: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: { changes: { type: "array", items: { type: "object", properties: { do: { type: "string", enum: ["add_rest", "set"] }, after_day: { type: "integer" } }, required: ["do"] } } },
-          required: ["changes"],
-        },
-      },
-    },
-    required: ["options"],
+    properties: { changes: { type: "array", items: { type: "object", properties: { do: { type: "string", enum: ["add_rest", "set"] }, after_day: { type: "integer" } }, required: ["do"] } } },
+    required: ["changes"],
     additionalProperties: false,
   },
 };
 const day4: ToolResult = { lines: ["Day 4, Fri 17 Sep: Tarragona → Sitges, 60 km, 4 h 35 riding, within your level."], facts: {} };
-const nested = { options: [{ changes: [{ do: "add_rest", after_day: 5 }] }] };
+const nested = { changes: [{ do: "add_rest", after_day: 5 }] };
 
 describe("Gemma 4's format (D97)", () => {
   it("declares a tool as its chat template does", () => {
@@ -39,7 +30,7 @@ describe("Gemma 4's format (D97)", () => {
     );
     // An array's items keep every key, nested as far as they go.
     expect(declaration(offer)).toContain(
-      `options:{items:{properties:{changes:{items:{properties:{after_day:{type:<|"|>INTEGER<|"|>},do:{enum:[<|"|>add_rest<|"|>,<|"|>set<|"|>],type:<|"|>STRING<|"|>}},required:[<|"|>do<|"|>],type:<|"|>OBJECT<|"|>},type:<|"|>ARRAY<|"|>}},required:[<|"|>changes<|"|>],type:<|"|>OBJECT<|"|>},type:<|"|>ARRAY<|"|>}`,
+      `changes:{items:{properties:{after_day:{type:<|"|>INTEGER<|"|>},do:{enum:[<|"|>add_rest<|"|>,<|"|>set<|"|>],type:<|"|>STRING<|"|>}},required:[<|"|>do<|"|>],type:<|"|>OBJECT<|"|>},type:<|"|>ARRAY<|"|>}`,
     );
   });
 
@@ -77,7 +68,7 @@ describe("a call's arguments against its schema", () => {
   it("fixes what's plain and says what's wrong", () => {
     expect(checkArgs(days, { day: "4" })).toEqual({ args: { day: 4 } });
     expect(checkArgs(days, { night: 4 })).toEqual({ problem: `days has no "night"; it takes day.` });
-    expect(checkArgs(offer, {})).toEqual({ problem: "offer_options needs options." });
+    expect(checkArgs(offer, {})).toEqual({ problem: "offer_options needs changes." });
   });
 });
 

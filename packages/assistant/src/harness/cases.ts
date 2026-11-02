@@ -41,9 +41,12 @@ export interface Turn {
   thought?: string | null;
   /** The tool calls a good answer makes (extra lookups are fine). */
   calls: Call[];
-  /** The option a good answer offers: by the call that makes it and its place among that call's options. */
-  offer?: { call: number; option: number };
-  /** Words a good answer says, and words it never says (matched without case or accents). */
+  /** The option a good answer offers, by the call that makes it: each call makes one (D98). */
+  offer?: { call: number };
+  /**
+   * Words a good answer says, and words it never says (matched without case or accents). A must-say entry may give words
+   * with the same meaning, any of which will do: "kit / packing" (D98).
+   */
   mustSay?: string[];
   mustNotSay?: string[];
   /** An answer that does all this, written from the tools' real output. */

@@ -29,36 +29,32 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "label": "Rest there, same end date",
-                  "changes": [
-                    {
-                      "do": "add_rest",
-                      "after_day": 5
-                    }
-                  ]
+                  "do": "add_rest",
+                  "after_day": 5
+                }
+              ]
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "changes": [
+                {
+                  "do": "add_rest",
+                  "after_day": 5
                 },
                 {
-                  "label": "Rest there, a day longer",
-                  "changes": [
-                    {
-                      "do": "add_rest",
-                      "after_day": 5
-                    },
-                    {
-                      "do": "set",
-                      "total_days": 8
-                    }
-                  ]
+                  "do": "set",
+                  "total_days": 8
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 1,
-          "option": 0
+          "call": 1
         },
         "mustSay": [
           "Esplugues de Llobregat"
@@ -100,32 +96,30 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "stop_at",
-                      "after_day": 6,
-                      "town": "Malgrat de Mar"
-                    }
-                  ]
-                },
+                  "do": "stop_at",
+                  "after_day": 6,
+                  "town": "Malgrat de Mar"
+                }
+              ]
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "stop_at",
-                      "after_day": 6,
-                      "town": "Santa Susanna"
-                    }
-                  ]
+                  "do": "stop_at",
+                  "after_day": 6,
+                  "town": "Santa Susanna"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 1,
-          "option": 0
+          "call": 1
         },
         "mustSay": [
           "Malgrat de Mar"
@@ -162,22 +156,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "stop_at",
-                      "town": "Barcelona"
-                    }
-                  ]
+                  "do": "stop_at",
+                  "town": "Barcelona"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Barcelona"
@@ -214,32 +203,28 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "label": "A day shorter",
-                  "changes": [
-                    {
-                      "do": "set",
-                      "total_days": 6
-                    }
-                  ]
-                },
+                  "do": "set",
+                  "total_days": 6
+                }
+              ]
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "changes": [
                 {
-                  "label": "A rest day instead",
-                  "changes": [
-                    {
-                      "do": "rest_days",
-                      "count": 1
-                    }
-                  ]
+                  "do": "rest_days",
+                  "count": 1
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "You can make the trip a day shorter, with day 5 ending at Calella, 66 km; or keep your end date and make one day a rest day, after riding day 4.",
         "phrasings": [
@@ -324,32 +309,30 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "stop_at",
-                      "after_day": 5,
-                      "town": "Sant Adrià de Besòs"
-                    }
-                  ]
-                },
+                  "do": "stop_at",
+                  "after_day": 5,
+                  "town": "Sant Adrià de Besòs"
+                }
+              ]
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "stop_at",
-                      "after_day": 5,
-                      "town": "Barcelona"
-                    }
-                  ]
+                  "do": "stop_at",
+                  "after_day": 5,
+                  "town": "Barcelona"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 1,
-          "option": 0
+          "call": 1
         },
         "mustSay": [
           "Sant Adrià de Besòs"
@@ -505,7 +488,7 @@
         "rider": "Is Barcelona safe to stay in?",
         "calls": [],
         "mustSay": [
-          "safe"
+          "safe / safety"
         ],
         "reference": "We can't tell you whether a place is safe. Your government's travel advice is the place to check that.",
         "phrasings": [
@@ -579,30 +562,25 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "stop_at",
-                      "town": "Hope"
-                    },
-                    {
-                      "do": "stop_at",
-                      "town": "Princeton"
-                    },
-                    {
-                      "do": "stop_at",
-                      "town": "Greenwood"
-                    }
-                  ]
+                  "do": "stop_at",
+                  "town": "Hope"
+                },
+                {
+                  "do": "stop_at",
+                  "town": "Princeton"
+                },
+                {
+                  "do": "stop_at",
+                  "town": "Greenwood"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Princeton"
@@ -721,22 +699,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "be_in_by",
-                      "time": "15:00"
-                    }
-                  ]
+                  "do": "be_in_by",
+                  "time": "15:00"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "Not every day. Leaving at 05:00 gets some days in by 15:00, but days 1–2, 4, 7 and 10–11 still end after it.",
         "phrasings": [
@@ -771,22 +744,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "trains_there_and_back": true
-                    }
-                  ]
+                  "do": "set",
+                  "trains_there_and_back": true
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "Your plan leaves getting there and back out. I can add it: on this route it would say to make your own arrangements at both ends.",
         "phrasings": [
@@ -1198,23 +1166,18 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "move_rest",
-                      "rest_day": 5,
-                      "after_day": 2
-                    }
-                  ]
+                  "do": "move_rest",
+                  "rest_day": 5,
+                  "after_day": 2
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Bad Honnef"
@@ -1252,22 +1215,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "total_days": 8
-                    }
-                  ]
+                  "do": "set",
+                  "total_days": 8
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "With one riding day more, the trip ends Sat 22 May instead of Fri 21 May, and the last days get shorter: day 6 ends at Boppard, 22 km instead of 30, and day 7 at Oberwesel, 21 km instead of 35.",
         "phrasings": [
@@ -1303,22 +1261,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "level": 2
-                    }
-                  ]
+                  "do": "set",
+                  "level": 2
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "At Easy-moderate (instead of Leisurely) your days stay as they are: only the level they're judged against changes. You can apply it if you like.",
         "phrasings": [
@@ -1353,22 +1306,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "start_date": "2027-06-15"
-                    }
-                  ]
+                  "do": "set",
+                  "start_date": "2027-06-15"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "You can: the trip would start Tue 15 Jun instead of Sat 15 May, and the days stay as they are.",
         "phrasings": [
@@ -1403,22 +1351,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "bike": "ebike"
-                    }
-                  ]
+                  "do": "set",
+                  "bike": "ebike"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "I'll set your bike to an e-bike (it was a touring bike) once you apply it.",
         "phrasings": [
@@ -1453,22 +1396,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "be_in_by",
-                      "time": "13:00"
-                    }
-                  ]
+                  "do": "be_in_by",
+                  "time": "13:00"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "Leave at 08:00 instead of 09:00 and every day is in by 13:00.",
         "phrasings": [
@@ -1621,22 +1559,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "booked",
-                      "after_day": 1
-                    }
-                  ]
+                  "do": "booked",
+                  "after_day": 1
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Wesseling"
@@ -1710,7 +1643,7 @@
         "rider": "Is the Rhine clean enough to swim in?",
         "calls": [],
         "mustSay": [
-          "water quality"
+          "water quality / water conditions"
         ],
         "reference": "I can't say: we have no water quality data for swimming. Check the local bathing water reports before you go in.",
         "phrasings": [
@@ -1994,35 +1927,31 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "label": "Same end date",
-                  "changes": [
-                    {
-                      "do": "rest_in",
-                      "town": "Bagnères-de-Luchon",
-                      "days": 2
-                    }
-                  ]
-                },
+                  "do": "rest_in",
+                  "town": "Bagnères-de-Luchon",
+                  "days": 2
+                }
+              ]
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "changes": [
                 {
-                  "label": "Two days longer",
-                  "changes": [
-                    {
-                      "do": "rest_in",
-                      "town": "Bagnères-de-Luchon",
-                      "days": 2,
-                      "longer": true
-                    }
-                  ]
+                  "do": "rest_in",
+                  "town": "Bagnères-de-Luchon",
+                  "days": 2,
+                  "longer": true
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Bagnères-de-Luchon"
@@ -2059,35 +1988,31 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "label": "Same end date",
-                  "changes": [
-                    {
-                      "do": "rest_length",
-                      "town": "Arreau",
-                      "days": 2
-                    }
-                  ]
-                },
+                  "do": "rest_length",
+                  "town": "Arreau",
+                  "days": 2
+                }
+              ]
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "changes": [
                 {
-                  "label": "A day longer",
-                  "changes": [
-                    {
-                      "do": "rest_length",
-                      "town": "Arreau",
-                      "days": 2,
-                      "longer": true
-                    }
-                  ]
+                  "do": "rest_length",
+                  "town": "Arreau",
+                  "days": 2,
+                  "longer": true
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Arreau"
@@ -2124,22 +2049,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "trains_there_and_back": true
-                    }
-                  ]
+                  "do": "set",
+                  "trains_there_and_back": true
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "I'll add getting there and back: a train to the start from Belaskoenea and home from the end at Colera, both on your to-do.",
         "phrasings": [
@@ -2173,22 +2093,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "stations_for_going_home": true
-                    }
-                  ]
+                  "do": "set",
+                  "stations_for_going_home": true
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "I'll show each day's stations for going home early once you apply it.",
         "phrasings": [
@@ -2301,23 +2216,18 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "stop_at",
-                      "after_day": 5,
-                      "town": "Luz-Saint-Sauveur"
-                    }
-                  ]
+                  "do": "stop_at",
+                  "after_day": 5,
+                  "town": "Luz-Saint-Sauveur"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Luz-Saint-Sauveur"
@@ -2354,22 +2264,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "booked",
-                      "after_day": 2
-                    }
-                  ]
+                  "do": "booked",
+                  "after_day": 2
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Aramits"
@@ -2405,7 +2310,7 @@
         "rider": "I have a bad knee, is this OK for me?",
         "calls": [],
         "mustSay": [
-          "doctor"
+          "doctor / medical professional"
         ],
         "reference": "I can't tell you that: it's a question for your doctor or physio. What I can show you is how hard each day is, if that helps them.",
         "phrasings": [
@@ -2562,22 +2467,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "level": 5
-                    }
-                  ]
+                  "do": "set",
+                  "level": 5
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "At Tough most days shift: day 13, for one, ends at Saint-Pierre-dels-Forcats, 57 km instead of Villefranche-de-Conflent's 86. Your rest days stay where they are.",
         "phrasings": [
@@ -2723,35 +2623,31 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "label": "Three days longer",
-                  "changes": [
-                    {
-                      "do": "rest_in",
-                      "town": "Barcelona",
-                      "days": 3,
-                      "longer": true
-                    }
-                  ]
-                },
+                  "do": "rest_in",
+                  "town": "Barcelona",
+                  "days": 3,
+                  "longer": true
+                }
+              ]
+            }
+          },
+          {
+            "tool": "offer_options",
+            "args": {
+              "changes": [
                 {
-                  "label": "Same end date",
-                  "changes": [
-                    {
-                      "do": "rest_in",
-                      "town": "Barcelona",
-                      "days": 3
-                    }
-                  ]
+                  "do": "rest_in",
+                  "town": "Barcelona",
+                  "days": 3
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "Barcelona"
@@ -2787,22 +2683,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "be_in_by",
-                      "time": "16:00"
-                    }
-                  ]
+                  "do": "be_in_by",
+                  "time": "16:00"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "Yes: leave at 09:30 instead of 09:00, and every day is in by 16:00.",
         "phrasings": [
@@ -2835,22 +2726,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "trains_there_and_back": false
-                    }
-                  ]
+                  "do": "set",
+                  "trains_there_and_back": false
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "I'll leave getting to the start and home out of the plan once you apply it.",
         "phrasings": [
@@ -2884,22 +2770,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "stations_for_going_home": true
-                    }
-                  ]
+                  "do": "set",
+                  "stations_for_going_home": true
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "I can show each day's stations for going home early, day 3's among them: apply it to see them.",
         "phrasings": [
@@ -2970,22 +2851,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "level": 4
-                    }
-                  ]
+                  "do": "set",
+                  "level": 4
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "At Challenging your days stay as they are: only the level they're judged against changes.",
         "phrasings": [
@@ -3288,23 +3164,18 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "stay_at",
-                      "after_day": 2,
-                      "place": "wild camp"
-                    }
-                  ]
+                  "do": "stay_at",
+                  "after_day": 2,
+                  "place": "wild camp"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "mustSay": [
           "allowed"
@@ -3463,22 +3334,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "sleep": "rooms"
-                    }
-                  ]
+                  "do": "set",
+                  "sleep": "rooms"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "In rooms instead of camping, day 5 ends at Castell de Ferro, 81 km instead of La Mamola's 74, and day 6 becomes 53 km instead of 60.",
         "phrasings": [
@@ -3513,22 +3379,17 @@
           {
             "tool": "offer_options",
             "args": {
-              "options": [
+              "changes": [
                 {
-                  "changes": [
-                    {
-                      "do": "set",
-                      "direction": "forward"
-                    }
-                  ]
+                  "do": "set",
+                  "direction": "forward"
                 }
               ]
             }
           }
         ],
         "offer": {
-          "call": 0,
-          "option": 0
+          "call": 0
         },
         "reference": "You can: Malaga → Águilas instead. Day 3 would be 74 km instead of 60, and days 1–2 and 5–7 change too.",
         "phrasings": [

@@ -106,7 +106,7 @@ function stopOf(ctx: PlanContext, name: string) {
 
 const theTrip: Tool<PlanContext> = {
   name: "the_trip",
-  description: "The trip brief: dates, km and climbing, the five questions with their answers, what's left to sort out, and each day in a line.",
+  description: "The trip brief: dates, km and climbing, the five questions with their answers, what's left to sort out, and each day in a line. Example: for \"How does the trip look?\", {}.",
   parameters: () => schema({}),
   run(ctx) {
     const p = planOf(ctx);
@@ -220,7 +220,7 @@ function between(ctx: PlanContext, p: PlanResult, fromName: string, toName: stri
 const days: Tool<PlanContext> = {
   name: "days",
   description:
-    "One day, or a run of days with their totals, as the day cards say: km, climbing, hours, effort against the rider's level, times, the steepest stretch, the way, the usual weather, water and food, and the night. Without a day, the one on screen. Or between two towns: the water and food there and the longest stretch without.",
+    "One day, or a run of days with their totals, as the day cards say: km, climbing, hours, effort against the rider's level, times, the steepest stretch, the way, the usual weather, water and food, and the night. Without a day, the one on screen. Or between two towns: the water and food there and the longest stretch without. Example: for \"How hard is day 4?\", {\"day\": 4}; for \"this day\", {}.",
   parameters: () =>
     schema({
       day: { type: "integer", minimum: 1 },
@@ -255,7 +255,7 @@ const days: Tool<PlanContext> = {
 const items: Tool<PlanContext> = {
   name: "items",
   description:
-    "What the plan raises: decisions to make (kind 'call'), things to sort out, heads-ups, highlights and things to be aware of, each with why. Filter by day or kind; 'left' gives what's still to sort out before the trip, decisions first.",
+    "What the plan raises: decisions to make (kind 'call'), things to sort out, heads-ups, highlights and things to be aware of, each with why. Filter by day or kind; 'left' gives what's still to sort out before the trip, decisions first. Example: for \"What's left to sort out?\", {\"left\": true}.",
   parameters: () =>
     schema({
       day: { type: "integer", minimum: 1 },
@@ -295,7 +295,7 @@ const items: Tool<PlanContext> = {
 
 const night: Tool<PlanContext> = {
   name: "night",
-  description: "Where to sleep on a night: the places at its stop and what we know of their opening, the other options nearby, why the plan stops there, the booking searches, and what's settled. By the day the night follows, or the town.",
+  description: "Where to sleep on a night: the places at its stop and what we know of their opening, the other options nearby, why the plan stops there, the booking searches, and what's settled. By the day the night follows, or the town. Example: for \"Where do I sleep after day 3?\", {\"after_day\": 3}.",
   parameters: () => schema({ after_day: { type: "integer", minimum: 1 }, town: { type: "string" } }),
   run(ctx, args) {
     const p = planOf(ctx);
@@ -351,7 +351,7 @@ const night: Tool<PlanContext> = {
 
 const restDay: Tool<PlanContext> = {
   name: "rest_day",
-  description: "A rest day: its town and why it's there, the usual weather, what to see and where to eat, what else is in town, and where else it could go. By its day, or the town.",
+  description: "A rest day: its town and why it's there, the usual weather, what to see and where to eat, what else is in town, and where else it could go. By its day, or the town. Example: for \"What's there to do in Nantes on my rest day?\", {\"town\": \"Nantes\"}.",
   parameters: () => schema({ day: { type: "integer", minimum: 1 }, town: { type: "string" } }),
   run(ctx, args) {
     const p = planOf(ctx);
@@ -381,7 +381,7 @@ const restDay: Tool<PlanContext> = {
 const usualWeatherTool: Tool<PlanContext> = {
   name: "usual_weather",
   description:
-    "The usual weather (averages over past years, never a forecast) on the trip, or one day, in a month: night lows to day highs and how often it rains; without a month, the trip's own month, or the best months when asked for them. There is no smoke or wildfire data.",
+    "The usual weather (averages over past years, never a forecast) on the trip, or one day, in a month: night lows to day highs and how often it rains; without a month, the trip's own month, or the best months when asked for them. There is no smoke or wildfire data. Example: for \"Will it be hot on day 2?\", {\"day\": 2}.",
   parameters: () => schema({ day: { type: "integer", minimum: 1 }, month: { type: "string", enum: MONTHS_ENUM }, best: { type: "boolean", description: "The best months." } }),
   run(ctx, args) {
     const p = planOf(ctx);
@@ -398,7 +398,7 @@ const usualWeatherTool: Tool<PlanContext> = {
 
 const findStop: Tool<PlanContext> = {
   name: "find_stop",
-  description: "A town the rider names on the plan's stretch: which day passes it and at what km, and whether a night is there.",
+  description: "A town the rider names on the plan's stretch: which day passes it and at what km, and whether a night is there. Example: for \"When do I get to Nantes?\", {\"name\": \"Nantes\"}.",
   parameters: () => schema({ name: { type: "string" } }, ["name"]),
   run(ctx, args) {
     const name = arg.str(args, "name");
@@ -615,61 +615,41 @@ const CHANGE = schema(
 const offerOptions: Tool<PlanContext, PlanApply> = {
   name: "offer_options",
   description:
-    "Offer the rider changes to the plan, as up to four options of up to three changes each; each says what it would change, previews on the plan when chosen, and applies only if the rider applies it. Use it for 'what if' questions too. Days are numbered as on screen.",
-  parameters: () =>
-    schema(
-      { options: { type: "array", minItems: 1, maxItems: 4, items: schema({ label: { type: "string" }, changes: { type: "array", minItems: 1, maxItems: 3, items: CHANGE } }, ["changes"]) } },
-      ["options"],
-    ),
+    "Offer the rider one option: up to three changes to the plan, made together. It says what they would change, previews on the plan when chosen, and applies only if the rider applies it. For another option, call it again. Use it for 'what if' questions too. Days are numbered as on screen. Example: for \"Can I rest in Nantes?\", {\"changes\": [{\"do\": \"rest_in\", \"town\": \"Nantes\"}]}.",
+  // One option a call (D98): the small models can't fill a list of options.
+  parameters: () => schema({ changes: { type: "array", minItems: 1, maxItems: 3, items: CHANGE } }, ["changes"]),
   run(ctx, args) {
     const before = planOf(ctx);
-    const options: ToolOption<PlanApply>[] = [];
-    const problems: string[] = [];
-    for (const o of (arg.list(args, "options") ?? []).slice(0, 4)) {
-      if (!o || typeof o !== "object") continue;
-      const changes = (arg.list(o as Record<string, unknown>, "changes") ?? []).slice(0, 3);
-      let state = ctx.state;
-      const actions: PlanAction[] = [];
-      const notes: string[] = [];
-      let failed: string | null = null;
-      for (const c of changes) {
-        if (!c || typeof c !== "object") continue;
-        const b = build(ctx, state, c as Record<string, unknown>);
-        if ("error" in b) {
-          failed = b.error;
-          break;
-        }
-        actions.push(b.action);
-        if (b.note) notes.push(b.note);
-        state = applyAction(state, b.action, ctx.planFor(state));
-      }
-      if (failed) {
-        problems.push(failed);
-        continue;
-      }
-      const after = ctx.planFor(state);
-      const what = planChanges(before, after);
-      // A place chosen, a booking, a tick or "I know" changes no day: what it settles is the change, as the to-do says it.
-      // What it adds to the to-do (getting there and back, a booking to change): the to-do's own lines.
-      const was = new Set(before.items.map((i) => i.id));
-      const added = after.items.filter((i) => i.kind === "todo" && !was.has(i.id) && !i.id.startsWith("bed:")).map((i) => `New on the to-do: ${i.title}`);
-      // A night the rider moved comes first: it's what they asked for, whatever else moves with it.
-      const kept = actions.flatMap((x) => {
-        const n = x.type === "lock-night" ? after.nights[x.night] : undefined;
-        const d = n && after.days.find((y) => y.kind === "ride" && y.ride === n.afterRide);
-        return n && d ? [`Night after day ${d.number} at ${stopName(n.stop)}`] : [];
-      });
-      const lines = [...(what.lines.length ? [...kept, ...what.lines] : actions.map((x) => settles(after, x))), ...added, ...notes];
-      const label = arg.str(o as Record<string, unknown>, "label") ?? lines[0] ?? "A change";
-      options.push({ id: `plan:${options.length + 1}`, label, changes: lines, apply: { state, actions } });
+    const changes = (arg.list(args, "changes") ?? []).slice(0, 3);
+    let state = ctx.state;
+    const actions: PlanAction[] = [];
+    const notes: string[] = [];
+    for (const c of changes) {
+      if (!c || typeof c !== "object") continue;
+      const b = build(ctx, state, c as Record<string, unknown>);
+      if ("error" in b) return problem(b.error);
+      actions.push(b.action);
+      if (b.note) notes.push(b.note);
+      state = applyAction(state, b.action, ctx.planFor(state));
     }
-    if (!options.length) return problem(problems[0] ?? "No change to offer: the plan already is that way.", { problems });
-    return {
-      // The label said once: when it is the first change, the line doesn't repeat it.
-      lines: [...options.map((o) => `${o.label}${o.changes[0] === o.label ? (o.changes.length > 1 ? `; ${o.changes.slice(1).join("; ")}` : "") : `: ${o.changes.join("; ")}`}.`), ...problems.map((x) => `Left out: ${x}`)],
-      facts: { ok: true, options: options.map((o) => ({ label: o.label, changes: o.changes })), problems },
-      options,
-    };
+    if (!actions.length) return problem("No change to offer: the plan already is that way.");
+    const after = ctx.planFor(state);
+    const what = planChanges(before, after);
+    // A place chosen, a booking, a tick or "I know" changes no day: what it settles is the change, as the to-do says it.
+    // What it adds to the to-do (getting there and back, a booking to change): the to-do's own lines.
+    const was = new Set(before.items.map((i) => i.id));
+    const added = after.items.filter((i) => i.kind === "todo" && !was.has(i.id) && !i.id.startsWith("bed:")).map((i) => `New on the to-do: ${i.title}`);
+    // A night the rider moved comes first: it's what they asked for, whatever else moves with it.
+    const kept = actions.flatMap((x) => {
+      const n = x.type === "lock-night" ? after.nights[x.night] : undefined;
+      const d = n && after.days.find((y) => y.kind === "ride" && y.ride === n.afterRide);
+      return n && d ? [`Night after day ${d.number} at ${stopName(n.stop)}`] : [];
+    });
+    const lines = [...(what.lines.length ? [...kept, ...what.lines] : actions.map((x) => settles(after, x))), ...added, ...notes];
+    // Labelled by its first change, never by the model (D77, D98).
+    const label = lines[0] ?? "A change";
+    const option: ToolOption<PlanApply> = { id: `plan:${lines.join("|")}`, label, changes: lines, apply: { state, actions } };
+    return { lines: [`${lines.join("; ")}.`], facts: { ok: true, options: [{ label, changes: lines }] }, options: [option] };
   },
 };
 
