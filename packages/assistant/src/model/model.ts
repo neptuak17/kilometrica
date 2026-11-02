@@ -56,6 +56,8 @@ export interface Model {
   name: string;
   /** One step on the conversation; an answer's words stream through `onText` as they come. */
   next(c: Conversation, onText?: (chunk: string) => void, signal?: AbortSignal): Promise<Step>;
+  /** One step whose output the runtime forces to a JSON schema (D99): the value, or null if it can't be read. */
+  json(c: Conversation, schema: object, signal?: AbortSignal): Promise<{ value: unknown; text: string; stats: StepStats }>;
 }
 
 /** A model family's documented chat format: the prompt it expects, and its output read back. */
@@ -73,7 +75,7 @@ export interface Format {
 export interface Runtime {
   complete(
     prompt: string,
-    opts: { stop: string[]; onText?: (chunk: string) => void; signal?: AbortSignal },
+    opts: { stop: string[]; onText?: (chunk: string) => void; signal?: AbortSignal; schema?: object },
   ): Promise<{ text: string; promptTokens?: number; outputTokens?: number }>;
 }
 
@@ -105,6 +107,26 @@ export function makeModel(name: string, format: Format, runtime: Runtime): Model
         stats: {
           ms: performance.now() - start,
           firstTextMs: read.calls.length ? null : firstTextMs,
+          ...(out.promptTokens !== undefined ? { promptTokens: out.promptTokens } : {}),
+          ...(out.outputTokens !== undefined ? { outputTokens: out.outputTokens } : {}),
+        },
+      };
+    },
+    async json(c, schema, signal) {
+      const start = performance.now();
+      const out = await runtime.complete(format.render(c), { stop: format.stop, schema, ...(signal ? { signal } : {}) });
+      let value: unknown = null;
+      try {
+        value = JSON.parse(out.text);
+      } catch {
+        // Forced to the schema, it reads; cut short (the output limit), it may not.
+      }
+      return {
+        value,
+        text: out.text,
+        stats: {
+          ms: performance.now() - start,
+          firstTextMs: null,
           ...(out.promptTokens !== undefined ? { promptTokens: out.promptTokens } : {}),
           ...(out.outputTokens !== undefined ? { outputTokens: out.outputTokens } : {}),
         },

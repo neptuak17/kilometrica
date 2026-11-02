@@ -81,6 +81,9 @@ function scripted(steps: (Partial<Step> & { text?: string })[]): Model {
       const s = steps[Math.min(i++, steps.length - 1)]!;
       return { calls: s.calls ?? [], text: s.text ?? "", unreadable: s.unreadable ?? [], stats: { ms: 1, firstTextMs: s.calls?.length ? null : 0 } };
     },
+    async json() {
+      return { value: null, text: "", stats: { ms: 1, firstTextMs: null } };
+    },
   };
 }
 const turn = (model: Model) => chatTurn(model, startChat("P", [days]), { rider: "How long is day 4?", screen: "On screen: Plan, Tarragona → Sitges.", call: () => day4 });

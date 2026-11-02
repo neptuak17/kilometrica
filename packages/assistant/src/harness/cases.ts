@@ -51,6 +51,8 @@ export interface Turn {
   mustNotSay?: string[];
   /** An answer that does all this, written from the tools' real output. */
   reference: string;
+  /** What the model should understand the message as (D99): a request kind and its details. */
+  request?: { kind: string; [detail: string]: unknown };
 }
 
 export interface Case {
@@ -94,6 +96,7 @@ export function readCases(raw: unknown, file: string): { cases: Case[]; problems
       if (!Array.isArray(t.calls)) problems.push(`${at} turn ${k + 1}: calls is a list`);
       if (typeof t.reference !== "string") problems.push(`${at} turn ${k + 1}: no reference answer`);
       if (t.offer && !t.calls?.[t.offer.call]) problems.push(`${at} turn ${k + 1}: the offer's call isn't there`);
+      if (t.request && typeof t.request.kind !== "string") problems.push(`${at} turn ${k + 1}: a request needs its kind`);
     }
   }
   return { cases: problems.length ? [] : (raw as Case[]), problems };

@@ -31,10 +31,12 @@ export interface Answer {
   trace?: Record<string, unknown>;
 }
 
-/** The phase as a player meets it: the tools' schemas, and what's on screen as it is now. */
+/** The phase as a player meets it: the tools' schemas, what's on screen as it is now, and the state behind it. */
 export interface Phase {
   tools: ToolSpec[];
   screen: () => string;
+  /** Dream's question or the plan, as the screen has it: our code reads it to act on a request (D99). */
+  context: () => DreamContext | PlanContext;
 }
 
 /** A change made on screen, as the change bar says it, and the second thought it raised (none: empty). */
@@ -114,6 +116,7 @@ export async function playCase(world: World, c: Case, player: Player, phrasing =
   const conversation = player.begin(c, {
     tools: dream ? toolSpecs(DREAM_TOOLS, dream) : toolSpecs(PLAN_TOOLS, plan!),
     screen: () => (dream ? dreamScreen(dream) : planScreen(plan!)),
+    context: ctx,
   });
 
   for (const [k, turn] of c.turns.entries()) {

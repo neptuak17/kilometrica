@@ -48,7 +48,18 @@
         "reference": "Here are two that suit a relaxed 10 days in September, both strong on beaches and towns: Cabo de Gata → San Roque, 408 km at 51 km a day, typically 20–24 °C with rain 1 day in 9; and Castellon de la Plana → Blanes, 405 km at 51 km a day, typically 18–26 °C. Both are Easy-moderate. If you'd like longer days, at Moderate the best is Águilas → San Roque, 519 km at 65 km a day.",
         "phrasings": [
           "10 days on ev8 in september, beaches and culture, fit but want it relaxed - ideas?"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "riding": "fit",
+          "days": 10,
+          "month": "September",
+          "pace": "relaxed",
+          "themes": [
+            "coast",
+            "culture"
+          ]
+        }
       }
     ]
   },
@@ -85,7 +96,12 @@
         "reference": "I can set Dream to 7 days through Barcelona: 2 stretches fit, Alcossebre → Sils and Narbonne → Barcelona. For days in Barcelona itself, plan the stretch and use Rest in… with Barcelona: the rest days there are taken from your 7 days.",
         "phrasings": [
           "a 7 day trip with a few days in barcelona in the middle?"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "days": 7,
+          "through": "Barcelona"
+        }
       }
     ]
   },
@@ -134,7 +150,17 @@
         "reference": "For an easy, flat 5 days by the sea, staying in rooms: Estepona → Torre del Mar, 126 km at 31 km a day with ↑ 158 m a day, and Castell de Ferro → Malaga, 125 km at 31 km a day. Both are Leisurely, strong on beaches and best in June, when it rains about 1 day in 20. If your family is happy with a bit more, at Easy-moderate the best is Fuengirola → Adra, 192 km at 48 km a day. When you plan one, each night shows its hotels.",
         "phrasings": [
           "easy flat 5 days with the family, sunny, beaches, hotels every night"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "riding": "gentle",
+          "days": 5,
+          "pace": "relaxed",
+          "themes": [
+            "coast"
+          ],
+          "stay": "rooms"
+        }
       }
     ]
   },
@@ -167,7 +193,10 @@
             }
           }
         ],
-        "reference": "The best months for Cartagena → Almuñecar are May, June and October, with a best-time score of 90 of 100. In May it's usually 17–20 °C, with rain 1 day in 8."
+        "reference": "The best months for Cartagena → Almuñecar are May, June and October, with a best-time score of 90 of 100. In May it's usually 17–20 °C, with rain 1 day in 8.",
+        "request": {
+          "kind": "best_months"
+        }
       }
     ]
   },
@@ -204,7 +233,13 @@
         "reference": "Yes: keeping to Italy, 5 stretches fit. The best is Jesolo → Piacenza, 398 km at 66 km a day; then Piacenza → Cuneo, and San Benedetto Po → Casale Monferrato.",
         "phrasings": [
           "only italy please"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "only_countries": [
+            "Italy"
+          ]
+        }
       }
     ]
   },
@@ -241,7 +276,13 @@
         "reference": "Yes. Avoiding Greece, 13 stretches fit your 14 days; the best is Ulldecona → Carboneras, 779 km at 65 km a day.",
         "phrasings": [
           "skip greece"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "avoid_countries": [
+            "Greece"
+          ]
+        }
       }
     ]
   },
@@ -270,7 +311,10 @@
         "reference": "Dream has no ferry choice, but each stretch lists its ferry crossings, and none of the best three has one: Aliaga → Selcuk, Cartagena → Almuñecar and Castell de Ferro → Conil de la Frontera.",
         "phrasings": [
           "no ferries please"
-        ]
+        ],
+        "request": {
+          "kind": "stretches"
+        }
       }
     ]
   },
@@ -315,7 +359,11 @@
         "reference": "Here are stretches with less climbing: Torre del Mar → Conil de la Frontera, ↑ 424 m a day over 50 km days, and Cabo de Gata → Fuengirola, ↑ 440 m a day, both Easy-moderate. For flatter still, at 30 km a day: San Roque → Cadiz climbs ↑ 279 m a day, and Cervignano → Alberoni only ↑ 22 m a day.",
         "phrasings": [
           "too hilly - anything flatter?"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "riding": "easier"
+        }
       }
     ]
   },
@@ -361,7 +409,11 @@
         "reference": "Here are more challenging stretches: Trojica → Pakostane, 85 km a day with ↑ 1111 m a day, and Carboneras → Facinas, 84 km a day with ↑ 808 m a day, both Challenging. Or keep your level in 5 days for longer days: Cabo de Gata → Marbella is 66 km a day.",
         "phrasings": [
           "too easy, I want something harder"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "riding": "harder"
+        }
       }
     ]
   },
@@ -400,7 +452,10 @@
         "reference": "Aliaga → Selcuk is 65 km a day with ↑ 561 m a day, which is Moderate: 50–80 km a day with luggage, up to about 850 m of climbing. You're the best judge of whether you're up to days like that.",
         "phrasings": [
           "can I manage this one?"
-        ]
+        ],
+        "request": {
+          "kind": "fit"
+        }
       }
     ]
   },
@@ -437,7 +492,10 @@
         "reference": "It's too early to tell, but in September on Aliaga → Selcuk it typically rains 1 day in 23, at 21–26 °C.",
         "phrasings": [
           "how rainy is it?"
-        ]
+        ],
+        "request": {
+          "kind": "weather"
+        }
       }
     ]
   },
@@ -470,7 +528,10 @@
         "reference": "In July, Cartagena → Almuñecar is usually 24–27 °C, and it rarely rains. You're the best judge of how you ride in that heat.",
         "phrasings": [
           "is it going to be too hot?"
-        ]
+        ],
+        "request": {
+          "kind": "weather"
+        }
       }
     ]
   },
@@ -497,7 +558,11 @@
         "reference": "We don't give kit advice, but I can tell you the usual weather on a stretch, and once you plan it, where water and food are each day.",
         "phrasings": [
           "packing list?"
-        ]
+        ],
+        "request": {
+          "kind": "decline",
+          "reason": "kit"
+        }
       }
     ]
   },
@@ -533,7 +598,11 @@
         "reference": "We can't tell you whether a route is safe. What we know: Aliaga → Selcuk has 101 km on busy roads, and 5 things to look out for, detailed with a Trip Pass.",
         "phrasings": [
           "is this route dangerous?"
-        ]
+        ],
+        "request": {
+          "kind": "decline",
+          "reason": "safety"
+        }
       }
     ]
   },
@@ -567,7 +636,10 @@
         "reference": "With your 14 days (12 riding, 2 rest), Vancouver → Nakusp is 85 km a day with ↑ 889 m a day, which grades as Challenging: more than Moderate's 50–80 km a day and about 850 m of climbing. You're the best judge of whether you're up to days like that.",
         "phrasings": [
           "can I do it in my time at my level?"
-        ]
+        ],
+        "request": {
+          "kind": "fit"
+        }
       }
     ]
   },
@@ -596,7 +668,10 @@
         "reference": "Your file's nights make it 11 riding days. At a usual Moderate day it would be 16. Set your days in Dream and we find the stops for them instead.",
         "phrasings": [
           "how long will it take me?"
-        ]
+        ],
+        "request": {
+          "kind": "fit"
+        }
       }
     ]
   },
@@ -627,7 +702,11 @@
         "reference": "July and August are best, with a best-time score of 87 of 100. In July it's usually 11–24 °C, with rain 1 day in 5. We have no smoke or wildfire data, so we can't help you avoid the smoke.",
         "phrasings": [
           "best month to avoid heat, cold, rain and smoke?"
-        ]
+        ],
+        "request": {
+          "kind": "best_months",
+          "smoke": true
+        }
       }
     ]
   },
@@ -658,7 +737,10 @@
         "reference": "Campsites are near 6 of your 10 nights; none are known near Tulameen, Naramata, Greenwood and Ootischenia, so those nights need another plan. When you plan it, each of them shows what else is nearby.",
         "phrasings": [
           "can I camp every night?"
-        ]
+        ],
+        "request": {
+          "kind": "sleep_choice"
+        }
       }
     ]
   },
@@ -688,7 +770,10 @@
         "reference": "Rooms are near 8 of your 10 nights; none are known near Bankeir and Beaverdell. When you plan it, those nights show what else is nearby.",
         "phrasings": [
           "hotels every night possible?"
-        ]
+        ],
+        "request": {
+          "kind": "sleep_choice"
+        }
       }
     ]
   },
@@ -717,7 +802,11 @@
         "reference": "We can't tell you whether it's safe. What we know: 104 km on busy roads, up to 53 km between places to stay, and 6 things to look out for, detailed with a Trip Pass.",
         "phrasings": [
           "is it dangerous?"
-        ]
+        ],
+        "request": {
+          "kind": "decline",
+          "reason": "safety"
+        }
       }
     ]
   },
@@ -743,7 +832,10 @@
         "mustSay": [
           "Switzerland"
         ],
-        "reference": "EuroVelo 15 runs 1,463 km in 39 daily sections, through Switzerland, Austria, France, Germany and the Netherlands. Most of it is in Germany (571 km) and Switzerland (412 km), and May is among the best months in every country it crosses."
+        "reference": "EuroVelo 15 runs 1,463 km in 39 daily sections, through Switzerland, Austria, France, Germany and the Netherlands. Most of it is in Germany (571 km) and Switzerland (412 km), and May is among the best months in every country it crosses.",
+        "request": {
+          "kind": "overview"
+        }
       }
     ]
   },
@@ -790,7 +882,16 @@
         "reference": "Here are the best for a gentle week by the river in rooms: at Leisurely, Bad Salzig → Speyer, 182 km at 30 km a day; at Easy-moderate, Millingen aan de Rijn → Koblenz, 303 km at 50 km a day.",
         "phrasings": [
           "easy week by the river, hotels"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "riding": "gentle",
+          "days": 7,
+          "themes": [
+            "water"
+          ],
+          "stay": "rooms"
+        }
       }
     ]
   },
@@ -827,7 +928,13 @@
         "reference": "Yes: keeping to Switzerland, 2 stretches fit your 5 days, Basel → Gaißau (224 km, 45 km a day) and St Margrethen → Andermatt (188 km, 38 km a day). Both are easier than your usual.",
         "phrasings": [
           "switzerland only?"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "only_countries": [
+            "Switzerland"
+          ]
+        }
       }
     ]
   },
@@ -860,7 +967,12 @@
           "Basel",
           "Strasbourg"
         ],
-        "reference": "Basel → Strasbourg is 130 km: 3 days at 43 km a day, with ↑ 85 m a day, which grades as Easy-moderate. It's best in September, usually 12–22 °C with rain 1 day in 3."
+        "reference": "Basel → Strasbourg is 130 km: 3 days at 43 km a day, with ↑ 85 m a day, which grades as Easy-moderate. It's best in September, usually 12–22 °C with rain 1 day in 3.",
+        "request": {
+          "kind": "describe",
+          "town": "Basel",
+          "to_town": "Strasbourg"
+        }
       }
     ]
   },
@@ -891,7 +1003,12 @@
         "reference": "They're alike: both are 391 km at 65 km a day in June. Hook of Holland → Dusseldorf climbs less (↑ 197 m a day against at least 233) but has no station that carries bikes at the start and a 2 km ferry; Arnhem → Bingen am Rhein has stations at both ends and a 2 km gap in the route, counted as ridden.",
         "phrasings": [
           "how do 1 and 2 compare?"
-        ]
+        ],
+        "request": {
+          "kind": "compare",
+          "number": 1,
+          "other_number": 2
+        }
       }
     ]
   },
@@ -924,7 +1041,12 @@
         "reference": "In May, Bad Salzig → Neuf-Brisach is usually 10–19 °C, with rain 1 day in 3.",
         "phrasings": [
           "weather on number 1 in may?"
-        ]
+        ],
+        "request": {
+          "kind": "weather",
+          "number": 1,
+          "month": "May"
+        }
       }
     ]
   },
@@ -957,7 +1079,11 @@
         "reference": "With a train at both ends, 7 stretches fit; the best is Arnhem → Bingen am Rhein, 391 km at 65 km a day.",
         "phrasings": [
           "I'm coming by train, need bikes allowed at the start and end"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "trains": true
+        }
       }
     ]
   },
@@ -990,7 +1116,11 @@
         "offer": {
           "call": 0
         },
-        "reference": "Here it is to plan: Hook of Holland → Dusseldorf, 391 km at 65 km a day over 7 days, with 1 rest day."
+        "reference": "Here it is to plan: Hook of Holland → Dusseldorf, 391 km at 65 km a day over 7 days, with 1 rest day.",
+        "request": {
+          "kind": "plan_this",
+          "number": 1
+        }
       }
     ]
   },
@@ -1016,7 +1146,11 @@
         "reference": "We don't book anything ourselves. Once you plan a stretch, each night lists its places to stay with their links, and a search of Booking.com and Expedia for that town and date.",
         "phrasings": [
           "book me hotels please"
-        ]
+        ],
+        "request": {
+          "kind": "decline",
+          "reason": "booking"
+        }
       }
     ]
   },
@@ -1044,7 +1178,11 @@
         "reference": "Arnhem is at km 1,225 of the Rhine route.",
         "phrasings": [
           "is arnhem on it?"
-        ]
+        ],
+        "request": {
+          "kind": "find",
+          "town": "Arnhem"
+        }
       }
     ]
   },
@@ -1070,7 +1208,10 @@
         "reference": "At a usual Challenging day it's 10 days: 9 riding and 1 rest, 81 km a day. But it climbs 1593 m a day, more than Challenging's 1200 m, so it grades as Tough.",
         "phrasings": [
           "how many days at challenging?"
-        ]
+        ],
+        "request": {
+          "kind": "fit"
+        }
       }
     ]
   },
@@ -1098,7 +1239,10 @@
         "phrasings": [
           "best month for the raid?"
         ],
-        "reference": "June, July, September and October are best, with a best-time score of 71 of 100. In June it's usually 11–20 °C, with rain 1 day in 2."
+        "reference": "June, July, September and October are best, with a best-time score of 71 of 100. In June it's usually 11–20 °C, with rain 1 day in 2.",
+        "request": {
+          "kind": "best_months"
+        }
       }
     ]
   },
@@ -1132,7 +1276,10 @@
         "reference": "In 14 days (12 riding, 2 rest) it's 60 km a day but ↑ 1195 m a day, more than Moderate's 850 m, so it grades as Challenging. You're the best judge of whether you're up to that much climbing.",
         "phrasings": [
           "14 days at moderate, ok?"
-        ]
+        ],
+        "request": {
+          "kind": "fit"
+        }
       }
     ]
   },
@@ -1164,7 +1311,12 @@
         "reference": "Hendaye → Bagnères-de-Luchon is 362 km: 5 days at 72 km a day, with ↑ 1792 m a day, which grades as Tough. It has 241 km on busy roads, a steep 5 km at 11%, and 17 things to look out for, detailed with a Trip Pass.",
         "phrasings": [
           "hendaye to bagnères-de-luchon?"
-        ]
+        ],
+        "request": {
+          "kind": "describe",
+          "town": "Hendaye",
+          "to_town": "Bagnères-de-Luchon"
+        }
       }
     ]
   },
@@ -1189,7 +1341,11 @@
         "reference": "We can only show you the routes we've audited, and Dream works on one at a time. On this route, I can find you a stretch that suits.",
         "phrasings": [
           "anything better in the alps?"
-        ]
+        ],
+        "request": {
+          "kind": "decline",
+          "reason": "other_routes"
+        }
       }
     ]
   },
@@ -1224,7 +1380,11 @@
         "reference": "At Tough, your route is 8 days, 7 riding and 1 rest, at 104 km a day with ↑ 2048 m a day.",
         "phrasings": [
           "make me tough"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "level": "Tough"
+        }
       }
     ]
   },
@@ -1255,7 +1415,11 @@
         "reference": "In July it's usually 13–23 °C, with rain 1 day in 2.",
         "phrasings": [
           "july temperatures?"
-        ]
+        ],
+        "request": {
+          "kind": "weather",
+          "month": "July"
+        }
       }
     ]
   },
@@ -1280,7 +1444,11 @@
         "reference": "I can't tell you its history: I only say what our data holds, and that's no history of places. Wikipedia is the place for that.",
         "phrasings": [
           "what's the story of the tourmalet?"
-        ]
+        ],
+        "request": {
+          "kind": "decline",
+          "reason": "history"
+        }
       }
     ]
   },
@@ -1317,7 +1485,14 @@
         "reference": "Keeping to Croatia for 10 days, 3 stretches fit; the best is Ston → Klanac, 579 km at 64 km a day.",
         "phrasings": [
           "10 days, croatia only"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "only_countries": [
+            "Croatia"
+          ],
+          "days": 10
+        }
       }
     ]
   },
@@ -1347,7 +1522,10 @@
         "reference": "Next: 4. Narbonne → Manosque, 391 km at 65 km a day, best-time 84 of 100 in September; 5. Apt → Ventimiglia, 387 km; 6. Vrsar → Pellestrina, with a 1 km ferry; 7. Durres → Nea Thesi, with 145 km on busy roads; 8. Sète → Sils, 395 km.",
         "phrasings": [
           "more please"
-        ]
+        ],
+        "request": {
+          "kind": "more"
+        }
       }
     ]
   },
@@ -1373,7 +1551,11 @@
         "reference": "We hold no entry rules, so I can't say whether you need a visa. Check with Türkiye's official sources before you go; once you plan a trip that crosses a border, its to-do reminds you.",
         "phrasings": [
           "visa for türkiye?"
-        ]
+        ],
+        "request": {
+          "kind": "decline",
+          "reason": "visa"
+        }
       }
     ]
   },
@@ -1398,7 +1580,11 @@
         "reference": "Yes: Nice is at km 2,684 of EuroVelo 8.",
         "phrasings": [
           "does it go through nice?"
-        ]
+        ],
+        "request": {
+          "kind": "find",
+          "town": "Nice"
+        }
       }
     ]
   },
@@ -1430,7 +1616,11 @@
         "reference": "With no rest days, 26 stretches fit; the best is Facinas → Cabo de Gata, 453 km at 65 km a day over 7 days.",
         "phrasings": [
           "no rest days please"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "no_rest": true
+        }
       }
     ]
   },
@@ -1463,7 +1653,11 @@
         "reference": "With any month, each stretch shows its own best: 31 fit, the best Conil de la Frontera → Castell de Ferro, 392 km at 65 km a day.",
         "phrasings": [
           "I can go any month"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "month": "any"
+        }
       }
     ]
   },
@@ -1492,7 +1686,10 @@
         "reference": "19 stretches fit; the best is San Pedro del Pinatar → Marbella, 587 km at 65 km a day, then Valencia → Carboneras, 584 km, and Fier → Ston, 585 km.",
         "phrasings": [
           "what fits me?"
-        ]
+        ],
+        "request": {
+          "kind": "stretches"
+        }
       },
       {
         "rider": "And what's the weather like on the second one in May?",
@@ -1505,7 +1702,12 @@
             }
           }
         ],
-        "reference": "In May, Valencia → Carboneras is usually 16–22 °C, with rain 1 day in 7."
+        "reference": "In May, Valencia → Carboneras is usually 16–22 °C, with rain 1 day in 7.",
+        "request": {
+          "kind": "weather",
+          "number": 2,
+          "month": "May"
+        }
       }
     ]
   },
@@ -1528,7 +1730,10 @@
         "reference": "The Trans Canada Trail from Vancouver to Nakusp is 1,020 km in 17 daily sections, all in Canada. July and August are best, with a best-time score of 87 of 100.",
         "phrasings": [
           "overview of this one?"
-        ]
+        ],
+        "request": {
+          "kind": "overview"
+        }
       }
     ]
   },
@@ -1559,7 +1764,11 @@
         "reference": "In 18 days (16 riding, 2 rest) it's 64 km a day with ↑ 667 m a day, which grades as Moderate.",
         "phrasings": [
           "18 days please"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "days": 18
+        }
       }
     ]
   },
@@ -1584,7 +1793,11 @@
         "reference": "I can't say: we have no wildlife data. Ask the local park and tourism offices.",
         "phrasings": [
           "will I see bears?"
-        ]
+        ],
+        "request": {
+          "kind": "decline",
+          "reason": "wildlife"
+        }
       }
     ]
   },
@@ -1612,7 +1825,10 @@
         "reference": "July and August are best, with a best-time score of 87 of 100. In July it's usually 11–24 °C, with rain 1 day in 5.",
         "phrasings": [
           "best time?"
-        ]
+        ],
+        "request": {
+          "kind": "best_months"
+        }
       },
       {
         "rider": "And in September?",
@@ -1624,7 +1840,11 @@
             }
           }
         ],
-        "reference": "In September it's usually cooler, 8–19 °C, with rain 1 day in 3."
+        "reference": "In September it's usually cooler, 8–19 °C, with rain 1 day in 3.",
+        "request": {
+          "kind": "weather",
+          "month": "September"
+        }
       }
     ]
   },
@@ -1657,7 +1877,11 @@
         "reference": "I can set that, but it's your own route, so it doesn't change the stretch: Vancouver → Nakusp stays 1020 km at 93 km a day, graded Challenging.",
         "phrasings": [
           "no gravel please"
-        ]
+        ],
+        "request": {
+          "kind": "question",
+          "gravel": "avoid"
+        }
       }
     ]
   }

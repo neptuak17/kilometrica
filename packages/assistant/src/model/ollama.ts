@@ -1,6 +1,7 @@
 /**
  * Ollama as a runtime (A3, D97): our text in, its text out, through its raw generate endpoint, so Ollama applies no
- * template and parses no tool calls of its own. Greedy decoding, so a run repeats (D52). Runs in Node and the browser.
+ * template and parses no tool calls of its own. Greedy decoding, so a run repeats (D52). A request's shape is forced by
+ * its grammar from a JSON schema (D99). Runs in Node and the browser.
  */
 import type { Runtime } from "./model";
 
@@ -24,7 +25,7 @@ interface Chunk {
 
 export function ollama({ model, host = "http://localhost:11434", context = 16384, maxOutput = 1024 }: OllamaOptions): Runtime {
   return {
-    async complete(prompt, { stop, onText, signal }) {
+    async complete(prompt, { stop, onText, signal, schema }) {
       const res = await fetch(`${host}/api/generate`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -34,6 +35,7 @@ export function ollama({ model, host = "http://localhost:11434", context = 16384
           raw: true,
           stream: true,
           keep_alive: "30m",
+          ...(schema ? { format: schema } : {}),
           options: { temperature: 0, top_k: 1, seed: 1, num_ctx: context, num_predict: maxOutput, stop },
         }),
         ...(signal ? { signal } : {}),

@@ -49,7 +49,9 @@ export const callText = (c: ModelCall) =>
   `${CALL}\n<function=${c.tool}>\n${Object.entries(c.args).map(([k, v]) => `<parameter=${k}>\n${argText(v)}\n</parameter>\n`).join("")}</function>\n</tool_call>`;
 
 function render(c: Conversation): string {
-  let s = `<|im_start|>system\n# Tools\n\nYou have access to the following functions:\n\n<tools>${c.tools.map((t) => `\n${toolJson(t)}`).join("")}${TOOLS_END}\n\n${c.prompt.trim()}<|im_end|>\n`;
+  // Without tools, the template's system message is the prompt alone.
+  const tools = c.tools.length ? `# Tools\n\nYou have access to the following functions:\n\n<tools>${c.tools.map((t) => `\n${toolJson(t)}`).join("")}${TOOLS_END}\n\n` : "";
+  let s = `<|im_start|>system\n${tools}${c.prompt.trim()}<|im_end|>\n`;
   for (const m of c.messages) {
     if (m.role === "user") s += `<|im_start|>user\n${m.text.trim()}<|im_end|>\n`;
     else if ("calls" in m) {
