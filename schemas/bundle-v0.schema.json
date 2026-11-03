@@ -3,7 +3,7 @@
     "BundleManifest": {
       "properties": {
         "schema_version": {
-          "default": "0.6",
+          "default": "0.7",
           "type": "string"
         },
         "run_id": {
@@ -544,9 +544,32 @@
         "tier": {
           "enum": [
             "essential",
-            "important"
+            "important",
+            "additional"
           ],
           "type": "string"
+        },
+        "group": {
+          "enum": [
+            "infrastructure",
+            "attractiveness",
+            "public_transport",
+            "services",
+            "communication"
+          ],
+          "type": "string"
+        },
+        "basis": {
+          "description": "'route': judged along the route, km by km; 'daily_section': judged per daily section, so a failure fails the whole section at this tier (D106)",
+          "enum": [
+            "route",
+            "daily_section"
+          ],
+          "type": "string"
+        },
+        "checked": {
+          "description": "False for criteria the audit can't judge from its data (results 'not_checked')",
+          "type": "boolean"
         },
         "description": {
           "type": "string"
@@ -556,10 +579,39 @@
         "id",
         "title",
         "tier",
+        "group",
+        "basis",
+        "checked",
         "description"
       ],
       "type": "object",
       "title": "Criterion"
+    },
+    "CriterionRun": {
+      "properties": {
+        "from_m": {
+          "type": "number"
+        },
+        "to_m": {
+          "type": "number"
+        },
+        "result": {
+          "enum": [
+            "pass",
+            "fail",
+            "unknown",
+            "not_checked"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_m",
+        "to_m",
+        "result"
+      ],
+      "type": "object",
+      "title": "CriterionRun"
     },
     "CriterionShare": {
       "properties": {
@@ -571,12 +623,17 @@
         },
         "unknown": {
           "type": "number"
+        },
+        "not_checked": {
+          "default": 0.0,
+          "type": "number"
         }
       },
       "required": [
         "passed",
         "failed",
-        "unknown"
+        "unknown",
+        "not_checked"
       ],
       "type": "object",
       "title": "CriterionShare"
@@ -1214,6 +1271,30 @@
       "type": "object",
       "title": "DreamSection"
     },
+    "EcsPoint": {
+      "properties": {
+        "at_m": {
+          "type": "number"
+        },
+        "kind": {
+          "description": "A barrier that stops a bike, forces a dismount or is narrow; a complete rest area; e-bike charging",
+          "enum": [
+            "blocks",
+            "dismount",
+            "narrow",
+            "rest_area",
+            "charging"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "at_m",
+        "kind"
+      ],
+      "type": "object",
+      "title": "EcsPoint"
+    },
     "EffortFile": {
       "description": "What the pace model needs (11.6), compact and free so the teaser can time real days (D45).",
       "properties": {
@@ -1757,9 +1838,10 @@
       "title": "Licence"
     },
     "MinorFile": {
+      "description": "The ECS criteria along the route (D106): each criterion's results as runs, and the tiers they add up to.",
       "properties": {
-        "size_m": {
-          "type": "number"
+        "rules_profile": {
+          "type": "string"
         },
         "criteria": {
           "items": {
@@ -1767,61 +1849,39 @@
           },
           "type": "array"
         },
-        "sections": {
+        "tracks": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/CriterionRun"
+            },
+            "type": "array"
+          },
+          "description": "Criterion id -> its results along the route",
+          "type": "object"
+        },
+        "segments": {
           "items": {
-            "$ref": "#/$defs/MinorSection"
+            "$ref": "#/$defs/TierSegment"
+          },
+          "type": "array"
+        },
+        "points": {
+          "description": "The OSM points the ECS criteria used",
+          "items": {
+            "$ref": "#/$defs/EcsPoint"
           },
           "type": "array"
         }
       },
       "required": [
-        "size_m",
+        "rules_profile",
         "criteria",
-        "sections"
+        "tracks",
+        "segments",
+        "points"
       ],
       "type": "object",
       "title": "MinorFile"
-    },
-    "MinorSection": {
-      "description": "One ECS minor section (1 km): dominant layer values and indicative criterion results.",
-      "properties": {
-        "index": {
-          "type": "integer"
-        },
-        "from_m": {
-          "type": "number"
-        },
-        "to_m": {
-          "type": "number"
-        },
-        "values": {
-          "additionalProperties": {
-            "type": "string"
-          },
-          "description": "Layer id -> value covering most of this kilometre",
-          "type": "object"
-        },
-        "criteria": {
-          "additionalProperties": {
-            "enum": [
-              "pass",
-              "fail",
-              "unknown"
-            ],
-            "type": "string"
-          },
-          "type": "object"
-        }
-      },
-      "required": [
-        "index",
-        "from_m",
-        "to_m",
-        "values",
-        "criteria"
-      ],
-      "type": "object",
-      "title": "MinorSection"
     },
     "OverviewCountry": {
       "properties": {
@@ -2614,16 +2674,42 @@
           },
           "type": "object"
         },
+        "tiers": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CriterionShare"
+          },
+          "description": "Tier -> share of length passing, failing or unknown (cumulative tiers)",
+          "type": "object"
+        },
         "essential_pass": {
-          "description": "Share of length meeting all essential criteria",
+          "default": 0.0,
+          "description": "Share of length meeting all checked essential criteria",
           "type": "number"
         },
         "important_pass": {
-          "description": "Share of length meeting all important criteria",
+          "default": 0.0,
+          "description": "Share of length meeting all checked essential and important criteria",
+          "type": "number"
+        },
+        "additional_pass": {
+          "default": 0.0,
+          "description": "Share of length meeting every checked criterion",
           "type": "number"
         },
         "number": {
           "type": "integer"
+        },
+        "stars": {
+          "default": 0,
+          "description": "ECS stars (D106): how many tiers the whole section meets on what the audit checks (0-3); an unknown counts as not met, so this is a minimum",
+          "type": "integer"
+        },
+        "notes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Criterion id -> what decided it on this section",
+          "type": "object"
         }
       },
       "required": [
@@ -2635,9 +2721,13 @@
         "max_grade_500m",
         "shares",
         "criteria",
+        "tiers",
         "essential_pass",
         "important_pass",
-        "number"
+        "additional_pass",
+        "number",
+        "stars",
+        "notes"
       ],
       "type": "object",
       "title": "SectionScores"
@@ -2717,31 +2807,13 @@
             ]
           },
           "type": "array"
-        },
-        "minor": {
-          "description": "Fixed 1 km ECS minor sections as [from_m, to_m]",
-          "items": {
-            "maxItems": 2,
-            "minItems": 2,
-            "type": "array",
-            "items": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "number"
-              }
-            ]
-          },
-          "type": "array"
         }
       },
       "required": [
         "daily",
         "status",
         "components",
-        "blocks",
-        "minor"
+        "blocks"
       ],
       "type": "object",
       "title": "SectionsFile"
@@ -3317,12 +3389,26 @@
           },
           "type": "object"
         },
+        "tiers": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CriterionShare"
+          },
+          "description": "Tier -> share of length passing, failing or unknown (cumulative tiers)",
+          "type": "object"
+        },
         "essential_pass": {
-          "description": "Share of length meeting all essential criteria",
+          "default": 0.0,
+          "description": "Share of length meeting all checked essential criteria",
           "type": "number"
         },
         "important_pass": {
-          "description": "Share of length meeting all important criteria",
+          "default": 0.0,
+          "description": "Share of length meeting all checked essential and important criteria",
+          "type": "number"
+        },
+        "additional_pass": {
+          "default": 0.0,
+          "description": "Share of length meeting every checked criterion",
           "type": "number"
         }
       },
@@ -3335,8 +3421,10 @@
         "max_grade_500m",
         "shares",
         "criteria",
+        "tiers",
         "essential_pass",
-        "important_pass"
+        "important_pass",
+        "additional_pass"
       ],
       "type": "object",
       "title": "StretchStats"
@@ -3386,6 +3474,50 @@
       ],
       "type": "object",
       "title": "ThemeScore"
+    },
+    "TierSegment": {
+      "description": "A stretch with one result per tier. A tier passes where every checked criterion of it and of the tiers below\npasses, fails where one fails, and is unknown otherwise (ECS tiers are cumulative).",
+      "properties": {
+        "from_m": {
+          "type": "number"
+        },
+        "to_m": {
+          "type": "number"
+        },
+        "essential": {
+          "enum": [
+            "pass",
+            "fail",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        "important": {
+          "enum": [
+            "pass",
+            "fail",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        "additional": {
+          "enum": [
+            "pass",
+            "fail",
+            "unknown"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "from_m",
+        "to_m",
+        "essential",
+        "important",
+        "additional"
+      ],
+      "type": "object",
+      "title": "TierSegment"
     },
     "UserPlace": {
       "description": "A waypoint from the rider's own file (D24): private to that route, shown but never counted (D40).",

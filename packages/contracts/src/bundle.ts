@@ -228,10 +228,6 @@ export interface SectionsFile {
    * Fixed 50 km live-data blocks as [from_m, to_m]
    */
   blocks: [number, number][];
-  /**
-   * Fixed 1 km ECS minor sections as [from_m, to_m]
-   */
-  minor: [number, number][];
 }
 export interface DailySection {
   id: string;
@@ -381,33 +377,61 @@ export interface Event {
     [k: string]: unknown;
   };
 }
+/**
+ * The ECS criteria along the route (D106): each criterion's results as runs, and the tiers they add up to.
+ */
 export interface MinorFile {
-  size_m: number;
+  rules_profile: string;
   criteria: Criterion[];
-  sections: MinorSection[];
+  /**
+   * Criterion id -> its results along the route
+   */
+  tracks: {
+    [k: string]: CriterionRun[];
+  };
+  segments: TierSegment[];
+  /**
+   * The OSM points the ECS criteria used
+   */
+  points: EcsPoint[];
 }
 export interface Criterion {
   id: string;
   title: string;
-  tier: "essential" | "important";
+  tier: "essential" | "important" | "additional";
+  group: "infrastructure" | "attractiveness" | "public_transport" | "services" | "communication";
+  /**
+   * 'route': judged along the route, km by km; 'daily_section': judged per daily section, so a failure fails the whole section at this tier (D106)
+   */
+  basis: "route" | "daily_section";
+  /**
+   * False for criteria the audit can't judge from its data (results 'not_checked')
+   */
+  checked: boolean;
   description: string;
 }
-/**
- * One ECS minor section (1 km): dominant layer values and indicative criterion results.
- */
-export interface MinorSection {
-  index: number;
+export interface CriterionRun {
   from_m: number;
   to_m: number;
+  result: "pass" | "fail" | "unknown" | "not_checked";
+}
+/**
+ * A stretch with one result per tier. A tier passes where every checked criterion of it and of the tiers below
+ * passes, fails where one fails, and is unknown otherwise (ECS tiers are cumulative).
+ */
+export interface TierSegment {
+  from_m: number;
+  to_m: number;
+  essential: "pass" | "fail" | "unknown";
+  important: "pass" | "fail" | "unknown";
+  additional: "pass" | "fail" | "unknown";
+}
+export interface EcsPoint {
+  at_m: number;
   /**
-   * Layer id -> value covering most of this kilometre
+   * A barrier that stops a bike, forces a dismount or is narrow; a complete rest area; e-bike charging
    */
-  values: {
-    [k: string]: string;
-  };
-  criteria: {
-    [k: string]: "pass" | "fail" | "unknown";
-  };
+  kind: "blocks" | "dismount" | "narrow" | "rest_area" | "charging";
 }
 export interface ScoresFile {
   rules_profile: string;
@@ -447,18 +471,29 @@ export interface StretchStats {
     [k: string]: CriterionShare;
   };
   /**
-   * Share of length meeting all essential criteria
+   * Tier -> share of length passing, failing or unknown (cumulative tiers)
+   */
+  tiers: {
+    [k: string]: CriterionShare;
+  };
+  /**
+   * Share of length meeting all checked essential criteria
    */
   essential_pass: number;
   /**
-   * Share of length meeting all important criteria
+   * Share of length meeting all checked essential and important criteria
    */
   important_pass: number;
+  /**
+   * Share of length meeting every checked criterion
+   */
+  additional_pass: number;
 }
 export interface CriterionShare {
   passed: number;
   failed: number;
   unknown: number;
+  not_checked: number;
 }
 export interface SectionScores {
   from_m: number;
@@ -488,14 +523,34 @@ export interface SectionScores {
     [k: string]: CriterionShare;
   };
   /**
-   * Share of length meeting all essential criteria
+   * Tier -> share of length passing, failing or unknown (cumulative tiers)
+   */
+  tiers: {
+    [k: string]: CriterionShare;
+  };
+  /**
+   * Share of length meeting all checked essential criteria
    */
   essential_pass: number;
   /**
-   * Share of length meeting all important criteria
+   * Share of length meeting all checked essential and important criteria
    */
   important_pass: number;
+  /**
+   * Share of length meeting every checked criterion
+   */
+  additional_pass: number;
   number: number;
+  /**
+   * ECS stars (D106): how many tiers the whole section meets on what the audit checks (0-3); an unknown counts as not met, so this is a minimum
+   */
+  stars: number;
+  /**
+   * Criterion id -> what decided it on this section
+   */
+  notes: {
+    [k: string]: string;
+  };
 }
 export interface Climb {
   from_m: number;

@@ -1,0 +1,366 @@
+# The European Certification Standard, 2026 edition, as an open-data audit (D106).
+#
+# Wording and thresholds follow the 2026 short manual, "European Certification Standard: Introduction to the
+# methodology" (section 2). Criteria marked `rule: not_checked` need a field survey or data we don't hold; they are
+# listed so every report says what wasn't judged. ECS tiers are cumulative: a stretch meets "important" only if it
+# also meets "essential". `basis: route` criteria are judged along the route; `basis: daily_section` ones fail the
+# whole daily section. This is an indicative audit from open data, not an ECS survey.
+id: ecs-2026
+title: European Certification Standard 2026 (open-data audit)
+source: https://eurovelo.com/download/document/ECS-short-manual-2026-final.pdf
+pad_point_m: 200
+
+criteria:
+  # --- 2.1 Infrastructure ---------------------------------------------------------------------------------------
+  continuity:
+    tier: essential
+    group: infrastructure
+    basis: route
+    rule: continuity
+    title: Continuity
+    description: >-
+      No physical or legal disruption: no missing link, no way closed to bikes and no barrier that stops a bike
+      (OSM); at most 10 dismounts and 500 m of pushing per daily section. Ferries and official public-transport links
+      count as crossings.
+    max_dismounts: 10
+    max_push_m: 500
+  stairs:
+    tier: important
+    group: infrastructure
+    basis: route
+    rule: stairs
+    title: Easy stairs
+    description: Steps on the route have a bicycle ramp (OSM ramp:bicycle); their incline and clearance are not checked.
+  obstacles:
+    tier: additional
+    group: infrastructure
+    basis: route
+    rule: obstacles
+    title: Free of obstacles
+    description: >-
+      No steps, stiles, kissing gates, chicanes or gates narrower than 1.3 m, no obligation to dismount, and no
+      slope over 6% (100 m average, Copernicus DEM).
+    min_clearance_m: 1.3
+    slope_classes: [steep, very_steep, extreme]
+  traffic:
+    tier: essential
+    group: infrastructure
+    basis: route
+    rule: traffic
+    title: Traffic
+    description: >-
+      No very high traffic, and high traffic on at most 50% of each daily section. Traffic categories from speed
+      limits and a volume estimated from road class (D106).
+    forbid: [very_high]
+    max_half: high
+  traffic_important:
+    tier: important
+    group: infrastructure
+    basis: route
+    rule: traffic
+    title: Traffic (important)
+    description: No high or very high traffic, and moderate traffic on at most 50% of each daily section.
+    forbid: [high, very_high]
+    max_half: moderate
+  traffic_additional:
+    tier: additional
+    group: infrastructure
+    basis: route
+    rule: traffic
+    title: Traffic (additional)
+    description: No moderate traffic or above, and low traffic on at most 50% of each daily section.
+    forbid: [moderate, high, very_high]
+    max_half: low
+  crossings:
+    tier: essential
+    group: infrastructure
+    basis: route
+    rule: not_checked
+    title: Crossings
+    description: No crossing classified as very dangerous. Needs a field survey.
+  crossings_additional:
+    tier: additional
+    group: infrastructure
+    basis: route
+    rule: not_checked
+    title: Crossings (additional)
+    description: No crossing classified as dangerous. Needs a field survey.
+  width:
+    tier: additional
+    group: infrastructure
+    basis: route
+    rule: not_checked
+    title: Width
+    description: Cycle lanes and tracks wide enough for non-standard cycles everywhere. OSM rarely maps widths.
+  surface:
+    tier: essential
+    group: infrastructure
+    basis: route
+    rule: surface_everywhere
+    title: Surface
+    description: At least moderately rideable everywhere (OSM smoothness, surface and track grade).
+    layer: ecs_surface
+    pass: [well, moderate_plus, moderate]
+    fail: [bad, not_rideable]
+  surface_important:
+    tier: important
+    group: infrastructure
+    basis: daily_section
+    rule: surface_share
+    title: Surface (important)
+    description: At least 50% of each daily section perfectly or well rideable.
+    layer: ecs_surface
+    classes: [well]
+    min_share: 0.5
+    maybe: [moderate_plus, unknown, unmatched]
+  surface_additional:
+    tier: additional
+    group: infrastructure
+    basis: route
+    rule: surface_everywhere
+    title: Surface (additional)
+    description: Perfectly or well rideable everywhere.
+    layer: ecs_surface
+    pass: [well]
+    fail: [moderate, bad, not_rideable]
+  climbing:
+    tier: essential
+    group: infrastructure
+    basis: daily_section
+    rule: climbing
+    title: Elevation
+    description: At most 1,000 m of climbing on each daily section, in either direction (Copernicus DEM).
+    max_m: 1000
+  climbing_important:
+    tier: important
+    group: infrastructure
+    basis: daily_section
+    rule: climbing
+    title: Elevation (important)
+    description: At most 500 m of climbing on each daily section, in either direction.
+    max_m: 500
+  signing:
+    tier: essential
+    group: infrastructure
+    basis: daily_section
+    rule: signing
+    title: Signing
+    description: >-
+      Signed in line with national standards and the EuroVelo guidelines. Judged from EuroVelo's published status
+      (signed or certified, D105); sign spacing and junctions are field checks.
+  signing_additional:
+    tier: additional
+    group: infrastructure
+    basis: route
+    rule: not_checked
+    title: Signing (additional)
+    description: No sign missing or badly readable, a sign every 2.5 km and complete signs every 15 km. Field check.
+
+  # --- 2.2 Attractiveness ---------------------------------------------------------------------------------------
+  attractions:
+    tier: essential
+    group: attractiveness
+    basis: daily_section
+    rule: attraction
+    title: Attractions
+    description: >-
+      At least one significant cultural or natural attraction, or a highly attractive landscape, on each daily
+      section. Passes on evidence (a highlight with a Wikipedia article or a UNESCO site, or a strong scenery theme),
+      otherwise unknown, never failed (D106).
+    max_offset_m: 2000
+    themes: [coast, mountains, water, forest, viewpoints, wine]
+    min_theme: 0.8
+  social_safety:
+    tier: essential
+    group: attractiveness
+    basis: route
+    rule: not_checked
+    title: Social safety
+    description: Free of social-safety challenges, such as fear of crime or wild dogs. Field check.
+  nuisance:
+    tier: important
+    group: attractiveness
+    basis: daily_section
+    rule: not_checked
+    title: Noise and pollution
+    description: At most 25% of each daily section exposed to loud noise, dust, smells or other pollution.
+  monotony:
+    tier: additional
+    group: attractiveness
+    basis: daily_section
+    rule: not_checked
+    title: Monotony
+    description: At most 50% of each daily section through monotonous surroundings; attractions cycling-friendly.
+
+  # --- 2.3 Public transport access ------------------------------------------------------------------------------
+  public_transport:
+    tier: essential
+    group: public_transport
+    basis: route
+    rule: pt_every
+    title: Public transport
+    description: >-
+      Bikes can be carried on public transport at least every 150 km (stations and a sourced table of operators'
+      bike rules). How often services run is not checked (no timetables, D63).
+    max_gap_m: 150000
+  public_transport_important:
+    tier: important
+    group: public_transport
+    basis: route
+    rule: pt_every
+    title: Public transport (important)
+    description: Bikes can be carried at least every 75 km. How often services run is not checked.
+    max_gap_m: 75000
+  public_transport_additional:
+    tier: additional
+    group: public_transport
+    basis: route
+    rule: not_checked
+    title: Public transport (additional)
+    description: Trailers and handbikes carried at least every 75 km, six services a day, step-free access.
+
+  # --- 2.4 Services ---------------------------------------------------------------------------------------------
+  accommodation:
+    tier: essential
+    group: services
+    basis: daily_section
+    rule: on_section
+    title: Accommodation
+    description: At least one campsite, budget or standard accommodation on each daily section.
+    places: accommodation
+  accommodation_choice:
+    tier: important
+    group: services
+    basis: daily_section
+    rule: on_section
+    title: Accommodation choice
+    description: Budget or standard accommodation on each daily section (choice not limited to camping).
+    places: rooms
+  cyclist_friendly:
+    tier: additional
+    group: services
+    basis: daily_section
+    rule: not_checked
+    title: Cyclist-friendly accommodation
+    description: Accommodation with a cycling-friendly label on each daily section. We hold no label data.
+  food_water:
+    tier: essential
+    group: services
+    basis: daily_section
+    rule: on_section
+    title: Food and water
+    description: A restaurant, bar, snack bar, café or shop on each daily section.
+    places: food
+  rest_area:
+    tier: important
+    group: services
+    basis: daily_section
+    rule: on_section
+    title: Rest area
+    description: >-
+      At least one complete rest area (table, benches and shelter) on each daily section. Passes where OSM maps one,
+      otherwise unknown (D106).
+    places: rest_area
+    missing: unknown
+  toilets:
+    tier: important
+    group: services
+    basis: route
+    rule: every
+    title: Toilets
+    description: Toilets (public, or in a restaurant or café) at least every 15 km.
+    places: toilets
+    max_gap_m: 15000
+  warm_meal:
+    tier: additional
+    group: services
+    basis: daily_section
+    rule: on_section
+    title: Warm meal
+    description: A restaurant or bar on each daily section.
+    places: warm_meal
+  food_every_15:
+    tier: additional
+    group: services
+    basis: route
+    rule: every
+    title: Food or rest area every 15 km
+    description: Food (restaurant, bar, snack bar or café) or a complete rest area at least every 15 km.
+    places: food_or_rest
+    max_gap_m: 15000
+  water_every_15:
+    tier: additional
+    group: services
+    basis: route
+    rule: every
+    title: Water every 15 km
+    description: Drinking water (a tap, or a café or shop) at least every 15 km.
+    places: water
+    max_gap_m: 15000
+  cycle_repair:
+    tier: essential
+    group: services
+    basis: daily_section
+    rule: on_section
+    title: Cycle repair
+    description: A bike shop, a shop or vending machine with spare parts, or a repair station on each daily section.
+    places: repair
+  repair_shop:
+    tier: important
+    group: services
+    basis: daily_section
+    rule: on_section
+    title: Bike repair shop
+    description: At least one bike repair shop on each daily section.
+    places: bike_shop
+  ebike_charging:
+    tier: additional
+    group: services
+    basis: daily_section
+    rule: on_section
+    title: E-bike charging
+    description: An e-bike charging station on each daily section. Passes where OSM maps one, otherwise unknown.
+    places: charging
+    missing: unknown
+
+  # --- 2.5 Communication ----------------------------------------------------------------------------------------
+  website:
+    tier: essential
+    group: communication
+    basis: route
+    rule: not_checked
+    title: Official websites
+    description: Official websites with detailed, up-to-date information for each daily section and free GPX tracks.
+  information_boards:
+    tier: important
+    group: communication
+    basis: daily_section
+    rule: not_checked
+    title: Information boards
+    description: At least one information board about the route on each daily section.
+  website_important:
+    tier: important
+    group: communication
+    basis: route
+    rule: not_checked
+    title: Websites (important)
+    description: Surface types, segregation, repair workshops and an English version online; a guidebook or map.
+  website_additional:
+    tier: additional
+    group: communication
+    basis: route
+    rule: not_checked
+    title: Websites (additional)
+    description: Accessibility, rest areas, water and e-bike charging online, and a way to contact someone.
+
+# Findings for riders and route managers (unchanged from the earlier profile).
+findings:
+  busy_road_min_m: 1000
+  busy_road_merge_m: 1000   # busy stretches separated by less than this are one finding
+  unpaved_min_m: 1000
+  unmatched_min_m: 300
+  steep_min_m: 300
+  climb_min_fiets: 2.0
+  merge_gap_m: 200
+  osm_route_min_share: 0.5
+  length_mismatch: 0.10

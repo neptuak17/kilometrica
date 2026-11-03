@@ -9,9 +9,9 @@ from dpg_audit.models import (
     GapType,
     Signage,
 )
-from dpg_audit.rules.evaluate import LayerIndex, evaluate
+from dpg_audit.rules.evaluate import LayerIndex
 from dpg_audit.rules.findings import runs
-from dpg_audit.rules.profile import load_route_config, load_rules
+from dpg_audit.rules.profile import load_route_config
 
 
 def ev(layer, a, b, value, **detail):
@@ -40,48 +40,6 @@ def day(number, a, b, signage=Signage.SIGNED):
 def test_layer_index_lengths():
     idx = LayerIndex([ev("s", 0, 600, "a"), ev("s", 600, 1500, "b")])
     assert idx.lengths(500, 1000) == {"a": 100, "b": 400}
-
-
-def test_evaluate_criteria_per_kilometre():
-    profile = load_rules()
-    events = [
-        # km 0: calm, paved, flat; km 1: 300 m of LTS 4 and gravel; km 2: unmatched
-        ev("traffic_stress", 0, 1000, "1"),
-        ev("traffic_stress", 1000, 1300, "4"),
-        ev("traffic_stress", 1300, 2000, "2"),
-        ev("traffic_stress", 2000, 3000, "unmatched"),
-        ev("surface", 0, 1000, "paved_smooth"),
-        ev("surface", 1000, 2000, "gravel"),
-        ev("surface", 2000, 3000, "unmatched"),
-        ev("infrastructure", 0, 2000, "quiet_road"),
-        ev("infrastructure", 2000, 3000, "unmatched"),
-        ev("gradient", 0, 3000, "flat"),
-    ]
-    minor = evaluate(profile, events, [day(1, 0, 3000)], [], 3000)
-    k0, k1, k2 = (s.criteria for s in minor.sections)
-    assert all(v == "pass" for v in k0.values())
-    assert k1["traffic_safety"] == "fail" and k1["low_traffic"] == "fail" and k1["surface"] == "fail"
-    assert k2["continuity"] == "fail" and k2["traffic_safety"] == "unknown"
-    assert minor.sections[1].values["surface"] == "gravel"
-
-
-def test_missing_gap_fails_continuity_and_unsigned_fails_signage():
-    profile = load_rules()
-    gap = Component(
-        id="c2",
-        seq=1,
-        kind=ComponentKind.GAP,
-        from_m=500,
-        to_m=500,
-        length_m=0,
-        start=(0, 0),
-        end=(1, 0),
-        gap_type=GapType.MISSING,
-    )
-    events = [ev("infrastructure", 0, 1000, "quiet_road")]
-    minor = evaluate(profile, events, [day(1, 0, 1000, Signage.NOT_SIGNED)], [gap], 1000)
-    assert minor.sections[0].criteria["continuity"] == "fail"
-    assert minor.sections[0].criteria["signage"] == "fail"
 
 
 def test_runs_bridge_short_interruptions():

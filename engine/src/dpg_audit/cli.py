@@ -211,12 +211,15 @@ def audit(
     snapshot: str = typer.Option(None, help="Route snapshot date; default: latest"),
     valhalla: str = typer.Option("http://127.0.0.1:8002", help="Valhalla service URL (scripts/valhalla up)"),
     workers: int = typer.Option(6, help="Parallel map-matching requests"),
-    rules: str = typer.Option("eurovelo-ecs-v0", help="Rules profile in engine/profiles/"),
+    rules: str = typer.Option("ecs-2026", help="Rules profile in engine/profiles/"),
     services: str = typer.Option("services-v0", help="Services profile in engine/profiles/"),
     overture_release: str = typer.Option(None, help="Overture release, e.g. 2026-09-23.1; default: latest"),
     dream: str = typer.Option("dream-v0", help="Dream profile in engine/profiles/"),
+    other_ways: bool = typer.Option(
+        False, help="Audit the ways the main line sets aside (D65) as a private '<ref>-ways' bundle, for ECS checks"
+    ),
 ) -> None:
-    """Full audit: map matching, layers, gaps, terrain, services and access, ECS-style rules -> new bundle."""
+    """Full audit: map matching, layers, gaps, terrain, services and access, the ECS rules -> new bundle."""
     _source(network)
     from dpg_audit import audit as audit_mod  # heavy imports (osmium, rasterio) only when auditing
 
@@ -231,9 +234,59 @@ def audit(
         services_name=services,
         overture_release=overture_release,
         dream_name=dream,
+        other_ways=other_ways,
     )
     typer.echo("timings: " + ", ".join(f"{k} {v:.0f}s" for k, v in result.timings.items()))
     typer.echo(f"bundle {result.run_id} -> {result.out}")
+
+
+@app.command("ecs-compare")
+def ecs_compare(
+    network: str,
+    ref: str,
+    calibration: str = typer.Option(..., help="ECF's results, a file in engine/profiles/calibration/"),
+    rules: list[str] = typer.Option(["ecs-2026", "ecs-2021"], help="Rules profiles to judge with"),
+    out: Path = typer.Option(None, help="Write the markdown report here (default: print it)"),
+) -> None:
+    """Set ECF's published results beside ours for the same daily sections (D106), re-judged from the bundles."""
+    from dpg_audit.rules import compare
+    from dpg_audit.rules.profile import load_rules
+
+    bundles = [compare.current_bundle(data_dir(), network, ref)]
+    ways = data_dir() / "bundles" / "private" / network / f"{ref.lower()}-ways"
+    if (ways / "current.json").exists():
+        bundles.append(compare.current_bundle(data_dir(), network, f"{ref}-ways", private=True))
+    cal = compare.load_calibration(calibration)
+    results = {}
+    for name in rules:
+        profile = load_rules(name)
+        judged = [compare.judge(b, profile) for b in bundles]
+        results[profile.id] = compare.compare_rows(cal, judged)
+    text = compare.report(cal, results)
+    if out:
+        out.write_text(text + "\n", encoding="utf-8")
+        typer.echo(f"wrote {out}")
+    else:
+        typer.echo(text)
+
+
+@app.command("ecs-status")
+def ecs_status(
+    network: str,
+    refs: list[str],
+    rules: str = typer.Option("ecs-2026", help="Rules profile to judge with"),
+) -> None:
+    """Our essential infrastructure verdict per daily section against EuroVelo's published development status."""
+    from dpg_audit.rules import compare
+    from dpg_audit.rules.profile import load_rules
+
+    profile = load_rules(rules)
+    for ref in refs:
+        table = compare.status_check(compare.judge(compare.current_bundle(data_dir(), network, ref), profile))
+        typer.echo(f"{network} {ref} ({profile.id}): daily sections by published status, then our verdict")
+        for status, counts in sorted(table.items()):
+            line = "  ".join(f"{k} {counts[k]:3d}" for k in ("meets", "fails", "unknown"))
+            typer.echo(f"  {status:22s} {line}")
 
 
 @app.command()

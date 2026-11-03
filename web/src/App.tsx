@@ -192,8 +192,9 @@ function KpiBand({
       <div className="kpi-title">{title}</div>
       {stats && (
         <div className="kpi-row">
-          <Kpi value={pct(stats.essential_pass)} label="essential" title="Share of length meeting all essential criteria (indicative ECS-style check)" />
-          <Kpi value={pct(stats.important_pass)} label="important" title="Share of length meeting all important criteria" />
+          <Kpi value={pct(stats.essential_pass)} label="essential" title="Share of length meeting every checked ECS 2026 essential criterion (open-data audit, D106)" />
+          <Kpi value={pct(stats.important_pass)} label="important" title="Share of length meeting every checked essential and important criterion" />
+          <Kpi value={pct(stats.additional_pass)} label="additional" title="Share of length meeting every checked criterion, additional included" />
           <Kpi value={pct(carFree)} label="car-free" title="Cycle paths, shared paths and separated tracks" />
           <Kpi value={pct(lts["4"])} label="busy roads" title="Busy roads: traffic stress (LTS) 4" />
           <Kpi value={pct((surf.gravel ?? 0) + (surf.dirt ?? 0))} label="unpaved" title="Loose gravel, dirt or sand" />
@@ -729,7 +730,7 @@ export function App() {
                             ↑ {climbText(sc.ascent_m, sc.climb_unknown_m)}
                             {unknownNote(sc.ascent_m, sc.climb_unknown_m)} · busy {pct(sc.shares.traffic_stress?.["4"])} · unpaved{" "}
                             {pct((sc.shares.surface?.gravel ?? 0) + (sc.shares.surface?.dirt ?? 0))} · important ✓{" "}
-                            {pct(sc.important_pass)}
+                            {pct(sc.important_pass)} · ECS stars {sc.stars ?? 0}
                           </span>
                         )}
                         {sv && (

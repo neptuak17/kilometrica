@@ -1,11 +1,9 @@
 import numpy as np
 import pytest
-from test_rules import day
 
 from dpg_audit.lrs import MeasuredLine, RoutePath
 from dpg_audit.lrs.index import RouteIndex
-from dpg_audit.models import MinorFile, MinorSection, Place
-from dpg_audit.rules.profile import load_rules
+from dpg_audit.models import Place
 from dpg_audit.services import coverage
 from dpg_audit.services.access import AccessJob, _batches
 from dpg_audit.services.catalog import classify_osm, classify_overture
@@ -289,49 +287,6 @@ def test_water_gap_is_filled_by_shops():
     cov = coverage.Coverage(places, profile, 60_000)
     found = coverage.findings(cov, lambda m: (0.0, 0.0))
     assert not [f for f in found if f["evidence"].get("service") == "water"]
-
-
-def test_services_criteria_per_minor_section():
-    rules = load_rules()
-    daily = [day(1, 0, 3000), day(2, 3000, 6000)]
-    minor = MinorFile(
-        size_m=1000,
-        criteria=rules.criterion_info(),
-        sections=[
-            MinorSection(index=i, from_m=i * 1000, to_m=(i + 1) * 1000, values={}, criteria={}) for i in range(6)
-        ],
-    )
-    places = [
-        place("accommodation", 500, kind="campsite"),
-        place("food", 1500),
-        place("bike_shop", 4000),
-        place("station", 2000, bikes="yes"),
-        place("toilets", 2500),
-    ]
-    cov = coverage.Coverage(places, load_services(), 6000)
-    coverage.apply_criteria(cov, minor, daily, rules)
-    first, last = minor.sections[0].criteria, minor.sections[5].criteria
-    assert first["accommodation"] == "pass" and first["accommodation_choice"] == "fail"
-    assert first["food_water"] == "pass" and first["bike_repair"] == "fail"
-    assert last["accommodation"] == "fail" and last["bike_repair"] == "pass" and last["repair_shop"] == "pass"
-    assert first["pt_access"] == "pass" and first["toilets"] == "pass"
-
-
-def test_unknown_bike_policy_makes_pt_unknown_not_fail():
-    rules = load_rules()
-    minor = MinorFile(
-        size_m=1000,
-        criteria=rules.criterion_info(),
-        sections=[MinorSection(index=0, from_m=100_000, to_m=101_000, values={}, criteria={})],
-    )
-    places = [
-        place("station", 0, bikes="yes"),
-        place("station", 120_000, bikes="unknown"),
-        place("station", 250_000, bikes="yes"),
-    ]
-    cov = coverage.Coverage(places, load_services(), 250_000)
-    coverage.apply_criteria(cov, minor, [day(1, 0, 250_000)], rules)
-    assert minor.sections[0].criteria["pt_access"] == "unknown"  # 250 km known gap, 120/130 km with the unknown one
 
 
 def test_gap_list_per_month_for_the_strip():

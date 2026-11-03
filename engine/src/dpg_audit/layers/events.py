@@ -9,7 +9,15 @@ from dpg_audit.match.matcher import LineMatch
 from dpg_audit.models import Event
 from dpg_audit.osmdata import OsmData
 
-MATCHED_LAYERS = ("infrastructure", "traffic_stress", "surface", "cycle_network")
+MATCHED_LAYERS = (
+    "infrastructure",
+    "traffic_stress",
+    "surface",
+    "cycle_network",
+    "ecs_traffic",
+    "ecs_surface",
+    "ecs_continuity",
+)
 _CONF_RANK = {"low": 0, "medium": 1, "high": 2}
 _STRUCTURE = {
     "bridge": {"yes", "viaduct", "boardwalk", "aqueduct", "cantilever", "movable", "suspension"},
@@ -78,6 +86,9 @@ def build_matched_layers(
                 "infrastructure": classify.infrastructure(tags, piece.edge, lts),
                 "surface": classify.surface(tags, piece.edge),
                 "cycle_network": classify.cycle_network(osm.way_networks.get(way, set()), ev_number),
+                "ecs_traffic": classify.ecs_traffic(tags, piece.edge),
+                "ecs_surface": classify.ecs_surface(tags, piece.edge),
+                "ecs_continuity": classify.ecs_continuity(tags, piece.edge),
             }
             for layer, (value, conf, _) in values.items():
                 if piece.approx:

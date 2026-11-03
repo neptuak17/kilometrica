@@ -1,4 +1,4 @@
-import type { Event, MinorFile, MinorSection } from "@dpg/contracts";
+import type { Event, MinorFile, TierSegment } from "@dpg/contracts";
 import type { PathCollection, RideProps } from "./api";
 
 export type LayerKey = "status" | "infrastructure" | "traffic_stress" | "surface" | "cycle_network" | "gradient" | "ecs";
@@ -10,7 +10,7 @@ export const LAYER_TITLES: Record<LayerKey, string> = {
   surface: "Surface",
   cycle_network: "Waymarked network (OSM)",
   gradient: "Gradient",
-  ecs: "ECS-style check",
+  ecs: "ECS 2026 (open data)",
 };
 
 const UNMATCHED = "#212529";
@@ -30,23 +30,23 @@ export const PALETTES: Record<Exclude<LayerKey, "status">, Record<string, string
     local: "#9ecae1", none: "#f46d43", unmatched: UNMATCHED },
   gradient: { flat: "#d9f0d3", gentle: "#a6dba0", moderate: "#fed976", steep: "#fd8d3c", very_steep: "#e31a1c",
     extreme: "#800026", unknown: UNKNOWN },
-  ecs: { pass: "#1a9850", important_fail: "#fdae61", essential_fail: "#d7301f", unknown: UNKNOWN },
+  ecs: { all: "#1a9850", important: "#91cf60", essential: "#fdae61", essential_fail: "#d7301f", unknown: UNKNOWN },
 };
 
 export const ECS_LABELS: Record<string, string> = {
-  pass: "Meets all criteria",
-  important_fail: "Fails an important criterion",
+  all: "Meets every checked criterion",
+  important: "Meets essential and important",
+  essential: "Meets essential only",
   essential_fail: "Fails an essential criterion",
-  unknown: "Not enough data",
+  unknown: "Essential: not enough data",
 };
 
-/** Combine one kilometre's criterion results into a single ECS-style verdict. */
-export function ecsVerdict(section: MinorSection, tiers: Record<string, string>): string {
-  const results = Object.entries(section.criteria);
-  if (results.some(([id, r]) => tiers[id] === "essential" && r === "fail")) return "essential_fail";
-  if (results.some(([id, r]) => tiers[id] === "important" && r === "fail")) return "important_fail";
-  if (results.some(([, r]) => r === "unknown")) return "unknown";
-  return "pass";
+/** The highest ECS tier a stretch meets on what the audit checks (D106); tiers are cumulative. */
+export function ecsVerdict(segment: TierSegment): string {
+  if (segment.essential === "fail") return "essential_fail";
+  if (segment.essential === "unknown") return "unknown";
+  if (segment.important !== "pass") return "essential";
+  return segment.additional === "pass" ? "all" : "important";
 }
 
 interface Ride {
@@ -140,13 +140,12 @@ export interface Stretch {
   value: string;
 }
 
-/** Stretches to colour for a layer: its events, or ECS verdicts per kilometre. */
+/** Stretches to colour for a layer: its events, or the ECS tiers met along the route. */
 export function stretchesFor(layer: LayerKey, events: Event[], minor: MinorFile | null): Stretch[] {
   if (layer === "status") return [];
   if (layer === "ecs") {
-    if (!minor) return [];
-    const tiers = Object.fromEntries(minor.criteria.map((c) => [c.id, c.tier]));
-    return minor.sections.map((s) => ({ from_m: s.from_m, to_m: s.to_m, value: ecsVerdict(s, tiers) }));
+    if (!minor?.segments) return [];
+    return minor.segments.map((s) => ({ from_m: s.from_m, to_m: s.to_m, value: ecsVerdict(s) }));
   }
   return events.filter((e) => e.layer === layer);
 }

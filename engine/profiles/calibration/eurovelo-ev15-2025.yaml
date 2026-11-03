@@ -1,0 +1,58 @@
+# ECF's results for EuroVelo 15, transcribed for the ECS comparison (D106, question 149).
+#
+# Source: European Cyclists' Federation, "Certification Report: EuroVelo 15 – Rhine Cycle Route", 9 September 2025,
+# certification table (pages 3-4). The figures are ECF's; we only copied them. Surveyed by EuroVelo route inspectors
+# in 2024-25 under the 2021 criteria; some sections were certified on remedial work promised within 2.5 years.
+# `essential`, `important`, `additional`: the share of the daily section meeting that level of criteria.
+# `sections`: the daily sections of EuroVelo's GPX (downloaded 2026-10-20) that make up the row.
+route: eurovelo:ev15
+source: https://eurovelo.com/download/document/EuroVelo-15-Rhine-Cycle-Route-Certification-Report-2025.pdf
+published: 2025-09-09
+criteria_edition: ecs-2021
+rows:
+  - {start: Andermatt, stop: Disentis/Mustér, km: 32, status: Not certified, essential: 0.23, important: 0.03, additional: 0.00, sections: [1]}
+  - {start: Disentis/Mustér, stop: Breil/Brigels, km: 20, status: Not certified, essential: 0.77, important: 0.77, additional: 0.49, sections: [2]}
+  - {start: Breil/Brigels, stop: Castrisch, km: 14, status: Certified, essential: 1.00, important: 1.00, additional: 0.71, recommended: Occasional & regular cyclists, sections: [3]}
+  - {start: Castrisch, stop: Chur, km: 31, status: Public transport contingency, essential: 0.97, important: 0.79, additional: 0.37, sections: [4]}
+  - {start: Chur, stop: Buchs, km: 49, status: Certified, essential: 1.00, important: 1.00, additional: 0.96, recommended: Occasional & regular cyclists, sections: [5, 6]}
+  - {start: Trübbach, stop: Mauren, km: 26, status: Certified, essential: 1.00, important: 1.00, additional: 0.95, recommended: Occasional & regular cyclists, sections: [8]}
+  - {start: Mauren, stop: St Margrethen, km: 35, status: Certified, essential: 1.00, important: 1.00, additional: 0.95, recommended: Occasional & regular cyclists, sections: [9]}
+  - {start: Buchs, stop: St Margrethen, km: 43, status: Certified, essential: 1.00, important: 1.00, additional: 0.79, recommended: Occasional & regular cyclists, sections: [7]}
+  - {start: St Margrethen, stop: Gaißau, km: 16, status: Certified, essential: 1.00, important: 1.00, additional: 0.97, recommended: Occasional & regular cyclists, sections: [10]}
+  - {start: Gaißau, stop: Konstanz, km: 48, status: Certified, essential: 1.00, important: 0.98, additional: 0.81, recommended: Regular cyclists, sections: [11]}
+  - {start: Konstanz, stop: Stein am Rhein, km: 28, status: Certified, essential: 1.00, important: 0.88, additional: 0.75, recommended: Regular cyclists, sections: [12]}
+  - {start: Konstanz, stop: Radolfzell, km: 20, status: Certified, essential: 1.00, important: 1.00, additional: 0.69, recommended: Occasional & regular cyclists, sections: [17]}
+  - {start: Radolfzell, stop: Stein am Rhein, km: 25, status: Certified, essential: 1.00, important: 1.00, additional: 0.46, recommended: Occasional & regular cyclists, sections: [18]}
+  - {start: Stein am Rhein, stop: Neuhausen am Rheinfall, km: 22, status: Certified, essential: 1.00, important: 0.80, additional: 0.50, recommended: Regular cyclists, sections: [13]}
+  - {start: Neuhausen am Rheinfall, stop: Bad Zurzach, km: 50, status: Public transport contingency, essential: 0.95, important: 0.89, additional: 0.52, sections: [14]}
+  - {start: Neuhausen am Rheinfall, stop: Rheinheim, km: 35, status: Certified, essential: 1.00, important: 0.88, additional: 0.74, recommended: Regular cyclists, sections: [19]}
+  - {start: Bad Zurzach, stop: Rheinfelden, km: 55, status: Public transport contingency, essential: 0.89, important: 0.82, additional: 0.53, sections: [15]}
+  - {start: Rheinheim, stop: Rheinfelden, km: 58, status: Certified, essential: 1.00, important: 1.00, additional: 0.77, recommended: Occasional & regular cyclists, sections: [20]}
+  - {start: Rheinfelden, stop: Basel, km: 22, status: Certified, essential: 1.00, important: 0.74, additional: 0.69, recommended: Regular cyclists, sections: [16]}
+  - {start: Rheinfelden, stop: Basel, km: 16, status: Certified, essential: 1.00, important: 0.90, additional: 0.68, recommended: Regular cyclists, sections: [21]}
+  - {start: Basel, stop: Breisach am Rhein, km: 65, status: Public transport contingency, essential: 0.93, important: 0.93, additional: 0.39, sections: [27]}
+  - {start: Basel, stop: Kembs, km: 14, status: Certified, essential: 1.00, important: 1.00, additional: 1.00, recommended: All kinds, sections: [22]}
+  - {start: Breisach am Rhein, stop: Kappel-Grafenhausen, km: 46, status: Certified, essential: 1.00, important: 0.97, additional: 0.24, recommended: Regular cyclists, sections: [28]}
+  - {start: Kembs, stop: Neuf-Brisach, km: 44, status: Certified, essential: 1.00, important: 0.98, additional: 0.90, recommended: Regular cyclists, sections: [23]}
+  - {start: Kappel-Grafenhausen, stop: Kehl, km: 43, status: Certified, essential: 1.00, important: 1.00, additional: 0.26, recommended: Occasional & regular cyclists, sections: [29]}
+  - {start: Neuf-Brisach, stop: Strasbourg, km: 71, status: Certified, essential: 1.00, important: 1.00, additional: 0.92, recommended: Occasional & regular cyclists, sections: [24]}
+  - {start: Kehl, stop: Rastatt-Plittersdorf, km: 53, status: Certified, essential: 1.00, important: 0.98, additional: 0.40, recommended: Regular cyclists, sections: [30]}
+  - {start: Strasbourg, stop: Lauterbourg, km: 72, status: Not certified, essential: 0.92, important: 0.85, additional: 0.71, sections: [25]}
+  - {start: Lauterbourg, stop: Wörth am Rhein-Maximiliansau, km: 12, status: Certified, essential: 1.00, important: 1.00, additional: 0.98, recommended: Occasional & regular cyclists, sections: [26]}
+  - {start: Rastatt-Plittersdorf, stop: Karlsruhe, km: 35, status: Certified, essential: 1.00, important: 0.98, additional: 0.67, recommended: Regular cyclists, sections: [31]}
+  - {start: Wörth am Rhein-Maximiliansau, stop: Speyer, km: 50, status: Certified, essential: 1.00, important: 0.98, additional: 0.89, recommended: Regular cyclists, sections: [33]}
+  - {start: Karlsruhe, stop: Rheinhausen, km: 44, status: Not certified, essential: 0.96, important: 0.94, additional: 0.35, sections: [38]}
+  - {start: Speyer, stop: Ludwigshafen-Oggersheim, km: 33, status: Certified, essential: 1.00, important: 1.00, additional: 0.83, recommended: Occasional & regular cyclists, sections: [34]}
+  - {start: Rheinhausen, stop: Mannheim, km: 39, status: Certified, essential: 1.00, important: 1.00, additional: 0.67, recommended: Occasional & regular cyclists, sections: [39]}
+  - {start: Ludwigshafen-Oggersheim, stop: Eich, km: 39, status: Certified, essential: 1.00, important: 0.97, additional: 0.82, recommended: Regular cyclists, sections: [35]}
+  - {start: Mannheim, stop: Gernsheim, km: 47, status: Certified, essential: 1.00, important: 0.97, additional: 0.66, recommended: Regular cyclists, sections: [40]}
+  - {start: Eich, stop: Mainz, km: 37, status: Certified, essential: 1.00, important: 1.00, additional: 0.80, recommended: Occasional & regular cyclists, sections: [36]}
+  - {start: Gernsheim, stop: Mainz, km: 45, status: Certified, essential: 1.00, important: 0.96, additional: 0.86, recommended: Regular cyclists, sections: [41]}
+  - {start: Mainz, stop: Bingen am Rhein, km: 33, status: Certified, essential: 1.00, important: 1.00, additional: 0.75, recommended: Occasional & regular cyclists, sections: [37]}
+  - {start: Mainz, stop: Oestrich-Winkel, km: 22, status: Not certified, essential: 0.93, important: 0.88, additional: 0.61, sections: [42]}
+  - {start: Oestrich-Winkel, stop: Rüdesheim am Rhein, km: 9, status: Certified, essential: 1.00, important: 1.00, additional: 0.80, recommended: Occasional & regular cyclists, sections: [43]}
+  - {start: Bingen am Rhein, stop: Bad Salzig, km: 39, status: Certified, essential: 1.00, important: 1.00, additional: 0.76, recommended: Occasional & regular cyclists, sections: [44]}
+  - {start: Kamp-Bornhofen, stop: Koblenz, km: 27, status: Certified, essential: 1.00, important: 0.94, additional: 0.75, recommended: Regular cyclists, sections: [49]}
+  - {start: Bad Salzig, stop: Koblenz, km: 26, status: Certified, essential: 1.00, important: 0.95, additional: 0.80, recommended: Regular cyclists, sections: [45]}
+  - {start: Koblenz, stop: Rolandswerth, km: 56, status: Certified, essential: 1.00, important: 0.95, additional: 0.74, recommended: Regular cyclists, sections: [46]}
+  - {start: Koblenz, stop: Rheinbreitbach, km: 54, status: Certified, essential: 1.00, important: 0.98, additional: 0.87, recommended: Regular cyclists, sections: [50]}

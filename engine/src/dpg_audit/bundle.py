@@ -68,7 +68,6 @@ FILE_NAMES = {
     "calendar": "calendar.json",
 }
 BLOCK_SIZE_M = 50_000.0
-MINOR_SIZE_M = 1_000.0
 PROFILE_STEP_M = 100.0
 
 
@@ -182,7 +181,6 @@ def write_bundle(
             status=build.status_sections,
             components=build.components,
             blocks=[(round(a, 1), round(b, 1)) for a, b in fixed_sections(length, BLOCK_SIZE_M)],
-            minor=[(round(a, 1), round(b, 1)) for a, b in fixed_sections(length, MINOR_SIZE_M)],
         ),
         "findings": FindingsFile(findings=findings),
         "profile": profile or gpx_profile(build),

@@ -3,14 +3,14 @@ Dream data (M3) and Plan data (M4), apply rules."""
 
 import json
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import numpy as np
 
 from dpg_audit import __version__, networks
 from dpg_audit import overlap as overlap_mod
-from dpg_audit.build import assemble
+from dpg_audit.build import BuildParams, assemble, split_variants
 from dpg_audit.bundle import PROFILE_STEP_M, write_bundle
 from dpg_audit.config import work_dir
 from dpg_audit.dream import themes
@@ -26,15 +26,16 @@ from dpg_audit.match.valhalla import Valhalla
 from dpg_audit.models import ComponentKind, EventsFile, Licence, ProfileFile, ScoresFile, SourceSnapshot
 from dpg_audit.osmdata import load as load_osm
 from dpg_audit.plan import build_effort, build_highlights, build_stops
-from dpg_audit.rules.evaluate import evaluate, section_scores, stretch_stats
+from dpg_audit.rules import ecs
+from dpg_audit.rules.evaluate import section_scores, stretch_stats
 from dpg_audit.rules.findings import gap_findings, rule_findings, to_findings
-from dpg_audit.rules.profile import load_route_config, load_rules
+from dpg_audit.rules.profile import DEFAULT_RULES, load_route_config, load_rules
 from dpg_audit.services import coverage
 from dpg_audit.services.pipeline import build_places, services_file
 from dpg_audit.services.profile import load_services
 from dpg_audit.sources import dem
 
-PIPELINE = "dpg-audit/m4-plan"
+PIPELINE = "dpg-audit/ecs-2026"
 
 
 @dataclass
@@ -56,11 +57,14 @@ def run(
     snapshot: str | None,
     valhalla_url: str,
     workers: int,
-    rules_name: str = "eurovelo-ecs-v0",
+    rules_name: str = DEFAULT_RULES,
     services_name: str = "services-v0",
     overture_release: str | None = None,
     dream_name: str = "dream-v0",
+    other_ways: bool = False,
 ) -> AuditResult:
+    """`other_ways`: audit the ways the main line sets aside (D65) as one line of their own, as a private bundle
+    `<ref>-ways`, for the ECS comparison only (D106); riders keep the main line."""
     t: dict[str, float] = {}
     t0 = time.perf_counter()
     src = networks.get(network)
@@ -71,9 +75,24 @@ def run(
     pbf = wd / "osm" / "corridor.osm.pbf"
     if not pbf.exists():
         raise FileNotFoundError(f"{pbf} missing: run `dpg osm-prepare {network} {ref}` first")
+    route_sha = snap.sha256
     # Stages of a rider's own file are named after the towns at their ends (D40); Plan's stops use the same towns.
     settlements = read_settlements(pbf, wd / "dream")
-    build = assemble(src.route(ref, root), src.tracks(snap, root, settlements))
+    route = src.route(ref, root)
+    tracks = src.tracks(snap, root, settlements)
+    if other_ways:
+        _, chains = split_variants(tracks, BuildParams())
+        if not chains:
+            raise ValueError(f"{network} {ref} sets no ways aside")
+        tracks = [t for chain in chains for t in chain]
+        route = replace(route, id=f"{route.id}-ways", ref=f"{route.ref}-ways", name=f"{route.name} (other ways)")
+        route_sha = f"{snap.sha256}-ways"
+        # Its own working area, sharing the main line's OSM cut, so that caches built from the line stay apart.
+        main_osm, wd = wd / "osm", work_dir(root, network, f"{ref}-ways")
+        wd.mkdir(parents=True, exist_ok=True)
+        if not (wd / "osm").exists():
+            (wd / "osm").symlink_to(main_osm, target_is_directory=True)
+    build = assemble(route, tracks)
     osm_sources = [SourceSnapshot.model_validate(s) for s in json.loads((wd / "osm" / "sources.json").read_text())]
 
     client = Valhalla(valhalla_url)
@@ -111,7 +130,7 @@ def run(
         profs,
         client,
         tileset,
-        snap.sha256,
+        route_sha,
         svc_profile,
         workers=workers,
         overture_release=overture_release,
@@ -122,13 +141,11 @@ def run(
     t["services"] = time.perf_counter() - t0 - sum(t.values())
 
     events = sorted(matched.events + grad, key=lambda e: (e.layer, e.from_m))
-    minor = evaluate(rules, events, build.daily, build.components, build.path.length)
-    coverage.apply_criteria(services.coverage, minor, build.daily, rules)
     scores = ScoresFile(
         rules_profile=rules.id,
         criteria=rules.criterion_info(),
-        route=stretch_stats(0.0, build.path.length, events, minor, rules, profs, unknown),
-        sections=section_scores(build.daily, events, minor, rules, profs, unknown),
+        route=stretch_stats(0.0, build.path.length, events, profs, unknown),
+        sections=section_scores(build.daily, events, profs, unknown),
         climbs=climbs,
     )
     kept = [f.model_dump() for f in build.findings if f.rule_id != "source.gap_between_sections"]
@@ -165,6 +182,12 @@ def run(
     _log(f"plan: {len(stops.stops):,} stops, {len(highlights.highlights):,} highlights")
     overview = build_overview(build.daily, dream.file, highlights, build.summary().status_breakdown)
     t["plan"] = time.perf_counter() - t0 - sum(t.values())
+
+    minor = _ecs(rules, build, events, scores, services.coverage, osm, highlights.highlights, dream.file)
+    _log(
+        f"ECS ({rules.id}): essential {scores.route.essential_pass:.0%}, important {scores.route.important_pass:.0%}, "
+        f"additional {scores.route.additional_pass:.0%} of the length"
+    )
 
     ms = np.concatenate([np.append(np.arange(p.from_m, p.to_m, PROFILE_STEP_M), p.to_m) for p in build.path.parts])
     dem_ele = elevation.at(profs, ms)
@@ -223,7 +246,7 @@ def run(
         calendar=dream.calendar,
         overlap=shared,
         overview=overview,
-        private=src.private,
+        private=src.private or other_ways,
     )
     t["rules+write"] = time.perf_counter() - t0 - sum(t.values())
     _log(
@@ -231,3 +254,34 @@ def run(
         f"approximate {matched.approx_m / 1000:.1f} km"
     )
     return AuditResult(run_id=run_id, out=out, timings=t)
+
+
+def _ecs(rules, build, events, scores, cov, osm, highlights, dream_file):
+    """Judge the ECS criteria (D106) and fill their shares into the scores; returns the criteria file."""
+    clearance = float(rules.criteria.get("obstacles", {}).get("min_clearance_m", 1.3))
+    barriers = [
+        (m, effect)
+        for m, b in ecs.locate_points(build.path, osm.barriers, ecs.BARRIER_REACH_M)
+        if (effect := ecs.barrier_effect(b["barrier"], b["tags"], clearance))
+    ]
+    rest = [m for m, _ in ecs.locate_points(build.path, osm.rest_areas, ecs.POINT_REACH_M)]
+    charging = [m for m, _ in ecs.locate_points(build.path, osm.charging, ecs.POINT_REACH_M)]
+    themes = {s.number: {k: v.score for k, v in s.themes.items()} for s in dream_file.sections}
+    result = ecs.evaluate(
+        rules,
+        ecs.EcsInputs(
+            events=events,
+            daily=build.daily,
+            components=build.components,
+            length_m=build.path.length,
+            sections=scores.sections,
+            coverage=cov,
+            barriers=barriers,
+            rest_areas=rest,
+            charging=charging,
+            highlights=highlights,
+            themes=themes,
+        ),
+    )
+    ecs.apply_shares(result, scores.route, scores.sections)
+    return result.minor

@@ -10,7 +10,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-BUNDLE_SCHEMA_VERSION = "0.6"
+BUNDLE_SCHEMA_VERSION = "0.7"
 
 LonLat = tuple[float, float]
 
@@ -273,7 +273,6 @@ class SectionsFile(Model):
     status: list[StatusSection]
     components: list[Component]
     blocks: list[tuple[float, float]] = Field(description="Fixed 50 km live-data blocks as [from_m, to_m]")
-    minor: list[tuple[float, float]] = Field(description="Fixed 1 km ECS minor sections as [from_m, to_m]")
 
 
 class FindingsFile(Model):
@@ -328,36 +327,63 @@ class EventsFile(Model):
     events: list[Event]
 
 
-CriterionResult = Literal["pass", "fail", "unknown"]
+CriterionResult = Literal["pass", "fail", "unknown", "not_checked"]
+TierResult = Literal["pass", "fail", "unknown"]
+Tier = Literal["essential", "important", "additional"]
 
 
 class Criterion(Model):
     id: str
     title: str
-    tier: Literal["essential", "important"]
+    tier: Tier
+    group: Literal["infrastructure", "attractiveness", "public_transport", "services", "communication"]
+    basis: Literal["route", "daily_section"] = Field(
+        description="'route': judged along the route, km by km; 'daily_section': judged per daily section, so a "
+        "failure fails the whole section at this tier (D106)"
+    )
+    checked: bool = Field(description="False for criteria the audit can't judge from its data (results 'not_checked')")
     description: str
 
 
-class MinorSection(Model):
-    """One ECS minor section (1 km): dominant layer values and indicative criterion results."""
-
-    index: int
+class CriterionRun(Model):
     from_m: float
     to_m: float
-    values: dict[str, str] = Field(description="Layer id -> value covering most of this kilometre")
-    criteria: dict[str, CriterionResult]
+    result: CriterionResult
+
+
+class TierSegment(Model):
+    """A stretch with one result per tier. A tier passes where every checked criterion of it and of the tiers below
+    passes, fails where one fails, and is unknown otherwise (ECS tiers are cumulative)."""
+
+    from_m: float
+    to_m: float
+    essential: TierResult
+    important: TierResult
+    additional: TierResult
+
+
+class EcsPoint(Model):
+    at_m: float
+    kind: Literal["blocks", "dismount", "narrow", "rest_area", "charging"] = Field(
+        description="A barrier that stops a bike, forces a dismount or is narrow; a complete rest area; e-bike charging"
+    )
 
 
 class MinorFile(Model):
-    size_m: float
+    """The ECS criteria along the route (D106): each criterion's results as runs, and the tiers they add up to."""
+
+    rules_profile: str
     criteria: list[Criterion]
-    sections: list[MinorSection]
+    tracks: dict[str, list[CriterionRun]] = Field(description="Criterion id -> its results along the route")
+    segments: list[TierSegment]
+    points: list[EcsPoint] = Field(default_factory=list, description="The OSM points the ECS criteria used")
 
 
 class CriterionShare(Model):
     passed: float
     failed: float
     unknown: float
+    not_checked: float = 0.0
 
 
 class StretchStats(Model):
@@ -374,13 +400,25 @@ class StretchStats(Model):
     )
     max_grade_500m: float | None = Field(description="Steepest 500 m average gradient (%) in travel direction")
     shares: dict[str, dict[str, float]] = Field(description="Layer id -> value -> share of length (0-1)")
-    criteria: dict[str, CriterionShare]
-    essential_pass: float = Field(description="Share of length meeting all essential criteria")
-    important_pass: float = Field(description="Share of length meeting all important criteria")
+    criteria: dict[str, CriterionShare] = Field(default_factory=dict)
+    tiers: dict[str, CriterionShare] = Field(
+        default_factory=dict, description="Tier -> share of length passing, failing or unknown (cumulative tiers)"
+    )
+    essential_pass: float = Field(default=0.0, description="Share of length meeting all checked essential criteria")
+    important_pass: float = Field(
+        default=0.0, description="Share of length meeting all checked essential and important criteria"
+    )
+    additional_pass: float = Field(default=0.0, description="Share of length meeting every checked criterion")
 
 
 class SectionScores(StretchStats):
     number: int
+    stars: int = Field(
+        default=0,
+        description="ECS stars (D106): how many tiers the whole section meets on what the audit checks (0-3); an "
+        "unknown counts as not met, so this is a minimum",
+    )
+    notes: dict[str, str] = Field(default_factory=dict, description="Criterion id -> what decided it on this section")
 
 
 class Climb(Model):

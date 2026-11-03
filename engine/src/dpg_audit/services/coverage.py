@@ -7,8 +7,7 @@ path, so a ferry or other gap component adds nothing to them.
 from bisect import bisect_left, bisect_right
 from collections.abc import Callable, Iterable
 
-from dpg_audit.models import DailySection, MinorFile, Place, SectionServices, ServiceGap, Severity
-from dpg_audit.rules.profile import RulesProfile
+from dpg_audit.models import DailySection, Place, SectionServices, ServiceGap, Severity
 from dpg_audit.services.policy import CARRIED
 from dpg_audit.services.profile import ServicesProfile
 from dpg_audit.services.seasons import never_open
@@ -144,74 +143,6 @@ class Coverage:
 def within(p: Place, reach_m: float, reach_min: float | None) -> bool:
     minutes = p.access_min if p.access_min is not None else 0.0
     return p.access_m is not None and p.access_m <= reach_m and (reach_min is None or minutes <= reach_min)
-
-
-class GapIndex:
-    def __init__(self, gaps: Gaps):
-        self.gaps = gaps
-        self.starts = [a for a, _ in gaps]
-
-    def length_at(self, m: float) -> float:
-        a, b = self.gaps[max(bisect_right(self.starts, m) - 1, 0)]
-        return b - a
-
-
-def _any_between(positions: list[float], m0: float, m1: float) -> bool:
-    return bisect_right(positions, m1) > bisect_left(positions, m0)
-
-
-def apply_criteria(cov: Coverage, minor: MinorFile, daily: list[DailySection], rules: RulesProfile) -> None:
-    """Add the services and public-transport criteria (D21) to every 1 km minor section, in place."""
-    crit = rules.criteria
-
-    def pos(places: list[Place]) -> list[float]:
-        return sorted(p.access_at_m for p in places)
-
-    lodging = cov.own("accommodation")
-    groups = {
-        "accommodation": pos(lodging),
-        "food_water": pos(cov.own("food")),
-        "bike_repair": pos(cov.own("bike_shop") + cov.own("repair_station")),
-        "accommodation_choice": pos([p for p in lodging if p.kind != "campsite"]),
-        "repair_shop": pos(cov.own("bike_shop")),
-    }
-    per_day = {
-        d.number: {
-            cid: "pass" if _any_between(positions, d.from_m, d.to_m) else "fail"
-            for cid, positions in groups.items()
-            if cid in crit
-        }
-        for d in daily
-    }
-    toilets = GapIndex(cov.gaps(cov.own("toilets") + [p for p in cov.own("food") if p.kind in TOILET_FOOD_KINDS]))
-    stations_known = GapIndex(cov.gaps(cov.own("station")))
-    stations_any = GapIndex(
-        cov.gaps(
-            [
-                p
-                for p in cov.by_service.get("station", [])
-                if p.counts and p.detail.get("bikes") in (*CARRIED, "unknown")
-            ]
-        )
-    )
-    day_starts = [d.from_m for d in daily]
-    for s in minor.sections:
-        mid = (s.from_m + s.to_m) / 2
-        day = daily[max(bisect_right(day_starts, mid) - 1, 0)]
-        s.criteria.update(per_day[day.number])
-        if "toilets" in crit:
-            ok = toilets.length_at(mid) <= crit["toilets"]["max_gap_m"]
-            s.criteria["toilets"] = "pass" if ok else "fail"
-        for cid in ("pt_access", "pt_access_75"):
-            if cid not in crit:
-                continue
-            limit = crit[cid]["max_gap_m"]
-            if stations_known.length_at(mid) <= limit:
-                s.criteria[cid] = "pass"
-            elif stations_any.length_at(mid) <= limit:
-                s.criteria[cid] = "unknown"  # only stations with an unknown bike policy fill the gap
-            else:
-                s.criteria[cid] = "fail"
 
 
 def _merge_by_overlap(items: list[tuple[float, float, int]]) -> list[tuple[float, float, set[int]]]:
