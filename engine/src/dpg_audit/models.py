@@ -352,8 +352,8 @@ class CriterionRun(Model):
 
 
 class TierSegment(Model):
-    """A stretch with one result per tier. A tier passes where every checked criterion of it and of the tiers below
-    passes, fails where one fails, and is unknown otherwise (ECS tiers are cumulative)."""
+    """A stretch with one result per tier, from the criteria judged along the route (D107). A tier passes where
+    every checked criterion of it and of the tiers below passes, fails where one fails, and is unknown otherwise."""
 
     from_m: float
     to_m: float
@@ -402,7 +402,14 @@ class StretchStats(Model):
     shares: dict[str, dict[str, float]] = Field(description="Layer id -> value -> share of length (0-1)")
     criteria: dict[str, CriterionShare] = Field(default_factory=dict)
     tiers: dict[str, CriterionShare] = Field(
-        default_factory=dict, description="Tier -> share of length passing, failing or unknown (cumulative tiers)"
+        default_factory=dict,
+        description="Tier -> share of length passing, failing or unknown on the criteria judged along the route, as "
+        "ECF's certification figures count them (cumulative tiers, D107)",
+    )
+    conditions: dict[str, CriterionShare] = Field(
+        default_factory=dict,
+        description="Tier -> share of length in daily sections whose per-section criteria (climbing, signing, "
+        "services, attractions) pass, fail or are unknown (cumulative tiers, D107)",
     )
     essential_pass: float = Field(default=0.0, description="Share of length meeting all checked essential criteria")
     important_pass: float = Field(
@@ -415,8 +422,8 @@ class SectionScores(StretchStats):
     number: int
     stars: int = Field(
         default=0,
-        description="ECS stars (D106): how many tiers the whole section meets on what the audit checks (0-3); an "
-        "unknown counts as not met, so this is a minimum",
+        description="ECS stars (D107): how many tiers the section meets on what the audit checks (0-3): the "
+        "criteria along the route on all of it, and its conditions; an unknown counts as not met, so a minimum",
     )
     notes: dict[str, str] = Field(default_factory=dict, description="Criterion id -> what decided it on this section")
 

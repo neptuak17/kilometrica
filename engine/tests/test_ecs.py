@@ -184,11 +184,14 @@ def test_climbing_per_daily_section_either_way():
     assert per[0].notes["climbing"] == "400 m up, 1,200 m down"
 
 
-def test_signing_is_essential_and_follows_the_published_status():
+def test_signing_is_an_essential_condition_of_the_section():
+    # Per-section criteria don't lower the shares, as in ECF's figures; they are the section's conditions (D107).
     daily = [day(1, 0, 5000), day(2, 5000, 10_000, Signage.NOT_SIGNED)]
     _, route, per = judge(layers(10_000, **GOOD), daily)
-    assert per[0].essential_pass == 1.0 and per[1].essential_pass == 0.0
-    assert per[1].stars == 0
+    assert per[0].essential_pass == per[1].essential_pass == 1.0
+    assert per[0].conditions["essential"].passed == 1.0 and per[1].conditions["essential"].failed == 1.0
+    assert per[0].stars >= 1 and per[1].stars == 0
+    assert route.conditions["essential"].failed == 0.5
 
 
 def test_untagged_surface_is_unknown_not_a_pass():
@@ -270,9 +273,12 @@ def test_attractions_pass_on_evidence_and_are_never_failed():
 
 def test_tiers_are_cumulative():
     # Important passes nowhere the essential tier fails.
-    daily = [day(1, 0, 5000, Signage.NOT_SIGNED)]
-    _, route, _ = judge(layers(5000, **GOOD), daily)
+    events = [ev("ecs_traffic", 0, 5000, "very_high")] + [e for e in layers(5000, **GOOD) if e.layer != "ecs_traffic"]
+    _, route, _ = judge(events, [day(1, 0, 5000)])
     assert route.tiers["essential"].failed == 1.0 and route.tiers["important"].failed == 1.0
+    # And the conditions add up the same way.
+    _, route, _ = judge(layers(5000, **GOOD), [day(1, 0, 5000, Signage.NOT_SIGNED)])
+    assert route.conditions["essential"].failed == 1.0 and route.conditions["important"].failed == 1.0
 
 
 def test_other_ways_line_counts_no_missing_links():

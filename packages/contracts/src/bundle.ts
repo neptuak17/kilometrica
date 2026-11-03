@@ -416,8 +416,8 @@ export interface CriterionRun {
   result: "pass" | "fail" | "unknown" | "not_checked";
 }
 /**
- * A stretch with one result per tier. A tier passes where every checked criterion of it and of the tiers below
- * passes, fails where one fails, and is unknown otherwise (ECS tiers are cumulative).
+ * A stretch with one result per tier, from the criteria judged along the route (D107). A tier passes where
+ * every checked criterion of it and of the tiers below passes, fails where one fails, and is unknown otherwise.
  */
 export interface TierSegment {
   from_m: number;
@@ -471,9 +471,15 @@ export interface StretchStats {
     [k: string]: CriterionShare;
   };
   /**
-   * Tier -> share of length passing, failing or unknown (cumulative tiers)
+   * Tier -> share of length passing, failing or unknown on the criteria judged along the route, as ECF's certification figures count them (cumulative tiers, D107)
    */
   tiers: {
+    [k: string]: CriterionShare;
+  };
+  /**
+   * Tier -> share of length in daily sections whose per-section criteria (climbing, signing, services, attractions) pass, fail or are unknown (cumulative tiers, D107)
+   */
+  conditions: {
     [k: string]: CriterionShare;
   };
   /**
@@ -523,9 +529,15 @@ export interface SectionScores {
     [k: string]: CriterionShare;
   };
   /**
-   * Tier -> share of length passing, failing or unknown (cumulative tiers)
+   * Tier -> share of length passing, failing or unknown on the criteria judged along the route, as ECF's certification figures count them (cumulative tiers, D107)
    */
   tiers: {
+    [k: string]: CriterionShare;
+  };
+  /**
+   * Tier -> share of length in daily sections whose per-section criteria (climbing, signing, services, attractions) pass, fail or are unknown (cumulative tiers, D107)
+   */
+  conditions: {
     [k: string]: CriterionShare;
   };
   /**
@@ -542,7 +554,7 @@ export interface SectionScores {
   additional_pass: number;
   number: number;
   /**
-   * ECS stars (D106): how many tiers the whole section meets on what the audit checks (0-3); an unknown counts as not met, so this is a minimum
+   * ECS stars (D107): how many tiers the section meets on what the audit checks (0-3): the criteria along the route on all of it, and its conditions; an unknown counts as not met, so a minimum
    */
   stars: number;
   /**

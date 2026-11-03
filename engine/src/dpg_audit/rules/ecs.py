@@ -1,9 +1,12 @@
-"""The ECS rules (D106): each criterion's results along the route, the tiers they add up to, and their shares.
+"""The ECS rules (D106, D107): each criterion's results along the route, the tiers they add up to, and their
+shares.
 
 A criterion judged along the route (`basis: route`) gives runs from the layers, the places or the barriers; one
 judged per daily section gives one result that applies to the whole section. Every track covers the route from 0
 to its length with pass, fail, unknown or not_checked. Tiers are cumulative, as in ECS: a stretch meets
-"important" only where it also meets "essential".
+"important" only where it also meets "essential". As in ECF's certification figures, the tier shares come from
+the criteria along the route; the per-section criteria are each section's conditions, which decide its stars
+with the shares (D107).
 """
 
 from bisect import bisect_left, bisect_right
@@ -516,6 +519,21 @@ class EcsResult:
     minor: MinorFile
     notes: dict[int, dict[str, str]]
     tier_tracks: dict[str, list[Run]]
+    """The tiers from the criteria along the route (D107)."""
+    condition_tracks: dict[str, list[Run]]
+    """The tiers from the criteria per daily section: each section's conditions."""
+
+
+def tier_tracks(criteria, tracks: dict[str, list[Run]], basis: str, length: float) -> dict[str, list[Run]]:
+    """Cumulative tiers from the checked criteria of one basis ('route' or 'daily_section')."""
+    out: dict[str, list[Run]] = {}
+    below: list[Run] | None = None
+    for tier in TIERS:
+        own = [tracks[c.id] for c in criteria if c.tier == tier and c.checked and c.basis == basis]
+        parts = ([below] if below is not None else []) + own
+        below = worst(parts) if parts else [(0.0, length, "pass")]
+        out[tier] = below
+    return out
 
 
 def evaluate(profile: RulesProfile, inputs: EcsInputs) -> EcsResult:
@@ -528,16 +546,11 @@ def evaluate(profile: RulesProfile, inputs: EcsInputs) -> EcsResult:
         for number, note in section_notes.items():
             notes[number][cid] = note
     criteria = profile.criterion_info()
-    tier_tracks: dict[str, list[Run]] = {}
-    below: list[Run] | None = None
-    for tier in TIERS:
-        own = [tracks[c.id] for c in criteria if c.tier == tier and c.checked]
-        parts = ([below] if below is not None else []) + own
-        below = worst(parts) if parts else [(0.0, inputs.length_m, "pass")]
-        tier_tracks[tier] = below
+    along = tier_tracks(criteria, tracks, "route", inputs.length_m)
+    conditions = tier_tracks(criteria, tracks, "daily_section", inputs.length_m)
     segments = [
         TierSegment(from_m=round(a, 1), to_m=round(b, 1), essential=e, important=i, additional=x)
-        for a, b, (e, i, x) in _merge_tuples(overlay([tier_tracks[t] for t in TIERS]))
+        for a, b, (e, i, x) in _merge_tuples(overlay([along[t] for t in TIERS]))
     ]
     minor = MinorFile(
         rules_profile=profile.id,
@@ -554,7 +567,7 @@ def evaluate(profile: RulesProfile, inputs: EcsInputs) -> EcsResult:
             key=lambda p: p.at_m,
         ),
     )
-    return EcsResult(minor=minor, notes=notes, tier_tracks=tier_tracks)
+    return EcsResult(minor=minor, notes=notes, tier_tracks=along, condition_tracks=conditions)
 
 
 def _merge_tuples(pieces: list[tuple[float, float, tuple[str, ...]]]) -> list[tuple[float, float, tuple[str, ...]]]:
@@ -594,14 +607,16 @@ def _share(lengths: dict[str, float], total: float) -> CriterionShare:
 
 
 def apply_shares(result: EcsResult, route: StretchStats, sections: list[SectionScores]) -> None:
-    """Fill the criteria and tier shares, the stars and the notes into the scores, in place."""
+    """Fill the criteria and tier shares, the conditions, the stars and the notes into the scores, in place."""
     crit = {cid: _Shares([(r.from_m, r.to_m, r.result) for r in runs]) for cid, runs in result.minor.tracks.items()}
     tiers = {t: _Shares(track) for t, track in result.tier_tracks.items()}
+    conditions = {t: _Shares(track) for t, track in result.condition_tracks.items()}
 
     def fill_one(s: StretchStats) -> None:
         total = max(s.to_m - s.from_m, 1e-9)
         s.criteria = {cid: _share(sh.over(s.from_m, s.to_m), total) for cid, sh in crit.items()}
         s.tiers = {t: _share(sh.over(s.from_m, s.to_m), total) for t, sh in tiers.items()}
+        s.conditions = {t: _share(sh.over(s.from_m, s.to_m), total) for t, sh in conditions.items()}
         s.essential_pass = s.tiers["essential"].passed
         s.important_pass = s.tiers["important"].passed
         s.additional_pass = s.tiers["additional"].passed
@@ -611,7 +626,7 @@ def apply_shares(result: EcsResult, route: StretchStats, sections: list[SectionS
         fill_one(s)
         s.stars = 0
         for t in TIERS:
-            if s.tiers[t].passed < 0.9995:
+            if s.tiers[t].passed < 0.9995 or s.conditions[t].passed < 0.9995:
                 break
             s.stars += 1
         s.notes = result.notes.get(s.number, {})

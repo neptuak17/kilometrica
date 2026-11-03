@@ -45,23 +45,6 @@ class Judged:
     def by_number(self) -> dict[int, DailySection]:
         return {d.number: d for d in self.daily}
 
-    def route_tiers(self) -> dict[str, list[ecs.Run]]:
-        """The tiers from the criteria judged along the route only, leaving out those judged per daily section."""
-        minor = self.result.minor
-        out: dict[str, list[ecs.Run]] = {}
-        below: list[ecs.Run] | None = None
-        for tier in ecs.TIERS:
-            own = [
-                [(r.from_m, r.to_m, r.result) for r in minor.tracks[c.id]]
-                for c in minor.criteria
-                if c.tier == tier and c.checked and c.basis == "route"
-            ]
-            parts = ([below] if below is not None else []) + own
-            below = ecs.worst(parts) if parts else [(0.0, self.daily[-1].to_m, "pass")]
-            out[tier] = below
-        return out
-
-
 def _read(bundle: Path, name: str, model):
     return model.model_validate(json.loads((bundle / name).read_text(encoding="utf-8")))
 
@@ -125,9 +108,9 @@ def failing(judged: Judged, m0: float, m1: float, tier: str) -> list[tuple[str, 
 class RowResult:
     row: dict
     ours: dict[str, dict[str, float]]
-    """tier -> {pass, fail, unknown} share"""
-    along: dict[str, dict[str, float]]
-    """the same from the criteria judged along the route only"""
+    """tier -> {pass, fail, unknown} share, from the criteria along the route (D107)"""
+    conditions: dict[str, str]
+    """tier -> 'met', 'not met' or 'unknown': the row's per-section criteria"""
     why: dict[str, list[tuple[str, float]]]
     notes: dict[str, str]
 
@@ -142,20 +125,20 @@ def compare_rows(calibration: dict, judged: list[Judged]) -> list[RowResult]:
         days = [found.by_number()[n] for n in numbers]
         m0, m1 = days[0].from_m, days[-1].to_m
         total = max(m1 - m0, 1e-9)
-        ours, along = {}, {}
+        ours, conditions = {}, {}
         for tier, track in found.result.tier_tracks.items():
             lens = _over(track, m0, m1)
             ours[tier] = {k: lens[k] / total for k in ("pass", "fail", "unknown")}
-        for tier, track in found.route_tiers().items():
+        for tier, track in found.result.condition_tracks.items():
             lens = _over(track, m0, m1)
-            along[tier] = {k: lens[k] / total for k in ("pass", "fail", "unknown")}
+            conditions[tier] = "met" if lens["pass"] >= 0.995 * total else "not met" if lens["fail"] else "unknown"
         why = {t: failing(found, m0, m1, t) for t in ecs.TIERS}
         notes: dict[str, str] = {}
         for s in found.sections:
             if s.number in numbers:
                 for cid, note in s.notes.items():
                     notes.setdefault(cid, note if len(numbers) == 1 else f"{s.number}: {note}")
-        out.append(RowResult(row=row, ours=ours, along=along, why=why, notes=notes))
+        out.append(RowResult(row=row, ours=ours, conditions=conditions, why=why, notes=notes))
     return out
 
 
@@ -170,37 +153,36 @@ def report(calibration: dict, results: dict[str, list[RowResult]]) -> str:
         "",
         f"ECF's results: {calibration['source']} (published {calibration['published']}, surveyed under "
         f"{calibration['criteria_edition']}). Ours: re-judged from the current bundles. Shares are of each row's "
-        "length; ours leave out the criteria the audit doesn't check, and an unknown is not a pass.",
+        "length, from the criteria along the route as ECF's are (D107); the per-section criteria are the row's "
+        "conditions. Ours leave out the criteria the audit doesn't check, and an unknown is not a pass.",
         "",
     ]
     for pid, rows in results.items():
         lines += [f"## {pid}", ""]
-        for view, label in (("ours", "all criteria"), ("along", "criteria along the route only")):
-            lines.append(f"Ours from {label}:")
-            lines.append("")
-            for tier in ecs.TIERS:
-                mine = [getattr(r, view)[tier]["pass"] for r in rows]
-                diffs = [abs(m - r.row[tier]) for m, r in zip(mine, rows, strict=True)]
-                theirs_full = [r.row[tier] >= 0.995 for r in rows]
-                ours_full = [m >= 0.995 for m in mine]
-                same = sum(a == b for a, b in zip(theirs_full, ours_full, strict=True))
-                within = sum(d <= 0.10 for d in diffs)
-                lines.append(
-                    f"- **{tier.capitalize()}:** average difference {sum(diffs) / len(diffs) * 100:.0f} points; "
-                    f"within 10 points on {within} of {len(rows)} rows; the same verdict on meeting it in full on "
-                    f"{same} of {len(rows)} (ECF {sum(theirs_full)}, ours {sum(ours_full)})."
-                )
-            lines.append("")
+        for tier in ecs.TIERS:
+            mine = [r.ours[tier]["pass"] for r in rows]
+            diffs = [abs(m - r.row[tier]) for m, r in zip(mine, rows, strict=True)]
+            theirs_full = [r.row[tier] >= 0.995 for r in rows]
+            ours_full = [m >= 0.995 for m in mine]
+            same = sum(a == b for a, b in zip(theirs_full, ours_full, strict=True))
+            within = sum(d <= 0.10 for d in diffs)
+            met = sum(r.conditions[tier] == "met" for r in rows)
+            lines.append(
+                f"- **{tier.capitalize()}:** average difference {sum(diffs) / len(diffs) * 100:.0f} points; "
+                f"within 10 points on {within} of {len(rows)} rows; the same verdict on meeting it in full on "
+                f"{same} of {len(rows)} (ECF {sum(theirs_full)}, ours {sum(ours_full)}); conditions met on {met}."
+            )
         lines += [
-            "| GPX | Daily section | ECF status | ECF E / I / A | Ours E / I / A | Along the route E / I / A "
-            "| Unknown E / I / A | Why ours fails |",
+            "",
+            "| GPX | Daily section | ECF status | ECF E / I / A | Ours E / I / A | Unknown E / I / A "
+            "| Conditions E / I / A | Why ours fails |",
             "|---|---|---|---|---|---|---|---|",
         ]
         for r in rows:
             row = r.row
             theirs = " / ".join(_pct(row[t]) for t in ecs.TIERS)
             ours = " / ".join(_pct(r.ours[t]["pass"]) for t in ecs.TIERS)
-            along = " / ".join(_pct(r.along[t]["pass"]) for t in ecs.TIERS)
+            conds = " / ".join(r.conditions[t] for t in ecs.TIERS)
             unknown = " / ".join(_pct(r.ours[t]["unknown"]) for t in ecs.TIERS)
             reasons = []
             for t in ecs.TIERS:
@@ -210,7 +192,7 @@ def report(calibration: dict, results: dict[str, list[RowResult]]) -> str:
             nums = "+".join(str(n) for n in row["sections"])
             lines.append(
                 f"| {nums} | {row['start']} – {row['stop']} ({row['km']} km) | {row['status']} | {theirs} | {ours} | "
-                f"{along} | {unknown} | {'; '.join(reasons) or '–'} |"
+                f"{unknown} | {conds} | {'; '.join(reasons) or '–'} |"
             )
         lines.append("")
     return "\n".join(lines)

@@ -247,3 +247,5 @@ What the differences say:
 | EV8 undeveloped or unknown (21) | 1 | 3 | 17 |
 
 On EV8's 95 developed sections, 13 reach 95% as judged. Untagged surfaces (1,074 km unknown) hold back 32 of the others: counted as passing, 45 would reach it. Traffic holds back most of the rest: without it, 81 would. EV8's traffic categories come from road class (volume) and default speeds, the same weakness as the parked busy-road rule. Question 151.
+
+**Since D107 (bundles 2026-11-03, re-audited the same evening):** the tier shares count only the criteria along the route, as ECF's do, and the per-section criteria are each section's conditions. Route totals: EV15's main line meets essential on 93% of its length, important 91%, additional 81%; its other bank 91%, 89%, 79%; EV8 49%, 29%, 22%. Against ECF's 46 rows (2026 rules): essential 4 points apart on average, important 7, additional 21 (12 under the 2021 rules); the essential conditions hold on all 46 rows, the important ones on 20 (climbing over 500 m, rest areas OSM doesn't map) and the additional ones on 14.
