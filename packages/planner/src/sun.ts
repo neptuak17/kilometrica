@@ -90,17 +90,29 @@ export const TIME_ZONES: Record<string, string> = {
   XK: "Europe/Belgrade",
 };
 
+/** One clock formatter per time zone: making one costs far more than using it, and a plan asks thousands of times. */
+const zoneClocks = new Map<string, Intl.DateTimeFormat>();
+
+function zoneClock(zone: string): Intl.DateTimeFormat {
+  let f = zoneClocks.get(zone);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-US", {
+      timeZone: zone,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    zoneClocks.set(zone, f);
+  }
+  return f;
+}
+
 /** The zone's offset from UTC (minutes) at a given instant, through Intl (no time-zone data of our own). */
 export function zoneOffset(zone: string, utcMs: number): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: zone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).formatToParts(new Date(utcMs));
+  const parts = zoneClock(zone).formatToParts(new Date(utcMs));
   const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
   const asUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"));
   return Math.round((asUtc - utcMs) / 60_000);

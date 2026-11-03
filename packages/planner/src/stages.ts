@@ -125,6 +125,32 @@ function sunsetAt(ctx: DayContext, date: string, endStop: Stop | null): number |
   return ctx.sunsets.get(key) ?? null;
 }
 
+/** A day's ride between two trip positions, whichever day of the trip it is: everything in its cost but the sunset. */
+interface Ride {
+  q: { km: number; climbM: number; fastS: number; slowS: number };
+  hours: number;
+  effort: Effort;
+  endMinutes: number;
+  /** The day's cost before the sunset is checked. */
+  cost: number;
+}
+
+function rideOf(ctx: DayContext, t0: number, t1: number): Ride {
+  const q = ctx.axis.quick(t0, t1);
+  const hours = q.slowS / 3600;
+  const effort = effortOf(q, hours, ctx.usualHours, ctx.level);
+  const riding = q.slowS / 60;
+  const endMinutes = ctx.startMinutes + riding + stopMinutes(riding, ctx.stopStyle);
+  const r = hours / ctx.usualHours;
+  let cost = r > 1 ? 3 * (r - 1) ** 2 : (1 - r) ** 2;
+  if (effort === "harder") cost += 0.5;
+  if (effort === "beyond") cost += 4;
+  return { q, hours, effort, endMinutes, cost };
+}
+
+/** The ride's cost on a day with this sunset: more when it ends after dark. */
+const costWith = (ride: Ride, sunset: number | null) => (sunset !== null && ride.endMinutes > sunset ? ride.cost + 3 : ride.cost);
+
 export function evalDay(
   ctx: DayContext,
   k: number,
@@ -134,20 +160,12 @@ export function evalDay(
   last: boolean,
   full = false,
 ): DayEval {
-  const q = ctx.axis.quick(t0, t1);
-  const hours = q.slowS / 3600;
-  const effort = effortOf(q, hours, ctx.usualHours, ctx.level);
+  const ride = rideOf(ctx, t0, t1);
   const sunset = sunsetAt(ctx, ctx.dayDate(k), endStop);
-  const riding = q.slowS / 60;
-  const endMinutes = ctx.startMinutes + riding + stopMinutes(riding, ctx.stopStyle);
-  const afterSunset = sunset !== null && endMinutes > sunset;
-  const r = hours / ctx.usualHours;
-  let cost = r > 1 ? 3 * (r - 1) ** 2 : (1 - r) ** 2;
-  if (effort === "harder") cost += 0.5;
-  if (effort === "beyond") cost += 4;
-  if (afterSunset) cost += 3;
+  const afterSunset = sunset !== null && ride.endMinutes > sunset;
   const stats = full ? ctx.axis.stats(t0, t1, last) : null;
-  return { stats, ...q, hours, effort, endMinutes, sunset, afterSunset, cost };
+  const { q, hours, effort, endMinutes } = ride;
+  return { stats, ...q, hours, effort, endMinutes, sunset, afterSunset, cost: costWith(ride, sunset) };
 }
 
 /**
@@ -202,47 +220,49 @@ export function planStages(ctx: DayContext, rides: number, locked: Map<number, n
   const slowAt = (t: number) => ctx.axis.quick(0, t).slowS;
   const slow = C.map((c) => slowAt(c.t));
   const totalSlow = slowAt(T);
-  const month = (k: number) => monthOf(ctx.dayDate(k));
+  // Each riding day's date, once for the whole search: the search looks at millions of days on a long trip.
+  const dates = Array.from({ length: rides }, (_, k) => ctx.dayDate(k));
   // A night the rider locked is kept even with no bed of their kind (they chose it): flagged, never dropped.
   const LOCKED_NO_BED = 5;
   const nc: number[][] = Array.from({ length: nights }, (_, k) =>
     C.map((c, j) => {
-      const cost = nightCost(c, ctx.sleep, month(k));
+      const cost = nightCost(c, ctx.sleep, monthOf(dates[k]!));
       return !Number.isFinite(cost) && locked.get(k) === j ? LOCKED_NO_BED : cost;
     }),
   );
   const cost: number[][] = Array.from({ length: nights }, () => new Array<number>(C.length).fill(Number.POSITIVE_INFINITY));
   const from: number[][] = Array.from({ length: nights }, () => new Array<number>(C.length).fill(-1));
-  const dayCache = new Map<string, DayEval>();
-  const day = (k: number, i: number, j: number): DayEval => {
-    const key = `${k}:${i}:${j}`;
-    let d = dayCache.get(key);
-    if (!d) {
-      const t0 = i < 0 ? 0 : C[i]!.t;
-      const t1 = j < 0 ? T : C[j]!.t;
-      d = evalDay(ctx, k, t0, t1, j < 0 ? null : C[j]!.stop, j < 0);
-      dayCache.set(key, d);
-    }
-    return d;
+  // Sunset at each night's stop on that night's date, filled in as the search needs it.
+  const sunsets = Array.from({ length: nights }, () => new Array<number | null | undefined>(C.length));
+  const sunsetOf = (k: number, j: number) => {
+    const row = sunsets[k]!;
+    let s = row[j];
+    if (s === undefined) row[j] = s = sunsetAt(ctx, dates[k]!, C[j]!.stop);
+    return s;
   };
   const allowed = (k: number, j: number) => {
     const lock = locked.get(k);
     return lock === undefined || lock === j;
   };
-  for (let k = 0; k < nights; k++) {
-    for (let j = 0; j < C.length; j++) {
-      if (!allowed(k, j) || !Number.isFinite(nc[k]![j]!)) continue;
-      if (k === 0) {
-        if (slow[j]! < minS || slow[j]! > maxS) continue;
-        cost[0]![j] = day(0, -1, j).cost + nc[0]![j]!;
-        continue;
-      }
-      // Candidates are in trip order, so the ones a day's length away form one run: find it by binary search.
-      const hiI = Math.min(j - 1, lastAtMost(slow, slow[j]! - minS));
-      for (let i = Math.max(0, firstAtLeast(slow, slow[j]! - maxS)); i <= hiI; i++) {
+  // Stop by stop in trip order, then night by night: the best way to a night at stop j needs only earlier stops, all
+  // settled by then. So each ride from an earlier stop is worked out once for every night (only its sunset differs),
+  // and for each night the earlier stops are still tried in trip order, so ties go the same way.
+  for (let j = 0; j < C.length; j++) {
+    if (allowed(0, j) && Number.isFinite(nc[0]![j]!) && slow[j]! >= minS && slow[j]! <= maxS) {
+      cost[0]![j] = costWith(rideOf(ctx, 0, C[j]!.t), sunsetOf(0, j)) + nc[0]![j]!;
+    }
+    const ks: number[] = [];
+    for (let k = 1; k < nights; k++) if (allowed(k, j) && Number.isFinite(nc[k]![j]!)) ks.push(k);
+    if (!ks.length) continue;
+    // Candidates are in trip order, so the ones a day's length away form one run: find it by binary search.
+    const hiI = Math.min(j - 1, lastAtMost(slow, slow[j]! - minS));
+    for (let i = Math.max(0, firstAtLeast(slow, slow[j]! - maxS)); i <= hiI; i++) {
+      let ride: Ride | null = null;
+      for (const k of ks) {
         const prev = cost[k - 1]![i]!;
         if (!Number.isFinite(prev)) continue;
-        const c = prev + day(k, i, j).cost + nc[k]![j]!;
+        ride ??= rideOf(ctx, C[i]!.t, C[j]!.t);
+        const c = prev + costWith(ride, sunsetOf(k, j)) + nc[k]![j]!;
         if (c < cost[k]![j]!) {
           cost[k]![j] = c;
           from[k]![j] = i;
@@ -257,7 +277,7 @@ export function planStages(ctx: DayContext, rides: number, locked: Map<number, n
     if (!Number.isFinite(prev)) continue;
     const span = totalSlow - slow[j]!;
     if (span < minS || span > maxS) continue;
-    const c = prev + day(rides - 1, j, -1).cost;
+    const c = prev + costWith(rideOf(ctx, C[j]!.t, T), sunsetAt(ctx, dates[rides - 1]!, null));
     if (c < best) {
       best = c;
       bestJ = j;
