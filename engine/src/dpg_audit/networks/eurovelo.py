@@ -71,7 +71,7 @@ def parse_status(label: str) -> EuroVeloStatus:
         dev = DevelopmentLevel.UNRECOGNISED
     if "not signed" in low:
         sig = Signage.NOT_SIGNED
-    elif "signed" in low:
+    elif "signed" in low or dev == DevelopmentLevel.CERTIFIED:  # ECS certification includes signing (D105)
         sig = Signage.SIGNED
     else:
         sig = Signage.UNKNOWN

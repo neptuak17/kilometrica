@@ -17,7 +17,9 @@ from dpg_audit.networks import eurovelo
         ("Partially Developed + Signed", DevelopmentLevel.PARTIALLY_DEVELOPED, Signage.SIGNED),
         ("Partially Developed + Not Signed", DevelopmentLevel.PARTIALLY_DEVELOPED, Signage.NOT_SIGNED),
         ("Undeveloped / Unknown", DevelopmentLevel.UNDEVELOPED_UNKNOWN, Signage.UNKNOWN),
-        ("EuroVelo Certified", DevelopmentLevel.CERTIFIED, Signage.UNKNOWN),
+        ("EuroVelo Certified", DevelopmentLevel.CERTIFIED, Signage.SIGNED),
+        ("Certified", DevelopmentLevel.CERTIFIED, Signage.SIGNED),
+        ("Certified + Not Signed", DevelopmentLevel.CERTIFIED, Signage.NOT_SIGNED),
         ("Something new", DevelopmentLevel.UNRECOGNISED, Signage.UNKNOWN),
     ],
 )
