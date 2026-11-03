@@ -16,22 +16,19 @@ import {
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   TextField,
   Toggle,
+  type Town,
+  TownSelect,
   ToggleGroup,
   ToggleGroupItem,
 } from "@dpg/ui";
 import type { ReactNode } from "react";
 import { Dialog, type Key } from "react-aria-components";
 import { SELECTED } from "../rider/Questions";
-import { and, type Ask, countriesText, type Level, PACE, PREFS, STAY, SURFACES, surfacesText, WAY } from "@dpg/dream";
+import { and, type Ask, countriesText, type Level, PACE, PREFS, STAY, SURFACES, surfacesText, townsText, WAY } from "@dpg/dream";
 
-export type ChipId = "level" | "days" | "pace" | "month" | "surfaces" | "scenery" | "countries" | "through" | "stay" | "direction";
+export type ChipId = "level" | "days" | "pace" | "month" | "surfaces" | "scenery" | "countries" | "towns" | "stay" | "direction";
 
 const first = (keys: Set<Key>) => [...keys][0];
 
@@ -41,8 +38,8 @@ export function Chips({ a, levels, themes, countries, towns, open, onOpen, onCha
   themes: DreamFile["themes"];
   /** The route's countries in route order, by code (D80). */
   countries: string[];
-  /** The towns where stretches start and end, in route order (D80). */
-  towns: string[];
+  /** The towns where stretches start and end, in route order (D80, D104). */
+  towns: Town[];
   open: ChipId | null;
   onOpen: (c: ChipId | null) => void;
   onChange: (patch: Partial<Ask>) => void;
@@ -215,22 +212,24 @@ export function Chips({ a, levels, themes, countries, towns, open, onOpen, onCha
     </div>
   );
 
-  const throughEditor = (
-    <Select aria-label="Passing through" selectedKey={a.through ?? "any"} onSelectionChange={(k) => onChange({ through: k === null || k === "any" ? null : String(k) })} className="w-full">
-      <SelectTrigger className="w-full">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem id="any" textValue="Anywhere">
-          Anywhere
-        </SelectItem>
-        {[...new Set(towns)].map((t) => (
-          <SelectItem key={t} id={t} textValue={t}>
-            {t}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+  // Where the stretch starts, passes and ends (D80, D104): towns where stages meet, each picked once.
+  const names = new Set(towns.map((t) => t.name));
+  const unique = towns.filter((t, i) => towns.findIndex((u) => u.name === t.name) === i);
+  const townsEditor = (
+    <div className="grid gap-3">
+      {(
+        [
+          ["from", "Start in"],
+          ["through", "Passing through"],
+          ["to", "End in"],
+        ] as const
+      ).map(([k, label]) => (
+        <div key={k} className="grid gap-1.5">
+          <Label>{label}</Label>
+          <TownSelect label={label} towns={unique} selected={a[k] && names.has(a[k]) ? a[k] : null} anyLabel="Any town" onSelect={(t) => onChange({ [k]: t })} />
+        </div>
+      ))}
+    </div>
   );
 
   return (
@@ -266,13 +265,12 @@ export function Chips({ a, levels, themes, countries, towns, open, onOpen, onCha
       {countries.length > 1 &&
         chip("countries", <Icons.Globe />, countriesText(a), "Countries", "Ride only in some of the route's countries, or keep out of one.", countriesEditor)}
       {chip(
-        "through",
+        "towns",
         <Icons.MapPin />,
-        // A town from the address that isn't one of the route's is no choice at all: the search ignores it too.
-        a.through && towns.includes(a.through) ? `Through ${a.through}` : "Passing through",
-        "Passing through",
-        "A town your stretch must include: to spend days there, or to start or end nearby.",
-        throughEditor,
+        townsText(a, [...names]),
+        "Towns",
+        "Where your stretch starts, passes and ends, from the towns where stages meet. In Plan you can start or end in any town.",
+        townsEditor,
       )}
       {chip("stay", <Icons.Bed />, STAY[a.stay], "Where you sleep", "Places to stay along the way.", single("Where you sleep", ["any", "rooms", "camping"] as const, a.stay, (v) => STAY[v], (v) => onChange({ stay: v })))}
       {chip(

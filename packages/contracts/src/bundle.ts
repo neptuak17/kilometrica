@@ -969,6 +969,10 @@ export interface Stop {
    */
   name: string | null;
   /**
+   * The town's English name (OSM name:en) where it differs from its name, so a search finds either (D104)
+   */
+  name_en: string | null;
+  /**
    * For a stop with no town: "near X" (a named place within 10 km), else "N km from X" (D70)
    */
   near: string | null;

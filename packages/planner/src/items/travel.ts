@@ -2,6 +2,7 @@
  * What do I sort out before I go? Getting to the start and home from the end (D63, D70), when the rider wants it in
  * the plan (D79), and borders out of Schengen.
  */
+import { otherEnds } from "../ends";
 import type { PlanCore } from "../plan";
 import { country, km } from "../text";
 import type { PlanData } from "../types";
@@ -20,8 +21,8 @@ const inSchengen = (cc: string | null) => !!cc && (SCHENGEN.has(cc) || OPEN_BORD
 export function travelItems(data: PlanData, core: PlanCore, add: Add) {
   const rides = core.days.filter((d) => d.kind === "ride");
   const ends = [
-    { id: "start", m: core.axis.startM, d: rides[0]!, word: "to the start" },
-    { id: "end", m: core.axis.endM, d: rides[rides.length - 1]!, word: "home from the end" },
+    { id: "start" as const, m: core.axis.startM, d: rides[0]!, word: "to the start" },
+    { id: "end" as const, m: core.axis.endM, d: rides[rides.length - 1]!, word: "home from the end" },
   ];
   const ownWay = fewTrains(data, core);
   // Riders who don't need it get a cleaner plan (D79); plans saved before it keep it.
@@ -46,6 +47,29 @@ export function travelItems(data: PlanData, core: PlanCore, add: Add) {
       topic: "prepare",
       evidence: { source: "M2 stations, bike-carriage table (D20)" },
       handoffs: railLinks([near?.country]),
+    });
+    // No station there (D104): the nearest towns each side that have one, and what each does to the trip.
+    const others = near || ownWay ? [] : otherEnds(data, core.inputs, e.id);
+    if (!others.length) continue;
+    const here = e.id === "start" ? e.d.startName : e.d.endName;
+    const which = e.id === "start" ? "day 1" : "the last day";
+    const longer = (k: number) => `${km(Math.abs(k))} km ${k > 0 ? "longer" : "shorter"}`;
+    add({
+      id: `travel-town:${e.id}`,
+      kind: "call",
+      day: e.d.number,
+      fromM: e.m,
+      toM: e.m,
+      title: e.id === "start" ? `Start in a town with a station?` : `End in a town with a station?`,
+      why: `We found no station that carries bikes within 10 km of ${here}. There is one within 10 km of ${others.map((o) => `${o.town.name} (${o.town.station})`).join(" and of ")}.`,
+      rank: 24,
+      topic: "prepare",
+      evidence: { source: "M2 stations, bike-carriage table (D20)" },
+      handoffs: [],
+      options: [
+        ...others.map((o) => ({ id: `${e.id}-at:${Math.round(o.town.m)}`, label: `${e.id === "start" ? "Start" : "End"} in ${o.town.name}`, effect: `${which} ${longer(o.km)}` })),
+        { id: "keep", label: "Keep it", effect: `${e.id === "start" ? "start" : "end"} in ${here}` },
+      ],
     });
   }
   let prev: string | null = null;

@@ -153,6 +153,7 @@ def build_stops(
             Stop(
                 id=base if seen[base] == 1 else f"{base}-{seen[base]}",
                 name=town.name if town else None,
+                name_en=town.name_en if town and town.name_en != town.name else None,
                 place_kind=town.kind if town else None,
                 at_m=at_m,
                 lon=round(lon, 6),

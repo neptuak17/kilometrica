@@ -56,7 +56,7 @@ def at(path: RoutePath, lon: float, service: str, **kw):
 
 
 def test_beds_group_by_town_else_along_the_route(path):
-    town = Settlement(lon=0.5, lat=LAT + 0.01, name="Ville", kind="town")
+    town = Settlement(lon=0.5, lat=LAT + 0.01, name="Ville", kind="town", name_en="Town")
     places = [
         at(path, 0.49, "accommodation", kind="hotel", months="?" * 12),
         at(path, 0.51, "accommodation", kind="hotel", months="?" * 12),
@@ -74,6 +74,7 @@ def test_beds_group_by_town_else_along_the_route(path):
     stops = build_stops(path, places, [town], coverage, 2027).stops
     assert [s.name for s in stops] == ["Ville", None, None]
     ville = stops[0]
+    assert ville.name_en == "Town"  # for finding it by its English name (D104)
     assert {b.kind: b.count for b in ville.beds} == {"campsite": 1, "hotel": 2}
     camp = next(b for b in ville.beds if b.kind == "campsite")
     assert camp.seasons == [("cccoooooooocc"[:12], 1)]

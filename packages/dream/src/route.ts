@@ -6,7 +6,7 @@
 import type { DailySection, DreamFile, RouteOverview, StopsFile, UserPlace } from "@dpg/contracts";
 import { ownNightBeds, ownNights, ridingDays } from "@dpg/planner";
 import { and, type Ask, planHref, type Point, pointsOf } from "./ask";
-import { describeStretch, findStretches, type StretchResult } from "./matchmaker";
+import { describeStretch, findStretches, type StretchResult, type TownAt } from "./matchmaker";
 
 /** A route's Dream files: what Dream's page loads, and what the assistant's Dream tools see. */
 export interface DreamRoute {
@@ -38,10 +38,20 @@ export function spanOf(r: DreamRoute, s: StretchResult) {
 
 const nightsIn = (r: DreamRoute, fromM: number, toM: number) => (r.own ? ownNights(r, fromM, toM).length : 0);
 
-/** The question as the matchmaker takes it: the town to pass through placed on the route (D80). */
+/** A town's index among the route's points, by name; -1 when it isn't one. */
+const pointIndex = (r: DreamRoute, name: string | null) => (name ? routePoints(r).findIndex((x) => x.name.toLowerCase() === name.toLowerCase()) : -1);
+
+/** Point i as the matchmaker takes a town (D104): the section that starts there and the one that ends there. */
+function townAt(r: DreamRoute, i: number): TownAt | null {
+  const secs = sectionsOf(r);
+  const p = routePoints(r)[i];
+  return p ? { name: p.name, after: secs[i]?.number ?? null, before: secs[i - 1]?.number ?? null } : null;
+}
+
+/** The question as the matchmaker takes it: the towns to pass through (D80), start and end in (D104) placed on the route. */
 function query(r: DreamRoute, a: Ask) {
-  const p = a.through ? routePoints(r).find((x) => x.name.toLowerCase() === a.through!.toLowerCase()) : undefined;
-  return { ...a, through: p ? { m: p.m, name: p.name } : null };
+  const p = routePoints(r)[pointIndex(r, a.through)];
+  return { ...a, through: p ? { m: p.m, name: p.name } : null, from: townAt(r, pointIndex(r, a.from)), to: townAt(r, pointIndex(r, a.to)) };
 }
 
 /** Whether the rider's file marks nights on the whole route (D70). */
@@ -67,6 +77,17 @@ export function ridesFor(r: DreamRoute, a: Ask, fromM: number, toM: number): num
 export function stretchesFor(r: DreamRoute, a: Ask): StretchResult[] {
   const secs = sectionsOf(r);
   if (a.level === null || !secs.length) return [];
+  const i = pointIndex(r, a.from);
+  const j = pointIndex(r, a.to);
+  // Both towns make one stretch (D104): described, never ruled out, with the rider's days or a usual day's at the level.
+  if (bothTowns(r, a)) return [pickedStretch(r, a, i, j)].filter((s): s is StretchResult => !!s);
+  if (r.own && (i >= 0 || j >= 0)) {
+    // A rider's own file is the trip (D76): from a town to its far end, or from its start to a town, the way they ride.
+    const last = secs.length;
+    const back = a.direction === "reverse";
+    const s = i >= 0 ? pickedStretch(r, a, i, back || i === last ? 0 : last) : pickedStretch(r, a, back || j === 0 ? last : 0, j);
+    return s ? [s] : [];
+  }
   if (r.own) {
     const days = ridesFor(r, a, secs[0]!.from_m, secs[secs.length - 1]!.to_m);
     const whole = describeStretch(r.dream, secs[0]!.number, secs[secs.length - 1]!.number, { ...query(r, a), level: a.level, days });
@@ -83,13 +104,21 @@ export function pickedStretch(r: DreamRoute, a: Ask, i: number, j: number): Stre
   const from = i < j ? secs[i]!.number : secs[i - 1]!.number;
   const to = i < j ? secs[j - 1]!.number : secs[j]!.number;
   const days = ridesFor(r, a, secs[Math.min(i, j)]!.from_m, secs[Math.max(i, j) - 1]!.to_m);
-  return describeStretch(r.dream, from, to, { ...query(r, a), level: a.level, days });
+  // Its own two towns are its ends, whatever the question's (D104).
+  return describeStretch(r.dream, from, to, { ...query(r, a), from: null, to: null, level: a.level, days });
+}
+
+/** Whether the question names two different towns of the route to start and end in (D104): then it is one stretch. */
+export function bothTowns(r: DreamRoute, a: Pick<Ask, "from" | "to">): boolean {
+  const i = pointIndex(r, a.from);
+  const j = pointIndex(r, a.to);
+  return i >= 0 && j >= 0 && i !== j;
 }
 
 /** The riding days a usual day at the rider's level would take on a stretch: shown beside the file's nights (D80). */
 export function usualRides(r: DreamRoute, a: Ask, s: StretchResult): number | null {
   if (a.level === null) return null;
-  return describeStretch(r.dream, s.first, s.last, { ...query(r, a), level: a.level, days: null })?.days ?? null;
+  return describeStretch(r.dream, s.first, s.last, { ...query(r, a), from: null, to: null, level: a.level, days: null })?.days ?? null;
 }
 
 /**

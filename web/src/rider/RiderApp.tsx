@@ -38,6 +38,7 @@ import {
   placesMissing,
   readFragment,
   restAfterAction,
+  planTowns,
   restInAction,
   restLengthAction,
   restMoveAction,
@@ -471,6 +472,8 @@ function PlanPage({ start }: { start: Start }) {
   }, [files, blockKey, pass, attempt]);
 
   const data: PlanData | null = useMemo(() => (files ? { ...files.free, full: pass && full ? full.full : null } : null), [files, full, pass]);
+  // Every town to start or end in (D104), worked out once per route.
+  const routeTowns = useMemo(() => (files ? planTowns(files.free) : []), [files]);
   // The device's languages pick Wikipedia articles (they stay on the device, D30); the route's lines place the
   // street-level photo links (D58).
   const options = useMemo(() => ({ languages: [...navigator.languages], geometry: files?.geometry }), [files]);
@@ -784,7 +787,7 @@ function PlanPage({ start }: { start: Start }) {
                   <Questions
                     inputs={inputs}
                     levels={data.dream.levels}
-                    daily={data.daily}
+                    routeTowns={routeTowns}
                     suggestedMonth={suggested}
                     datesConfirmed={datesConfirmed}
                     ownNights={ownNights(data, inputs.fromM, inputs.toM).length}

@@ -4,6 +4,7 @@
  */
 export {
   ArrowLeft,
+  ArrowLeftRight,
   ArrowRight,
   Bed,
   Bike,

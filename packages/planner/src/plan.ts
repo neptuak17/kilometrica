@@ -169,6 +169,7 @@ function pseudoStop(id: string, m: number, near: Stop | null): Stop {
   return {
     id,
     name: null,
+    name_en: null,
     near: null,
     place_kind: null,
     at_m: m,
@@ -220,7 +221,7 @@ export function makePlan(
       candidates.push(best);
     } else if (!best.stop.name && w.name) {
       // Our stop has no town name ("69 km from Midway"): the rider's name for it reads better (D70).
-      best.stop = { ...best.stop, name: w.name, near: null };
+      best.stop = { ...best.stop, name: w.name, name_en: null, near: null };
     }
     if (!ownName.has(best.stop.id)) ownName.set(best.stop.id, w.name);
     // A night the file marks as a rest ("Nelson, rest day") gets a rest day after it (D74).

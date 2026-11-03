@@ -93,6 +93,7 @@ function stop(km: number): Stop {
   return {
     id: `s${km}`,
     name: km === 120 ? "Saint-Jean" : `Town ${km}`,
+    name_en: null,
     near: null,
     place_kind: km % 60 === 0 ? "town" : "village",
     at_m: km * 1000,

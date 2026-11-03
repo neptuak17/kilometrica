@@ -3,6 +3,7 @@ export * from "./axis";
 export * from "./brief";
 export * from "./changes";
 export * from "./document";
+export * from "./ends";
 export * from "./exports";
 export * from "./facts";
 export * from "./geometry";

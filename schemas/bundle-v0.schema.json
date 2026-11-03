@@ -3062,6 +3062,18 @@
           ],
           "description": "Town or village; null when the beds are grouped by km only"
         },
+        "name_en": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The town's English name (OSM name:en) where it differs from its name, so a search finds either (D104)"
+        },
         "near": {
           "anyOf": [
             {
@@ -3167,6 +3179,7 @@
       "required": [
         "id",
         "name",
+        "name_en",
         "near",
         "place_kind",
         "at_m",

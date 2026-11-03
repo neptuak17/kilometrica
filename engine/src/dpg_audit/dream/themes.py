@@ -168,6 +168,8 @@ class Settlement:
     name: str | None
     kind: str
     """OSM place=*: city, town or village."""
+    name_en: str | None = None
+    """OSM name:en, for finding a town by its English name (D104)."""
 
 
 def read_settlements(corridor_pbf: Path, work: Path) -> list[Settlement]:
@@ -177,7 +179,7 @@ def read_settlements(corridor_pbf: Path, work: Path) -> list[Settlement]:
     if not (small.exists() and small.stat().st_mtime >= corridor_pbf.stat().st_mtime):
         _osmium("tags-filter", "--overwrite", str(corridor_pbf), "n/place=city,town,village", "-o", str(small))
     return [
-        Settlement(o.lon, o.lat, o.tags.get("name"), o.tags.get("place", "village"))
+        Settlement(o.lon, o.lat, o.tags.get("name"), o.tags.get("place", "village"), o.tags.get("name:en"))
         for o in osmium.FileProcessor(str(small))
         if o.is_node() and o.location.valid()
     ]

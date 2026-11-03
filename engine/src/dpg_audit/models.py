@@ -639,6 +639,11 @@ class Stop(Model):
 
     id: str
     name: str | None = Field(description="Town or village; null when the beds are grouped by km only")
+    name_en: str | None = Field(
+        default=None,
+        description="The town's English name (OSM name:en) where it differs from its name, so a search finds either "
+        "(D104)",
+    )
     near: str | None = Field(
         default=None,
         description='For a stop with no town: "near X" (a named place within 10 km), else "N km from X" (D70)',

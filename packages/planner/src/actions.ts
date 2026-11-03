@@ -3,6 +3,7 @@
  * the assistant. `applyAction` is pure; the planner re-plans from the new state and `planChanges` says what changed.
  * Actions say what they set rather than toggle, so the same action twice changes nothing more.
  */
+import { endOf, startOf, withEnds } from "./ends";
 import type { PlanResult } from "./plan";
 import { MAX_REST_LENGTH, ownRestDays, restLengthOf, trimOwnRests } from "./rest";
 import type { PlanChoices, PlanInputs, PlanItem } from "./types";
@@ -16,6 +17,8 @@ export type PlanAction =
   /** Any of the rider's answers: dates, days, level, bike, sleep, start time, stops, stretch, direction. */
   | { type: "set"; inputs: Partial<PlanInputs> }
   | { type: "add-day" }
+  /** Where the trip starts or ends, in route metres (D104); the other end stays, and the direction follows. */
+  | { type: "ends"; start?: number; end?: number }
   /**
    * Riding days (D75): one more uses up a rest day when there is one (the end date holds), else the trip ends a day
    * later; one fewer becomes a rest day, placed where it helps.
@@ -103,6 +106,10 @@ export function applyAction(state: PlanState, action: PlanAction, before?: PlanR
       // Another stretch or the other way is another trip: its rest days start afresh.
       const trip = (["fromM", "toM", "direction"] as const).some((k) => next[k] !== undefined && next[k] !== inputs[k]);
       return trip ? { inputs: { ...inputs, ...next }, choices: { ...choices, nights: undefined, keepNights: undefined, restStops: undefined } } : replan(next);
+    }
+    case "ends": {
+      const { fromM, toM, direction } = withEnds(inputs, action.start ?? startOf(inputs), action.end ?? endOf(inputs));
+      return applyAction(state, { type: "set", inputs: { fromM, toM, direction } }, before);
     }
     case "add-day":
     case "ride-days": {
@@ -234,6 +241,10 @@ export function optionOutcome(item: PlanItem, optionId: string): OptionOutcome |
     }
     case "move":
       return Number.isFinite(n) ? { showDay: n } : null;
+    case "start-at":
+      return Number.isFinite(n) ? { action: { type: "ends", start: n } } : null;
+    case "end-at":
+      return Number.isFinite(n) ? { action: { type: "ends", end: n } } : null;
     default:
       return null;
   }

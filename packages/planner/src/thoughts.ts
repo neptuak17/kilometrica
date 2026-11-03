@@ -5,11 +5,11 @@
  * rest days are asked about: the planner never places them like this itself (D74).
  */
 import type { PlanAction } from "./actions";
-import type { PlanResult } from "./plan";
+import { makePlan, type PlanResult } from "./plan";
 import { MIN_APART, restLengthOf, restPlace } from "./rest";
 import { bedsFor, usable } from "./stages";
 import { monthOf } from "./sun";
-import { plural, sleepNoun, stopName } from "./text";
+import { numberList, plural, sleepNoun, stopName } from "./text";
 import type { PlanData } from "./types";
 
 export interface SecondThought {
@@ -108,11 +108,48 @@ function thoughtsOf(data: PlanData, p: PlanResult): SecondThought[] {
   return out;
 }
 
+/** The longest trip the screen takes, rest days included. */
+const MAX_DAYS = 60;
+/** Numbers of riding days tried for a new stretch: each try is a whole plan, and a long one takes a while. */
+const DAYS_TRIES = 3;
+
+/**
+ * Days for a new start or end (D104): the total days hold (D74), so when the change leaves days harder than the
+ * rider's level or beyond it, the fewest riding days that keep every day within it, as one tap.
+ */
+function daysThought(data: PlanData, before: PlanResult, after: PlanResult): SecondThought | null {
+  const [a, b] = [before.inputs, after.inputs];
+  if (a.fromM === b.fromM && a.toM === b.toM && a.direction === b.direction) return null;
+  // The nights the rider's file marks set the days (D70).
+  if (after.nights.some((n) => n.own)) return null;
+  const over = (p: PlanResult) => p.days.filter((d) => d.kind === "ride" && d.effort !== "within").length;
+  const rides = after.days.filter((d) => d.kind === "ride").length;
+  const max = MAX_DAYS - (after.days.length - rides);
+  if (!over(after) || rides >= max) return null;
+  const choices = { ...after.choices, nights: undefined, keepNights: undefined };
+  const fits = (n: number) => over(makePlan(data, { ...b, days: n }, choices)) === 0;
+  // Fewer days than the level's longest day allows can't all be within it, so the search starts there, and stops after
+  // a few tries rather than keep the rider waiting: the day cards still say which days are too much.
+  const km = after.days.reduce((s, d) => s + (d.kind === "ride" ? d.km : 0), 0);
+  const from = Math.max(rides + 1, Math.ceil(km / after.level.km_max));
+  const hi = Array.from({ length: DAYS_TRIES }, (_, k) => from + k).find((n) => n <= max && fits(n));
+  if (hi === undefined) return null;
+  const hard = after.days.filter((d) => d.kind === "ride" && d.effort !== "within").map((d) => d.number);
+  return {
+    id: `thought:days:${Math.round(b.fromM)}:${Math.round(b.toM)}`,
+    question: `${plural(hi, "riding day")} for this stretch?`,
+    why: `With ${plural(rides, "riding day")}, ${hard.length === 1 ? `day ${hard[0]} is` : `days ${numberList(hard)} are`} more than your selected level (${after.level.name}). ${plural(hi, "riding day")} keep every day within it; your trip ends ${plural(hi - rides, "day")} later.`,
+    options: [{ label: `Make it ${plural(hi, "riding day")}`, action: { type: "set", inputs: { days: hi } } }],
+    keep: `Keep ${plural(rides, "riding day")}`,
+  };
+}
+
 /**
  * The second thoughts a change brought up: those the plan after it has and the plan before it didn't, less the ones
  * the rider dismissed. At most one is shown at a time (D77); the first is the one to show.
  */
 export function secondThoughts(data: PlanData, before: PlanResult, after: PlanResult): SecondThought[] {
   const had = new Set(thoughtsOf(data, before).map((t) => t.id));
-  return thoughtsOf(data, after).filter((t) => !had.has(t.id) && !after.choices.dismissed.includes(t.id));
+  const days = daysThought(data, before, after);
+  return [...(days ? [days] : []), ...thoughtsOf(data, after)].filter((t) => !had.has(t.id) && !after.choices.dismissed.includes(t.id));
 }

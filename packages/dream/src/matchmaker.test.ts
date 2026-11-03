@@ -1,6 +1,7 @@
-import type { DreamFile, DreamSection } from "@dpg/contracts";
+import type { DailySection, DreamFile, DreamSection } from "@dpg/contracts";
 import { describe, expect, it } from "vitest";
-import { watchLines } from "./ask";
+import { type Ask, EMPTY, townsText, watchLines } from "./ask";
+import { bothTowns, type DreamRoute, stretchesFor } from "./route";
 import { type CountryPref, describeStretch, type DreamQuery, findStretches, gradeFor, type StretchResult } from "./matchmaker";
 
 const LEVELS = [
@@ -298,5 +299,64 @@ describe("countries and a town to pass through (D80)", () => {
     expect(rs.length).toBeGreaterThan(0);
     expect(rs.every((r) => r.first <= 8 && r.last >= 8)).toBe(true);
     expect(describeStretch(dream(two), 1, 3, { ...base, days: 2, through: { m: 375_000, name: "Midway" } })!.watch).toContain("doesn't pass Midway");
+  });
+});
+
+describe("a town to start or end in (D104)", () => {
+  const twenty = Array.from({ length: 20 }, (_, i) => section(i + 1));
+  // Mid is where section 10 ends and section 11 starts.
+  const mid = { name: "Mid", after: 11, before: 10 };
+  const q = { ...base, days: 4, direction: "either" as const, limit: 20 };
+  const start = (r: StretchResult) => (r.way === "forward" ? r.first : r.last);
+  const end = (r: StretchResult) => (r.way === "forward" ? r.last : r.first);
+
+  it("leaves from the town, either way, with the other ends a middling day apart", () => {
+    const rs = findStretches(dream(twenty), { ...q, from: mid });
+    expect(rs.filter((r) => r.way === "forward").every((r) => r.first === 11)).toBe(true);
+    expect(rs.filter((r) => r.way === "reverse").every((r) => r.last === 10)).toBe(true);
+    expect(new Set(rs.map((r) => r.way))).toEqual(new Set(["forward", "reverse"]));
+    // More than one each way: the overlap rule would have kept one.
+    expect(rs.filter((r) => r.way === "forward").length).toBeGreaterThan(1);
+    const ends = rs.filter((r) => r.way === "forward").map((r) => end(r) * 50);
+    for (const a of ends) for (const b of ends) if (a !== b) expect(Math.abs(a - b)).toBeGreaterThanOrEqual(65);
+  });
+
+  it("arrives at the town when it is the end", () => {
+    const rs = findStretches(dream(twenty), { ...q, to: mid });
+    expect(rs.length).toBeGreaterThan(1);
+    expect(rs.every((r) => (r.way === "forward" ? r.last === 10 : r.first === 11))).toBe(true);
+    expect(rs.every((r) => start(r) !== 11 || r.way === "reverse")).toBe(true);
+  });
+
+  it("never rules a picked stretch out, but says where it doesn't start or end there", () => {
+    const r = describeStretch(dream(twenty), 3, 6, { ...base, days: 4, from: mid, to: mid });
+    expect(r!.watch).toEqual(expect.arrayContaining(["doesn't start in Mid", "doesn't end in Mid"]));
+  });
+});
+
+describe("towns in Dream's question (D104)", () => {
+  const ten = Array.from({ length: 10 }, (_, i) => section(i + 1));
+  // Towns T0…T10: section n runs from T(n-1) to Tn.
+  const daily = ten.map((s) => ({ number: s.number, start_name: `T${s.number - 1}`, end_name: `T${s.number}`, from_m: s.from_m, to_m: s.to_m }) as DailySection);
+  const r: DreamRoute = { id: "test/one", name: "Test", dream: dream(ten), daily, userPlaces: [], own: false };
+  const a: Ask = { ...EMPTY, level: 3, days: null, direction: "either" };
+
+  it("makes both towns one stretch, with a usual day's days until the rider sets theirs", () => {
+    expect(bothTowns(r, { from: "T2", to: "T6" })).toBe(true);
+    const [s, ...rest] = stretchesFor(r, { ...a, from: "T6", to: "T2" });
+    expect(rest).toEqual([]);
+    expect([s!.first, s!.last, s!.way]).toEqual([3, 6, "reverse"]);
+    expect(s!.days).toBe(4); // 200 km at a middling Moderate day of 65 km
+    expect(stretchesFor(r, { ...a, days: 3, from: "T2", to: "T6" })[0]!.days).toBe(3);
+  });
+
+  it("searches from one town once the days are set, and ignores a town the route doesn't have", () => {
+    expect(stretchesFor(r, { ...a, from: "T4" })).toEqual([]);
+    const rs = stretchesFor(r, { ...a, days: 3, from: "T4" });
+    expect(rs.length).toBeGreaterThan(0);
+    expect(rs.every((s) => (s.way === "forward" ? s.first === 5 : s.last === 4))).toBe(true);
+    expect(townsText({ from: "T4", to: null, through: null }, ["T4"])).toBe("From T4");
+    expect(townsText({ from: "Nowhere", to: "T4", through: "T2" }, ["T2", "T4"])).toBe("To T4, through T2");
+    expect(townsText({ from: null, to: null, through: null }, [])).toBe("Any town");
   });
 });

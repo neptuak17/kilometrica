@@ -13,7 +13,7 @@ export const PACE: Record<Pace, string> = { relaxed: "Relaxed", steady: "Steady"
 
 /** The rider's answers. Level and days start unset: no stretch is shown until the rider gives them. `days` is the
  * whole trip, rest days included (D74). */
-export interface Ask extends Omit<DreamQuery, "level" | "days" | "limit" | "countries" | "through"> {
+export interface Ask extends Omit<DreamQuery, "level" | "days" | "limit" | "countries" | "through" | "from" | "to"> {
   level: number | null;
   days: number | null;
   pace: Pace;
@@ -21,6 +21,9 @@ export interface Ask extends Omit<DreamQuery, "level" | "days" | "limit" | "coun
   countries: Record<string, CountryPref>;
   /** A town the stretch must pass, by its name among the towns where stretches start and end (D80). */
   through: string | null;
+  /** The towns the stretch starts and ends in, by name among the same towns (D104). */
+  from: string | null;
+  to: string | null;
 }
 
 /** A stretch's rest days: the rider's days in all less its riding days, or by pace for a stretch of its own length. */
@@ -46,6 +49,8 @@ export const EMPTY: Ask = {
   direction: "either",
   countries: {},
   through: null,
+  from: null,
+  to: null,
 };
 
 /** Starting points: a whole question in one tap, changed from there. */
@@ -108,6 +113,8 @@ export function readAsk(p: URLSearchParams): Ask {
         .filter((x): x is [string, CountryPref] => !!x[0] && (x[1] === "only" || x[1] === "avoid")),
     ),
     through: p.get("through") || null,
+    from: p.get("from") || null,
+    to: p.get("to") || null,
   };
 }
 
@@ -126,6 +133,8 @@ export function addressOf(route: string, a: Ask): string {
   const countries = Object.entries(a.countries);
   if (countries.length) p.set("countries", countries.map(([c, v]) => `${c}:${v}`).join(","));
   if (a.through) p.set("through", a.through);
+  if (a.from) p.set("from", a.from);
+  if (a.to) p.set("to", a.to);
   return `/dream?${p}`;
 }
 
@@ -147,6 +156,18 @@ export function countriesText(a: Pick<Ask, "countries">): string {
   const parts = [of("only").length ? `Only ${and(of("only"))}` : "", of("avoid").length ? `avoid ${and(of("avoid"))}` : ""].filter(Boolean);
   const text = parts.join(", ");
   return text ? text.charAt(0).toUpperCase() + text.slice(1) : "Any country";
+}
+
+/**
+ * The towns chip (D104): "From Barcelona", "To Nice", "Barcelona → Nice", "Through Sète", together "From Barcelona,
+ * through Sète", or "Any town". A name that isn't one of the route's `towns` is no choice at all: the search ignores it.
+ */
+export function townsText(a: Pick<Ask, "from" | "to" | "through">, towns: string[]): string {
+  const known = (t: string | null) => (t && towns.includes(t) ? t : null);
+  const [from, to, through] = [known(a.from), known(a.to), known(a.through)];
+  const ends = from && to ? `${from} → ${to}` : from ? `From ${from}` : to ? `To ${to}` : "";
+  if (!through) return ends || "Any town";
+  return ends ? `${ends}, through ${through}` : `Through ${through}`;
 }
 
 /** A point between daily sections: a town, else its km. */

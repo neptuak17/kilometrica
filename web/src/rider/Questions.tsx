@@ -1,11 +1,12 @@
 /**
  * Step 1 (11.6) in the new look (D53, D54): a few questions, each with a default, asked only because they change the
- * plan. Dream suggested the stretch, time frame, days and level; the dates are confirmed here (D48). Pace comes from
- * the level and the bike, never from fitness data (D35).
+ * plan. Dream suggested the stretch, time frame, days and level; the dates are confirmed here (D48), and the start and
+ * end can move to any town (D104). Pace comes from the level and the bike, never from fitness data (D35).
  */
-import type { DailySection, RiderLevel } from "@dpg/contracts";
-import { clock, dayList, daysAnswer, MONTHS_LONG, type PlanInputs, plural, suggestedRest, withRestDays, withTotalDays } from "@dpg/planner";
+import type { RiderLevel } from "@dpg/contracts";
+import { clock, dayList, daysAnswer, endOf, km, MONTHS_LONG, type PlanInputs, type PlanTown, plural, startOf, suggestedRest, withEnds, withRestDays, withTotalDays } from "@dpg/planner";
 import {
+  Button,
   Checkbox,
   cn,
   Icons,
@@ -18,14 +19,16 @@ import {
   SelectValue,
   TextField,
   ToggleGroup,
+  TownSelect,
   ToggleGroupItem,
 } from "@dpg/ui";
-import { useId, useState, type ReactNode } from "react";
+import { useId, useMemo, useState, type ReactNode } from "react";
 
 interface Props {
   inputs: PlanInputs;
   levels: RiderLevel[];
-  daily: DailySection[];
+  /** Every town to start or end in, in route order (D104). */
+  routeTowns: PlanTown[];
   /** The month Dream suggested, until the rider confirms a date. */
   suggestedMonth: number | null;
   datesConfirmed: boolean;
@@ -65,11 +68,6 @@ const STOPS = [
 ] as const;
 /** The kit's toggles mark the chosen one faintly; an answer should be plain to see. */
 export const SELECTED = "data-selected:border-primary data-selected:bg-primary/10 data-selected:font-semibold data-selected:text-foreground";
-
-const WAYS = [
-  ["forward", "As the route runs"],
-  ["reverse", "The other way"],
-] as const;
 
 function Field({ label, hint, children, attention }: { label: string; hint?: ReactNode; children: ReactNode; attention?: boolean }) {
   return (
@@ -118,7 +116,7 @@ function Check({ label, checked, disabled, onChange }: { label: string; checked:
   );
 }
 
-export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirmed, ownNights, towns, onRestIn, onBeInBy, dayEnds, readOnly, onChange }: Props) {
+export function Questions({ inputs, levels, routeTowns, suggestedMonth, datesConfirmed, ownNights, towns, onRestIn, onBeInBy, dayEnds, readOnly, onChange }: Props) {
   const [inBy, setInBy] = useState<number | null>(null);
   const late = inBy === null ? [] : dayEnds.filter((d) => d.end > inBy).map((d) => d.day);
   const inByHint =
@@ -136,38 +134,39 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
   const suggest = suggestedRest(total, own ? riding : undefined);
   const setRest = (r: number) => onChange(withRestDays(inputs, r, ownNights));
   const set = <K extends keyof PlanInputs>(k: K, v: PlanInputs[K]) => onChange({ ...inputs, [k]: v });
-  const sections = [...daily].sort((a, b) => a.from_m - b.from_m);
-  const first = sections.find((s) => Math.abs(s.from_m - inputs.fromM) < 1) ?? sections[0];
-  const last = sections.find((s) => Math.abs(s.to_m - inputs.toM) < 1) ?? sections[sections.length - 1];
-  const setRange = (a: number, b: number) => {
-    const sa = sections.find((s) => s.number === a);
-    const sb = sections.find((s) => s.number === b);
-    if (!sa || !sb) return;
-    onChange({ ...inputs, fromM: Math.min(sa.from_m, sb.from_m), toM: Math.max(sa.to_m, sb.to_m) });
-  };
   const level = levels.find((l) => l.level === inputs.level);
-  // A rider's file names its sections "Stage 1: …" already: the number isn't said twice.
-  const sectionName = (s: DailySection) => (/^stage\s*\d+\b/i.test(s.title) ? s.title : `${s.number}: ${s.title}`);
-  const section = (label: string, value: number | undefined, pick: (n: number) => void) => (
-    <Field label={label}>
-      <Select aria-label={label} selectedKey={value === undefined ? null : String(value)} onSelectionChange={(k) => k !== null && pick(Number(k))} isDisabled={readOnly} className="w-full min-w-0">
-        <SelectTrigger className="w-full min-w-0">
-          {/* Long names end in "…" inside the field; the list shows them whole. */}
-          <SelectValue className="min-w-0">{({ selectedText }) => <span className="truncate">{selectedText}</span>}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {sections.map((s) => (
-            <SelectItem key={s.number} id={String(s.number)} textValue={sectionName(s)}>
-              {sectionName(s)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </Field>
-  );
+  // Where the trip starts and ends (D104): any town on the route; the direction follows from the two.
+  const [start, end] = [startOf(inputs), endOf(inputs)];
+  const townAt = (m: number) => routeTowns.find((t) => Math.abs(t.m - m) < 1)?.id ?? null;
+  const places = useMemo(() => routeTowns.map((t) => ({ id: t.id, name: t.name, alt: t.alt, km: t.m / 1000, station: t.station })), [routeTowns]);
+  const setEnd = (which: "start" | "end", id: string | null) => {
+    const t = routeTowns.find((x) => x.id === id);
+    if (!t) return;
+    const other = which === "start" ? end : start;
+    // The other end chosen again: the two swap.
+    if (Math.abs(t.m - other) < 1) return onChange(withEnds(inputs, end, start));
+    onChange(which === "start" ? withEnds(inputs, t.m, end) : withEnds(inputs, start, t.m));
+  };
 
   return (
     <div className="grid gap-5">
+      <div className="grid gap-1.5">
+        <div className="grid items-end gap-x-2 gap-y-5 sm:grid-cols-[1fr_auto_1fr]">
+          <Field label="Start in">
+            <TownSelect label="Start in" towns={places} selected={townAt(start)} placeholder={`km ${km(start / 1000)}`} isDisabled={readOnly} onSelect={(id) => setEnd("start", id)} />
+          </Field>
+          <Button variant="ghost" size="icon" aria-label="Swap the start and the end" isDisabled={readOnly} onPress={() => onChange(withEnds(inputs, end, start))} className="justify-self-start">
+            <Icons.ArrowLeftRight />
+          </Button>
+          <Field label="End in">
+            <TownSelect label="End in" towns={places} selected={townAt(end)} placeholder={`km ${km(end / 1000)}`} isDisabled={readOnly} onSelect={(id) => setEnd("end", id)} />
+          </Field>
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {km(Math.abs(end - start) / 1000)} km, {inputs.direction === "forward" ? "as the route runs" : "the other way from how the route runs"}. Any town or village with places to stay; the train marks a station that carries bikes within 10 km.
+        </span>
+      </div>
+
       <div className="grid gap-5 sm:grid-cols-2">
         <Field
           label="Start date"
@@ -310,17 +309,10 @@ export function Questions({ inputs, levels, daily, suggestedMonth, datesConfirme
 
       <details className="group rounded-2xl border px-4 py-3">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-medium">
-          Stretch and preferences
+          Preferences
           <Icons.ChevronDown className="ml-auto size-4 transition-transform group-open:rotate-180" />
         </summary>
         <div className="mt-4 grid gap-5">
-          <div className="grid gap-5">
-            {section("From section", first?.number, (n) => setRange(n, last?.number ?? n))}
-            {section("To section", last?.number, (n) => setRange(first?.number ?? n, n))}
-          </div>
-          <Field label="Direction">
-            <Choice label="Direction" value={inputs.direction} options={WAYS} disabled={readOnly} onPick={(v) => set("direction", v)} />
-          </Field>
           <div className="grid gap-2.5">
             <Check label="Rather avoid busy roads" checked={inputs.avoidBusy} disabled={readOnly} onChange={(on) => set("avoidBusy", on)} />
             <Check label="Rather avoid gravel" checked={inputs.avoidGravel} disabled={readOnly} onChange={(on) => set("avoidGravel", on)} />

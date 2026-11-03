@@ -7,7 +7,7 @@
  * for us (D43). The question lives in the address, so a search can be shared or reopened.
  */
 import type { DreamSection } from "@dpg/contracts";
-import { daysNote, type DreamRoute, nightsNote, pickedStretch, planLink, routeDescription, stretchesFor, type StretchResult } from "@dpg/dream";
+import { bothTowns, daysNote, type DreamRoute, nightsNote, planLink, routeDescription, stretchesFor, type StretchResult } from "@dpg/dream";
 import { km } from "@dpg/planner";
 import {
   Button,
@@ -18,13 +18,7 @@ import {
   CardTitle,
   cn,
   Icons,
-  Label,
   LinkButton,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   StretchCard,
 } from "@dpg/ui";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
@@ -45,7 +39,6 @@ import {
   keyOf,
   type Level,
   daysText,
-  type Point,
   pointsOf,
   readAsk,
   stretchName,
@@ -61,9 +54,8 @@ import { Glance } from "./Glance";
 
 const SHOWN = 3;
 const MORE = 5;
-const OWN = "own";
 
-type View = "results" | "compare" | "own";
+type View = "results" | "compare";
 
 /** The page around every Dream view: the header and a centred column. */
 function Page({ routeName, children }: { routeName?: string; children: ReactNode }) {
@@ -207,39 +199,6 @@ function Comparison({ pair, names, a, levels, titles, planOf }: {
   );
 }
 
-/** Any stretch, from one town to another, for riders who know where they want to go. */
-function TownPicker({ points, from, to, onChange }: { points: Point[]; from: number | null; to: number | null; onChange: (from: number | null, to: number | null) => void }) {
-  const pick = (label: string, value: number | null, set: (v: number | null) => void) => (
-    <div className="grid min-w-0 flex-[1_1_220px] gap-1.5">
-      <Label>{label}</Label>
-      <Select
-        aria-label={label}
-        placeholder="Choose a town…"
-        selectedKey={value === null ? null : String(value)}
-        onSelectionChange={(k) => set(k === null ? null : Number(k))}
-        className="w-full"
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {points.map((p, i) => (
-            <SelectItem key={i} id={String(i)} textValue={p.name}>
-              {p.name} <span className="text-muted-foreground">(km {km(p.m / 1000)})</span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
-  );
-  return (
-    <div className="flex flex-wrap gap-3">
-      {pick("From", from, (v) => onChange(v, to))}
-      {pick("To", to, (v) => onChange(from, v))}
-    </div>
-  );
-}
-
 function DreamRoute({ route }: { route: string }) {
   const [network = "", ref = ""] = route.split("/");
   const [files, setFiles] = useState<DreamFiles | null>(null);
@@ -249,7 +208,6 @@ function DreamRoute({ route }: { route: string }) {
   const [count, setCount] = useState(SHOWN);
   const [picked, setPicked] = useState<string | null>(null);
   const [compare, setCompare] = useState<string[]>([]);
-  const [own, setOwn] = useState<{ from: number | null; to: number | null }>({ from: null, to: null });
   const [view, setView] = useState<View>("results");
 
   useEffect(() => {
@@ -272,6 +230,11 @@ function DreamRoute({ route }: { route: string }) {
   const sections = useMemo(() => [...(files?.dream.sections ?? [])].sort((x, y) => x.from_m - y.from_m), [files]);
   const daily = useMemo(() => new Map((files?.daily ?? []).map((d) => [d.number, d])), [files]);
   const points = useMemo(() => pointsOf(sections, daily), [sections, daily]);
+  // The towns where stages meet (D104), with a bike-carrying station where the stage either side of it names one.
+  const towns = useMemo(
+    () => points.map((p, i) => ({ id: p.name, name: p.name, km: p.m / 1000, station: sections[i]?.station_start ?? sections[i - 1]?.station_end ?? null })),
+    [points, sections],
+  );
   const countries = useMemo(() => countryRows(sections).length, [sections]);
   const examples = useMemo(() => examplesFor(sections), [sections]);
   // The route as Dream's tools see it (D77): the page and the assistant work from the same functions.
@@ -284,7 +247,6 @@ function DreamRoute({ route }: { route: string }) {
   // Every stretch that fits is counted; the list shows the best few.
   const results = useMemo(() => (dr ? stretchesFor(dr, a) : []), [dr, a]);
   const shown = useMemo(() => results.slice(0, count), [results, count]);
-  const ownResult = useMemo(() => (dr && own.from !== null && own.to !== null ? pickedStretch(dr, a, own.from, own.to) : null), [dr, a, own]);
   const byNumber = useMemo(() => new Map(sections.map((s: DreamSection) => [s.number, s])), [sections]);
   const span = (r: StretchResult) => ({ fromM: byNumber.get(r.first)?.from_m ?? 0, toM: byNumber.get(r.last)?.to_m ?? 0 });
   const planOf = (r: StretchResult) => (dr ? planLink(dr, r, a) : "");
@@ -299,11 +261,6 @@ function DreamRoute({ route }: { route: string }) {
     () => pair.map((r, i) => ({ key: keyOf(r), ...span(r), on: i === 0, label: String(i + 1) })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [compare, results, byNumber],
-  );
-  const ownStretches: MapStretch[] = useMemo(
-    () => (ownResult ? [{ key: OWN, ...span(ownResult), on: true, label: "" }] : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ownResult, byNumber],
   );
 
   if (error)
@@ -323,12 +280,18 @@ function DreamRoute({ route }: { route: string }) {
   const levels = files.dream.levels;
   const titles = Object.fromEntries(files.dream.themes.map((t) => [t.id, t.title]));
   const total = sections.reduce((s, x) => s + x.length_m, 0);
-  const asked = a.level !== null && (a.days !== null || ownRoute);
+  // Two towns make one stretch, with a usual day's days until the rider sets theirs (D104).
+  const twoTowns = !!dr && bothTowns(dr, a);
+  const asked = a.level !== null && (a.days !== null || ownRoute || twoTowns);
   const change = (patch: Partial<Ask>) => {
     setA((x) => ({ ...x, ...patch }));
     setPicked(null);
     setCompare([]);
     setCount(SHOWN);
+  };
+  const pickTowns = () => {
+    window.scrollTo({ top: 0 });
+    setOpen("towns");
   };
   const toggleCompare = (r: StretchResult) =>
     setCompare((c) => (c.includes(keyOf(r)) ? c.filter((x) => x !== keyOf(r)) : [...c.slice(-1), keyOf(r)]));
@@ -338,7 +301,7 @@ function DreamRoute({ route }: { route: string }) {
       levels={levels}
       themes={files.dream.themes}
       countries={countryRows(sections).map((r) => r.cc)}
-      towns={points.map((p) => p.name)}
+      towns={towns}
       open={open}
       onOpen={setOpen}
       onChange={change}
@@ -377,75 +340,6 @@ function DreamRoute({ route }: { route: string }) {
     );
   }
 
-  if (view === "own") {
-    const ownName = own.from !== null && own.to !== null ? `${points[own.from]!.name} → ${points[own.to]!.name}` : "";
-    return (
-      <Page routeName={routeName}>
-        <BackTo label={asked ? `${results.length} stretches that fit` : "The whole route"} onPress={() => setView("results")} />
-        {chips}
-        <div className="flex flex-wrap items-start gap-7">
-          <section aria-labelledby="own-title" className="flex max-w-[600px] min-w-0 flex-[1_1_480px] flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <h1 id="own-title" className="text-3xl font-bold tracking-tight">
-                Your own stretch
-              </h1>
-              <p className="text-muted-foreground">
-                Any two towns on the route. We describe it the same way as the others, and warn you where it doesn't fit, but never rule it out.
-              </p>
-            </div>
-            <TownPicker
-              points={points}
-              from={own.from}
-              to={own.to}
-              onChange={(from, to) => {
-                setOwn({ from, to });
-                setPicked(from !== null && to !== null && from !== to ? OWN : null);
-              }}
-            />
-            {own.from !== null && own.to !== null && own.from !== own.to && a.level === null && (
-              <p className="flex items-center gap-2 text-muted-foreground">
-                <Icons.Info className="size-4" />
-                Set your level above to see the days it takes and how hard it is.
-              </p>
-            )}
-            {ownResult && (
-              <StretchCard
-                name={ownName}
-                facts={factsText(ownResult, levels, a)}
-                when={whenText(ownResult, a)}
-                why={whyLines(ownResult).slice(0, 4)}
-                watch={watchLines(ownResult)}
-                checks={ownResult.check}
-                chosen
-                planHref={planOf(ownResult)}
-              />
-            )}
-            {ownResult && a.days === null && (
-              <p className="text-xs text-muted-foreground">
-                {dr && daysNote(dr, a, ownResult)} {dr && nightsNote(dr, a, ownResult)}
-              </p>
-            )}
-          </section>
-          <section aria-label="Map of your stretch" className="min-w-0 flex-[999_1_560px] lg:sticky lg:top-6">
-            <MapCard
-              files={files}
-              stretches={ownStretches}
-              focus={ownResult ? OWN : null}
-              onPick={() => {}}
-              legend={
-                <>
-                  <Swatch className="bg-muted-foreground/60" label={routeName} />
-                  <Swatch className="bg-route-chosen" label={ownResult ? `Your stretch, ${km(ownResult.km)} km` : "Your stretch"} />
-                </>
-              }
-            />
-          </section>
-        </div>
-        {footnote}
-      </Page>
-    );
-  }
-
   return (
     <Page routeName={routeName}>
       <div className="flex flex-col gap-1.5">
@@ -476,15 +370,15 @@ function DreamRoute({ route }: { route: string }) {
         {asked ? (
           <section aria-labelledby="results-title" className="flex max-w-[600px] min-w-0 flex-[1_1_480px] flex-col gap-3.5">
             <h2 id="results-title" className="text-lg font-semibold">
-              {ownRoute ? "Your route" : results.length === 0 ? "Nothing fits" : results.length === 1 ? "One stretch fits" : `${results.length} stretches fit`}
+              {ownRoute ? "Your route" : twoTowns ? "Your stretch" : results.length === 0 ? "Nothing fits" : results.length === 1 ? "One stretch fits" : `${results.length} stretches fit`}
               {results.length > shown.length && <span className="font-normal text-muted-foreground"> · the best {shown.length} shown</span>}
             </h2>
             {results.length === 0 && (
               <p className="text-muted-foreground">
-                Every stretch is more than your level can do in these days, or misses something you asked for (trains at both ends, avoiding busy roads). Try more days, a higher level or fewer needs, or pick your own stretch below.
+                Every stretch is more than your level can do in these days, or misses something you asked for (a town to start or end in, trains at both ends, avoiding busy roads). Try more days, a higher level or fewer needs, or pick your own stretch below.
               </p>
             )}
-            {ownRoute && a.days === null && results.length > 0 && (
+            {(ownRoute || twoTowns) && a.days === null && results.length > 0 && (
               <p className="text-xs text-muted-foreground">
                 {dr && daysNote(dr, a, results[0]!)} {dr && nightsNote(dr, a, results[0]!)}
               </p>
@@ -520,18 +414,20 @@ function DreamRoute({ route }: { route: string }) {
                 )}
               </div>
             )}
-            <Card size="sm">
-              <CardHeader>
-                <CardTitle className="font-semibold">Or pick your own stretch</CardTitle>
-                <CardDescription>Choose any two towns on the route. We describe your stretch the same way, and warn you about it, but never rule it out.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" size="sm" onPress={() => setView("own")}>
-                  <Icons.MapPin data-icon="inline-start" />
-                  Pick two towns
-                </Button>
-              </CardContent>
-            </Card>
+            {!twoTowns && (
+              <Card size="sm">
+                <CardHeader>
+                  <CardTitle className="font-semibold">Or pick your own stretch</CardTitle>
+                  <CardDescription>Choose where it starts and ends. We describe your stretch the same way, and warn you about it, but never rule it out.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" size="sm" onPress={pickTowns}>
+                    <Icons.MapPin data-icon="inline-start" />
+                    Pick two towns
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </section>
         ) : (
           <section aria-label="When to ride" className="max-w-[820px] min-w-0 flex-[1_1_740px]">
@@ -586,7 +482,7 @@ function DreamRoute({ route }: { route: string }) {
                   </Card>
                 ))}
               </div>
-              <Button variant="ghost" size="sm" className="w-fit" onPress={() => setView("own")}>
+              <Button variant="ghost" size="sm" className="w-fit" onPress={pickTowns}>
                 <Icons.MapPin data-icon="inline-start" />
                 Or pick your own stretch, town to town
               </Button>

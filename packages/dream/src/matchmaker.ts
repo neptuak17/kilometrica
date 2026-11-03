@@ -14,6 +14,16 @@ export type SurfaceKind = "road" | "cycle_path" | "gravel";
 /** A country the rider will ride only in, or avoids (D80). */
 export type CountryPref = "only" | "avoid";
 
+/**
+ * A town where stages meet (D104): the daily section that starts there and the one that ends there, by number (null
+ * at the route's own ends). Matched by section rather than by metre, so a ferry or gap between the two still counts.
+ */
+export interface TownAt {
+  name: string;
+  after: number | null;
+  before: number | null;
+}
+
 export interface DreamQuery {
   /** Rider level 1-5 (D36). */
   level: number;
@@ -33,6 +43,9 @@ export interface DreamQuery {
   countries?: Record<string, CountryPref>;
   /** A town the stretch must pass, at its route measure (D80). */
   through?: { m: number; name: string } | null;
+  /** The town the stretch starts in, and the one it ends in (D104). */
+  from?: TownAt | null;
+  to?: TownAt | null;
   limit?: number;
 }
 
@@ -247,6 +260,16 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
     if (strict) return null;
     beyond.push(`doesn't pass ${q.through.name}`);
   }
+  // Where it starts and ends (D104): riding forward, a stretch starts with the section after the town; riding back,
+  // with the one before it.
+  if (q.from && secs[0]!.number !== (way === "forward" ? q.from.after : q.from.before)) {
+    if (strict) return null;
+    beyond.push(`doesn't start in ${q.from.name}`);
+  }
+  if (q.to && secs[secs.length - 1]!.number !== (way === "forward" ? q.to.before : q.to.after)) {
+    if (strict) return null;
+    beyond.push(`doesn't end in ${q.to.name}`);
+  }
 
   const first = secs[0]!;
   const last = secs[secs.length - 1]!;
@@ -460,7 +483,7 @@ export function describeStretch(dream: DreamFile, from: number, to: number, q: O
   return evaluate(dream, { sections, crossings, gapM }, from <= to ? "forward" : "reverse", { ...q, days }, false);
 }
 
-/** Ranked, non-overlapping stretches for the query (at most `limit`, default 10). */
+/** Ranked stretches for the query, kept apart (at most `limit`, default 10). */
 export function findStretches(dream: DreamFile, q: DreamQuery): StretchResult[] {
   const level = dream.levels.find((l) => l.level === q.level);
   const maxKm = (level?.km_max ?? 130) * (1 + TOLERANCE) * q.days;
@@ -473,9 +496,17 @@ export function findStretches(dream: DreamFile, q: DreamQuery): StretchResult[] 
     }
   }
   candidates.sort((a, b) => b.score - a.score);
+  // From or to a town (D104), every stretch shares that end, so they would all overlap: their other ends are kept at
+  // least a middling day at the level apart instead.
+  const by = new Map(dream.sections.map((s) => [s.number, s]));
+  const otherEnd = (r: StretchResult) => {
+    const ends = r.way === "forward" ? [by.get(r.first)!.from_m, by.get(r.last)!.to_m] : [by.get(r.last)!.to_m, by.get(r.first)!.from_m];
+    return q.from ? ends[1]! : ends[0]!;
+  };
+  const apart = level ? ((level.km_min + level.km_max) / 2) * 1000 : 65_000;
   const picked: StretchResult[] = [];
   for (const c of candidates) {
-    if (picked.some((p) => overlap(p, c) > 0.5)) continue;
+    if (q.from || q.to ? picked.some((p) => Math.abs(otherEnd(p) - otherEnd(c)) < apart) : picked.some((p) => overlap(p, c) > 0.5)) continue;
     picked.push(c);
     if (picked.length >= (q.limit ?? 10)) break;
   }

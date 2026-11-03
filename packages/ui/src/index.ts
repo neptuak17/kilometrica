@@ -31,6 +31,7 @@ export * from "./components/km/day-row"
 export * from "./components/km/effort-chart"
 export * from "./components/km/elevation-profile"
 export * from "./components/km/stretch-card"
+export * from "./components/km/town-select"
 
 // A labelled text field wraps Label + Input; React Aria's TextField provides the wiring.
 export { TextField } from "react-aria-components"

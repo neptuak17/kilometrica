@@ -26,6 +26,7 @@ import {
 import { LEVEL_FLAT_KMH, riderFor, speed, usualDay } from "./pace";
 import { makePlan, ownNightBeds } from "./plan";
 import { ridingDays, suggestedRest, suggestedRestDays } from "./rest";
+import { endOf, planTowns, startOf, withEnds } from "./ends";
 import { secondThoughts } from "./thoughts";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
@@ -75,6 +76,7 @@ function stop(km: number, over: Partial<Stop> = {}): Stop {
   return {
     id: `s${km}`,
     name: `Town ${km}`,
+    name_en: null,
     near: null,
     place_kind: "town",
     at_m: km * 1000,
@@ -1111,5 +1113,68 @@ describe("the day's big climb, a day's own part of it (D75, D82)", () => {
     const ups = cards.map((i) => Number(/^(\d+) m up/.exec(i.why)![1]));
     expect(ups.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(1200);
     expect(cards.at(-1)!.title).toMatch(/to 1300 m$/);
+  });
+});
+
+describe("where a trip starts and ends (D104)", () => {
+  it("lists the stage towns and the towns with beds in route order, a stop by a stage town's name folded into it", () => {
+    const d = data({
+      stops: [
+        stop(2, { id: "athina", name: "Αθήνα", name_en: "Athens" }),
+        stop(50),
+        stop(60, { id: "korinthos", name: "Κόρινθος", name_en: "Corinth" }),
+      ],
+    });
+    d.daily = [
+      { number: 1, start_name: "Athens", end_name: "Mid", from_m: 0, to_m: 100_000 } as DailySection,
+      { number: 2, start_name: "Mid", end_name: "End", from_m: 100_000, to_m: 300_000 } as DailySection,
+    ];
+    const towns = planTowns(d);
+    expect(towns.map((t) => [t.name, t.alt, t.m, t.station])).toEqual([
+      ["Athens", "Αθήνα", 0, null],
+      ["Town 50", null, 50_000, "Gare 50"],
+      ["Κόρινθος", "Corinth", 60_000, "Gare 50"], // the station is within 10 km
+      ["Mid", null, 100_000, null],
+      ["End", null, 300_000, null],
+    ]);
+  });
+
+  it("rides from the start to the end, whichever way along the route", () => {
+    const i = withEnds(inputs(), 200_000, 50_000);
+    expect([i.fromM, i.toM, i.direction]).toEqual([50_000, 200_000, "reverse"]);
+    expect([startOf(i), endOf(i)]).toEqual([200_000, 50_000]);
+  });
+
+  it("offers a town with a station when the start or end has none, and moves the end there", () => {
+    const d = data();
+    const p = makePlan(d, inputs({ fromM: 35_000, toM: 280_000, travel: true }));
+    const start = p.items.find((i) => i.id === "travel-town:start")!;
+    expect(start.options!.map((o) => [o.id, o.label, o.effect])).toEqual([
+      ["start-at:40000", "Start in Town 40", "day 1 5 km shorter"], // Gare 50 is 10 km from it
+      ["keep", "Keep it", "start in Town 30"],
+    ]);
+    const end = p.items.find((i) => i.id === "travel-town:end")!;
+    expect(end.options!.map((o) => o.id)).toEqual(["end-at:260000", "keep"]); // Gare 250 is 10 km from it
+    expect(end.options![0]!.effect).toBe("the last day 20 km shorter");
+    const out = optionOutcome(end, "end-at:260000");
+    expect(out).toEqual({ action: { type: "ends", end: 260_000 } });
+    const next = applyAction({ inputs: p.inputs, choices: NO_CHOICES }, (out as { action: PlanAction }).action);
+    expect([next.inputs.fromM, next.inputs.toM, next.inputs.direction]).toEqual([35_000, 260_000, "forward"]);
+    // Not when the rider leaves getting there and home out of the plan (D79).
+    expect(makePlan(d, inputs({ fromM: 35_000, toM: 280_000, travel: false })).items.some((i) => i.id.startsWith("travel-town:"))).toBe(false);
+  });
+
+  it("asks once about more riding days when a longer stretch makes days harder than the level", () => {
+    const d = data({ lengthKm: 420 });
+    const before = makePlan(d, inputs({ toM: 200_000, days: 4 }));
+    const after = makePlan(d, inputs({ toM: 400_000, days: 4 }));
+    const t = secondThoughts(d, before, after).find((x) => x.id.startsWith("thought:days:"))!;
+    const days = (t.options[0]!.action as { inputs: { days: number } }).inputs.days;
+    const within = (n: number) => makePlan(d, inputs({ toM: 400_000, days: n })).days.every((x) => x.effort === "within");
+    expect(within(days)).toBe(true);
+    expect(within(days - 1)).toBe(false);
+    expect(t.keep).toBe("Keep 4 riding days");
+    // Not when the start and end stay where they were.
+    expect(secondThoughts(d, after, after).some((x) => x.id.startsWith("thought:days:"))).toBe(false);
   });
 });
