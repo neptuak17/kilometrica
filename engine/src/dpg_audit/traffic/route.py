@@ -14,7 +14,7 @@ from dpg_audit.match.matcher import LineMatch
 from dpg_audit.osmdata import OsmData
 from dpg_audit.services.policy import CountryLookup
 from dpg_audit.sources.osm import geofabrik_index
-from dpg_audit.traffic.calibrate import load_bands
+from dpg_audit.traffic.calibrate import load_bands, town_distances
 from dpg_audit.traffic.counts import TRAFFIC_DIR, latest_per_station, load_sources, osm_refs, raw_dir, read
 
 COUNT_REACH_M = 150.0
@@ -22,6 +22,9 @@ COUNT_REACH_M = 150.0
 COUNT_SPAN_M = 5000.0
 """A count stands for its road this far either side along the route, the nearest count winning."""
 SAMPLE_M = 1000.0
+TOWN_SAMPLE_M = 250.0
+FALLBACK_COUNTRY = "FR"
+"""Countries with no counts of their own use this country's calibration, labelled as such (D109)."""
 
 
 @dataclass(frozen=True)
@@ -39,6 +42,21 @@ class TrafficContext:
     """Road reference -> (measures, counts) of the counts on this route's roads."""
     bands: dict[str, dict[str, dict]] = field(default_factory=dict)
     legal: dict[str, dict[str, int]] = field(default_factory=dict)
+    town_m: list[float] = field(default_factory=list)
+    """Distance to the nearest city or town every TOWN_SAMPLE_M along the path."""
+
+    def town_m_at(self, m: float) -> float | None:
+        if not self.town_m:
+            return None
+        return self.town_m[min(int(m // TOWN_SAMPLE_M), len(self.town_m) - 1)]
+
+    def bands_for(self, country: str | None) -> tuple[dict[str, dict] | None, str | None]:
+        """The calibrated bands for a country, else France's (D109): (bands, the country they come from)."""
+        if country in self.bands:
+            return self.bands[country], country
+        if FALLBACK_COUNTRY in self.bands:
+            return self.bands[FALLBACK_COUNTRY], FALLBACK_COUNTRY
+        return None, None
 
     def country_at(self, m: float) -> str | None:
         if not self.countries:
@@ -61,11 +79,26 @@ def load_legal(path: Path = TRAFFIC_DIR / "legal-speeds.yaml") -> dict[str, dict
     return yaml.safe_load(path.read_text(encoding="utf-8"))["countries"]
 
 
-def build(root: Path, path: RoutePath, matches: list[LineMatch], osm: OsmData, log=print) -> TrafficContext:
+def build(
+    root: Path,
+    path: RoutePath,
+    matches: list[LineMatch],
+    osm: OsmData,
+    towns: list[tuple[float, float]] = (),
+    log=print,
+) -> TrafficContext:
+    """`towns`: (lon, lat) of the cities and towns in the corridor."""
     ms = np.arange(0.0, path.length + SAMPLE_M, SAMPLE_M)
     pts = np.array([path.locate(float(min(m, path.length))) for m in ms])
     countries = CountryLookup(geofabrik_index(root)).lookup(pts[:, 0], pts[:, 1])
-    ctx = TrafficContext(countries=countries, bands=load_bands(), legal=load_legal())
+    tms = np.arange(0.0, path.length + TOWN_SAMPLE_M, TOWN_SAMPLE_M)
+    tpts = [path.locate(float(min(m, path.length))) for m in tms]
+    ctx = TrafficContext(
+        countries=countries,
+        bands=load_bands(),
+        legal=load_legal(),
+        town_m=[float(d) for d in town_distances(tpts, list(towns))],
+    )
 
     # The route's roads by measure, with their references, to check a count lies on the road the route rides.
     pieces: list[tuple[float, float, list[str]]] = []

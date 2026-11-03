@@ -324,16 +324,27 @@ def band_of(aadt: float) -> int:
     return sum(aadt > edge for edge in BAND_EDGES)
 
 
+TOWN_DISTANCE = ((2000.0, "0-2 km"), (5000.0, "2-5 km"), (10000.0, "5-10 km"), (float("inf"), "over 10 km"))
+"""Distance from the nearest city or town, in the bands the volume is calibrated on (D109)."""
+
+
+def town_band(metres: float) -> str:
+    return next(label for edge, label in TOWN_DISTANCE if metres < edge)
+
+
 def ecs_traffic(
     tags: dict[str, str],
     edge: dict[str, Any],
     legal: dict[str, int] | None = None,
     bands: dict[str, dict] | None = None,
     measured: Any = None,
+    town_m: float | None = None,
+    origin: str | None = None,
 ) -> Result:
     """The ECS traffic category: traffic-free, or very low .. very high from the speed limit and the volume band.
-    The volume is measured where a count lies on the road (`measured`: aadt, year, source), else the road class's
-    band calibrated on the country's counts (`bands`), else the earlier estimate (D108)."""
+    The volume is measured where a count lies on the road (`measured`: aadt, year, source), else the band of the
+    road's class and distance from the nearest town (`town_m`), calibrated on counts (`bands`, from `origin`, the
+    country the counts come from), else the earlier estimate (D108, D109)."""
     hw = _highway(tags)
     if edge.get("use") == "ferry" or tags.get("route") == "ferry":
         return "na", "high", {"reason": "ferry"}
@@ -364,8 +375,12 @@ def ecs_traffic(
     else:
         row = (bands or {}).get(cls)
         if row:
-            band, conf = int(row["band"]), "medium"
-            volume_source = f"estimated from road class, calibrated on {row['counts']} counts"
+            near = row.get("by_town_distance", {}).get(town_band(town_m)) if town_m is not None else None
+            use = near if near and near.get("used") else row
+            band, conf = int(use["band"]), "medium"
+            what = "road class and distance from a town" if use is near else "road class"
+            where = f" in {origin}" if origin else ""
+            volume_source = f"estimated from {what}, calibrated on {use['counts']} counts{where}"
         if (lanes or 0) >= 4:
             band = 4
     col = _speed_column(speed)

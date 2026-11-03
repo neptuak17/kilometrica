@@ -86,3 +86,31 @@ def test_counts_match_the_nearest_road_of_the_same_reference():
     assert [(c.ref, w.id) for c, w in match([count], ways)] == [("D10", 2)]
     far = Count("fr-aude", "FR", "D10", 900, 2020, 2.005, 43.01)  # about 1 km away
     assert match([far], ways) == []
+
+
+def test_far_from_towns_a_secondary_road_takes_its_quieter_band():
+    bands = {
+        "secondary": {
+            "band": 2,
+            "counts": 452,
+            "by_town_distance": {
+                "over 10 km": {"band": 1, "counts": 244, "used": True},
+                "0-2 km": {"band": 3, "counts": 21, "used": True},
+                "2-5 km": {"band": 4, "counts": 3, "used": False},
+            },
+        }
+    }
+    tags = {"highway": "secondary"}
+    far = classify.ecs_traffic(tags, {}, FR, bands, None, 15_000, "FR")
+    assert far[0] == "moderate"  # 501-2,000 at 80 km/h
+    source = "estimated from road class and distance from a town, calibrated on 244 counts in FR"
+    assert far[2]["volume_source"] == source
+    assert classify.ecs_traffic(tags, {}, FR, bands, None, 1_000, "FR")[0] == "very_high"
+    assert classify.ecs_traffic(tags, {}, FR, bands, None, 3_000, "FR")[0] == "high"  # too few: the class's band
+
+
+def test_countries_without_counts_use_france():
+    ctx = TrafficContext(bands={"FR": {"secondary": {"band": 2}}})
+    assert ctx.bands_for("GR") == ({"secondary": {"band": 2}}, "FR")
+    assert ctx.bands_for("FR")[1] == "FR"
+    assert TrafficContext().bands_for("GR") == (None, None)

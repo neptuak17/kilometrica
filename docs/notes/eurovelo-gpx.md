@@ -271,3 +271,12 @@ On EV8's 95 developed sections, 13 reach 95% as judged. Untagged surfaces (1,074
 | EV15 main line (1,463 km) | 37 km | 45 km | none |
 
 EV8's rise is mostly in countries with no counts, where roads keep the earlier estimate and the legal 90 km/h: Greece 317 → 470 km, Albania 133 → 270, Croatia 344 → 439, Montenegro 78 → 104.
+
+**With distance from a town (D109, bundles 2026-11-03):** where a road has no count, its band now comes from its class and the distance to the nearest city or town, calibrated on France's counts, and countries with no counts of their own use France's figures. Busy (high or very high traffic):
+
+| | Before D108 (traffic stress 4) | D108 (class only) | D109 (class and distance) |
+|---|---:|---:|---:|
+| EV8 (7,213 km) | 1,537 km | 2,037 km | 2,081 km |
+| EV15 main line (1,463 km) | 37 km | 45 km | 54 km |
+
+EV8 by country, before D108 and now: Spain 265 → 335 km, France 38 → 50, Italy 48 → 77, Slovenia 0 → 1, Croatia 344 → 392, Montenegro 78 → 82, Albania 133 → 300, Greece 317 → 452, Türkiye 122 → 167, Cyprus 192 → 226. Near towns, where much of EV8's road riding is, France's counts put secondary roads at 2,001–4,000 a day or more, which is high traffic at 80–90 km/h in ECS terms; the rise is in countries with no counts of their own. Against ECF's EV15 report, essential is now 5 points apart on average (within 10 on 43 of 46 rows), important 7, additional 19.

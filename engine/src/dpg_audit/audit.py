@@ -109,7 +109,8 @@ def run(
     _log(f"reading OSM tags for {len(way_ids):,} matched ways …")
     osm = load_osm(pbf, way_ids, wd / "osm")
     ev_number = classify.eurovelo_number(build.route.ref) if src.eurovelo else None
-    traffic = traffic_route.build(root, build.path, matches, osm, log=_log)
+    towns = [(s.lon, s.lat) for s in settlements if s.kind in ("city", "town")]
+    traffic = traffic_route.build(root, build.path, matches, osm, towns, log=_log)
     matched = build_matched_layers(build.path, matches, osm, ev_number, traffic)
     notes = classify_gaps(build.components, osm.ferries, route_cfg.gaps)
     t["layers"] = time.perf_counter() - t0 - sum(t.values())

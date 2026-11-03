@@ -82,15 +82,17 @@ def build_matched_layers(
             tags = osm.way_tags.get(way, {})
             if piece.approx:
                 approx += m1 - m0
-            legal = bands = measured = None
+            legal = bands = measured = town_m = origin = None
             if traffic is not None:
                 mid = (m0 + m1) / 2
                 country = traffic.country_at(mid)
-                legal, bands = traffic.legal.get(country), traffic.bands.get(country)
+                legal = traffic.legal.get(country)
+                bands, origin = traffic.bands_for(country)
+                town_m = traffic.town_m_at(mid)
                 refs = osm_refs(tags.get("ref"))
                 measured = traffic.measured(refs, mid) if refs else None
             lts, lts_conf, lts_detail = classify.traffic_stress(tags, piece.edge, legal)
-            ecs_t = classify.ecs_traffic(tags, piece.edge, legal, bands, measured)
+            ecs_t = classify.ecs_traffic(tags, piece.edge, legal, bands, measured, town_m, origin)
             values = {
                 "traffic_stress": (lts, lts_conf, {}),
                 "infrastructure": classify.infrastructure(tags, piece.edge, lts, ecs_t[0]),

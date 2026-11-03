@@ -17,7 +17,7 @@ import osmium
 import shapely
 import yaml
 
-from dpg_audit.layers.classify import ROAD_CLASSES, VOLUME_BANDS, band_of
+from dpg_audit.layers.classify import ROAD_CLASSES, TOWN_DISTANCE, VOLUME_BANDS, band_of, town_band
 from dpg_audit.lrs.index import to_laea
 from dpg_audit.sources.osm import osm_dir
 from dpg_audit.traffic.counts import TRAFFIC_DIR, Count, latest_per_station, load_sources, osm_refs, read
@@ -50,6 +50,46 @@ def _extract(country_pbf: Path, bbox: tuple[float, float, float, float], work: P
     subprocess.run(["osmium", "tags-filter", "--overwrite", str(cut), "w/ref", "-o", str(out)], check=True)
     cut.unlink()
     return out
+
+
+def read_towns(country_pbf: Path, bbox: tuple[float, float, float, float], work: Path) -> list[tuple[float, float]]:
+    """Cities and towns (OSM place=city/town) in the box, the same places the route side measures from (D109)."""
+    key = hashlib.sha256(f"towns{country_pbf.name}{bbox}".encode()).hexdigest()[:10]
+    out = work / f"towns-{key}.osm.pbf"
+    if not (out.exists() and out.stat().st_mtime >= country_pbf.stat().st_mtime):
+        work.mkdir(parents=True, exist_ok=True)
+        cut = work / f"cut-{key}.osm.pbf"
+        b = ",".join(f"{v:.4f}" for v in bbox)
+        subprocess.run(["osmium", "extract", "--overwrite", "-b", b, str(country_pbf), "-o", str(cut)], check=True)
+        towns = ["osmium", "tags-filter", "--overwrite", str(cut), "n/place=city,town", "-o", str(out)]
+        subprocess.run(towns, check=True)
+        cut.unlink()
+    return [(o.lon, o.lat) for o in osmium.FileProcessor(str(out)) if o.is_node() and o.location.valid()]
+
+
+def town_distances(points: list[tuple[float, float]], towns: list[tuple[float, float]]) -> np.ndarray:
+    """Metres from each point to the nearest town (infinite when there are none)."""
+    if not towns or not points:
+        return np.full(len(points), np.inf)
+    tx, ty = to_laea(np.array([t[0] for t in towns]), np.array([t[1] for t in towns]))
+    px, py = to_laea(np.array([p[0] for p in points]), np.array([p[1] for p in points]))
+    tree = shapely.STRtree(shapely.points(tx, ty))
+    _, d = tree.query_nearest(shapely.points(px, py), return_distance=True)
+    return np.asarray(d, dtype=float)
+
+
+def _row(vols: list[float]) -> dict:
+    q = statistics.quantiles(vols, n=4) if len(vols) >= 4 else [min(vols), statistics.median(vols), max(vols)]
+    med = statistics.median(vols)
+    return {
+        "counts": len(vols),
+        "p25": round(q[0]),
+        "median": round(med),
+        "p75": round(q[2]),
+        "band": band_of(med),
+        "band_label": VOLUME_BANDS[band_of(med)],
+        "used": len(vols) >= MIN_COUNTS,
+    }
 
 
 def read_ref_ways(pbf: Path) -> list[RefWay]:
@@ -107,26 +147,25 @@ def calibrate(data_dir: Path, log=print) -> dict:
     for country, counts in sorted(by_country.items()):
         lons, lats = [c.lon for c in counts], [c.lat for c in counts]
         bbox = (min(lons) - 0.02, min(lats) - 0.02, max(lons) + 0.02, max(lats) + 0.02)
-        pbf = _extract(country_extract(data_dir, country), bbox, data_dir / "work" / "traffic")
+        extract = country_extract(data_dir, country)
+        pbf = _extract(extract, bbox, data_dir / "work" / "traffic")
         ways = read_ref_ways(pbf)
         matched = match(counts, ways)
         log(f"{country}: {len(matched):,} of {len(counts):,} counts matched to an OSM road of the same reference")
-        classes: dict[str, list[float]] = {}
-        for c, w in matched:
-            classes.setdefault(w.cls, []).append(c.aadt)
+        towns = read_towns(extract, bbox, data_dir / "work" / "traffic")
+        dists = town_distances([(c.lon, c.lat) for c, _ in matched], towns)
+        classes: dict[str, list[tuple[float, float]]] = {}
+        for (c, w), d in zip(matched, dists, strict=True):
+            classes.setdefault(w.cls, []).append((c.aadt, float(d)))
         rows = {}
-        for cls, vols in sorted(classes.items(), key=lambda kv: -len(kv[1])):
-            q = statistics.quantiles(vols, n=4) if len(vols) >= 4 else [min(vols), statistics.median(vols), max(vols)]
-            med = statistics.median(vols)
-            rows[cls] = {
-                "counts": len(vols),
-                "p25": round(q[0]),
-                "median": round(med),
-                "p75": round(q[2]),
-                "band": band_of(med),
-                "band_label": VOLUME_BANDS[band_of(med)],
-                "used": len(vols) >= MIN_COUNTS,
-            }
+        for cls, items in sorted(classes.items(), key=lambda kv: -len(kv[1])):
+            rows[cls] = _row([v for v, _ in items])
+            near = {}
+            for _, label in TOWN_DISTANCE:
+                vols = [v for v, d in items if town_band(d) == label]
+                if vols:
+                    near[label] = _row(vols)
+            rows[cls]["by_town_distance"] = near
         table[country] = {
             "sources": sorted({c.source for c in counts}),
             "years": [min(c.year or 0 for c in counts), max(c.year or 0 for c in counts)],
@@ -140,7 +179,9 @@ def write(table: dict, path: Path = TRAFFIC_DIR / "volume-bands.yaml") -> Path:
         "# Traffic volume by road class, calibrated on open counts (D108, question 153). Generated by\n"
         "# `dpg traffic-calibrate`; do not edit by hand. Per country and OSM road class: how many counts, their\n"
         "# quartiles (vehicles a day) and the ECS volume band of the median, used where a road has no count of its\n"
-        f"# own when `used` (at least {MIN_COUNTS} counts). Sources and licences: sources.yaml.\n"
+        f"# own when `used` (at least {MIN_COUNTS} counts); `by_town_distance` splits each class by the distance\n"
+        "# from the nearest city or town (D109). Countries with no counts of their own use France's. Sources:\n"
+        "# sources.yaml.\n"
     )
     doc = {"generated": date.today().isoformat(), "countries": table}
     body = yaml.safe_dump(doc, sort_keys=False, allow_unicode=True)
