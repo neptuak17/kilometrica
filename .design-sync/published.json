@@ -1,6 +1,6 @@
 {
   "files": {
-    "project/README.md": "4cfc4f3685f182abe29e9a8f9c65522bb8bfb8d5c45f1b3cb9524db4b8383698",
+    "project/README.md": "2e0a99acba478b6d5d024c78cee8185d61ca1e263f61332eee950fdc8fc95028",
     "project/components/Alert/Alert.d.ts": "ad3417f8a94a9e5f831ea42484dbd877d17be5738fc48d8e30616dd2e2f7b643",
     "project/components/Alert/README.md": "048810a639b5e4f91b750e543d7427f81ce380e3f055fd95b3bf5b2836560261",
     "project/components/Alert/preview.html": "1b42e4e97c6660bcca559019bf7ec8392e5add54dd587e691d9b3a745bd2a42d",
@@ -223,9 +223,12 @@
     "project/components/TooltipTrigger/README.md": "98397a015bc62a5a0a1344c4685d8723a4b89b67df4f06e56dc90da3d4d9fdf9",
     "project/components/TooltipTrigger/TooltipTrigger.d.ts": "766e6c167bd7e96c0d995b9e2c16f91849d918606570191256c7235b6bc6753a",
     "project/components/TooltipTrigger/preview.html": "596be9ec13eaaa167420f087e8507fc4bebecc81c6ac96c7fa650b3ffd2541e6",
-    "project/components/bundle.css": "1f57eaa20eb017114517f30d7134e0af4511ec0d3df5e2e29fc57736d6775f01",
-    "project/components/bundle.js": "8a8513d8a6a1dd58c223b803e7a626d4af2ac99fda58563d29d9fb196bde905d",
-    "project/components/index.d.ts": "244813febd1c010cfb516f86cabcf11486df499aec3036391e6d14ba1a69572f",
+    "project/components/TownSelect/README.md": "20dd993f8dffc99526e741732129bc24d3d13ef3af0a0a6082a739f945cc2ded",
+    "project/components/TownSelect/TownSelect.d.ts": "29d690ee1ba43b62499a45520941c891d186944b4ad8e65208a43caee2527856",
+    "project/components/TownSelect/preview.html": "7f4185ee52813bd24bd39edfed606cbe9abdeff61d8138e49d77b16db5fddd2f",
+    "project/components/bundle.css": "e2abcec34eea95f6917316945f2efdc8d8139861a645bf61cd832723c6b5bec6",
+    "project/components/bundle.js": "a34c6ab22bcf70b29e826a47a4f7810390565cdc66dde7274f9193d95d05676e",
+    "project/components/index.d.ts": "802dc0f0998ab626bdb1a4fccc914480de24d1fe45c5d3f09e409bfbc80b14ce",
     "project/components/lib/react-dom.js": "4f90394a7579bb9bb836e721e2a437da5c1be2286c764b579ac95a29c75d3803",
     "project/components/lib/react.js": "45ff7685ac7d2d9fdb02af95a5fcff6b96dffefe80b045d2fa7df20a599ab4ee",
     "project/fonts/fonts.css": "0d76d9fa07495968d6d7dfde0855baf61de20ebbdbdd101ce2ec0ee206bbfdcc",
