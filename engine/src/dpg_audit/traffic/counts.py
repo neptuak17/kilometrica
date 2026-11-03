@@ -7,8 +7,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import duckdb
+import numpy as np
+import shapely
 import yaml
 
+from dpg_audit.lrs.index import from_laea, to_laea
 from dpg_audit.rules.profile import PROFILES_DIR
 from dpg_audit.sources.download import download, fetch_text
 
@@ -27,6 +30,11 @@ class Count:
     lon: float
     lat: float
     """The count point, or the middle of a counted section."""
+    along: tuple[tuple[float, float], ...] = ()
+    """For a counted section: points every SECTION_STEP_M along it, so the count anchors along its whole length."""
+
+
+SECTION_STEP_M = 500.0
 
 
 def load_sources(path: Path = TRAFFIC_DIR / "sources.yaml") -> dict[str, dict]:
@@ -82,12 +90,15 @@ def read(data_dir: Path, source_id: str, cfg: dict) -> list[Count]:
     point = "ST_PointOnSurface(geom)"
     if crs != "EPSG:4326":
         point = f"ST_Transform({point}, '{crs}', 'EPSG:4326', always_xy := true)"
+    year_col = f'"{f["year"]}"' if "year" in f else str(int(cfg["year"]))
+    shape = "geom" if crs == "EPSG:4326" else f"ST_Transform(geom, '{crs}', 'EPSG:4326', always_xy := true)"
     rows = con.sql(
-        f'SELECT "{f["ref"]}", "{f["aadt"]}", "{f["year"]}", ST_X({point}), ST_Y({point}) FROM ST_Read(?)',
+        f'SELECT "{f["ref"]}", "{f["aadt"]}", {year_col}, ST_X({point}), ST_Y({point}), ST_AsWKB({shape}) '
+        "FROM ST_Read(?)",
         params=[str(path)],
     ).fetchall()
     out = []
-    for ref, aadt, year, lon, lat in rows:
+    for ref, aadt, year, lon, lat, wkb in rows:
         norm = normalise_ref(str(ref) if ref is not None else None)
         try:
             volume = float(aadt)
@@ -95,8 +106,26 @@ def read(data_dir: Path, source_id: str, cfg: dict) -> list[Count]:
             continue
         if norm and volume > 0 and lon is not None:
             yr = int(float(year)) if year not in (None, "") else None
-            out.append(Count(source_id, cfg["country"], norm, volume, yr, float(lon), float(lat)))
+            along = _along(bytes(wkb)) if wkb is not None else ()
+            out.append(Count(source_id, cfg["country"], norm, volume, yr, float(lon), float(lat), along))
     return out
+
+
+def _along(wkb: bytes) -> tuple[tuple[float, float], ...]:
+    """Points every SECTION_STEP_M along a counted section (nothing for a count point)."""
+    geom = shapely.from_wkb(wkb)
+    if geom.geom_type not in ("LineString", "MultiLineString"):
+        return ()
+    out = []
+    for line in getattr(geom, "geoms", [geom]):
+        xy = np.asarray(line.coords)
+        x, y = to_laea(xy[:, 0], xy[:, 1])
+        metric = shapely.linestrings(x, y)
+        steps = np.append(np.arange(0.0, metric.length, SECTION_STEP_M), metric.length)
+        pts = shapely.line_interpolate_point(metric, steps)
+        lon, lat = from_laea(shapely.get_x(pts), shapely.get_y(pts))
+        out += [(float(a), float(b)) for a, b in zip(lon, lat, strict=True)]
+    return tuple(out)
 
 
 def latest_per_station(counts: list[Count]) -> list[Count]:

@@ -114,14 +114,17 @@ def build(
     if not counts or not pieces:
         return ctx
     index = RouteIndex(path)
-    lon, lat = np.array([c.lon for c in counts]), np.array([c.lat for c in counts])
+    # A count point, or every point along a counted section: the count stands for all of it.
+    probes = [(c, p) for c in counts for p in (c.along or ((c.lon, c.lat),))]
+    lon, lat = np.array([p[0] for _, p in probes]), np.array([p[1] for _, p in probes])
     near = index.within(lon, lat, COUNT_REACH_M)
-    kept = [c for c, ok in zip(counts, near, strict=True) if ok]
+    kept = [(c, p) for (c, p), ok in zip(probes, near, strict=True) if ok]
     if not kept:
         return ctx
-    projections = index.project(np.array([c.lon for c in kept]), np.array([c.lat for c in kept]))
+    projections = index.project(np.array([p[0] for _, p in kept]), np.array([p[1] for _, p in kept]))
     found: dict[str, list[tuple[float, Measured]]] = {}
-    for c, pr in zip(kept, projections, strict=True):
+    measured_of: dict[int, Measured] = {}
+    for (c, _), pr in zip(kept, projections, strict=True):
         if pr.offset_m > COUNT_REACH_M:
             continue
         i = max(bisect_right(starts, pr.m - 200.0) - 1, 0)
@@ -132,9 +135,11 @@ def build(
                 break
             i += 1
         if on_road:
-            found.setdefault(c.ref, []).append((pr.m, Measured(c.aadt, c.year, c.source)))
+            one = measured_of.setdefault(id(c), Measured(c.aadt, c.year, c.source))
+            found.setdefault(c.ref, []).append((pr.m, one))
     for ref, items in found.items():
         items.sort(key=lambda t: t[0])
         ctx.anchors[ref] = ([m for m, _ in items], [x for _, x in items])
-    log(f"traffic counts on this route's roads: {sum(len(v) for v in found.values()):,} on {len(found):,} roads")
+    counted = {id(x) for v in found.values() for _, x in v}
+    log(f"traffic counts on this route's roads: {len(counted):,} counts on {len(found):,} roads")
     return ctx

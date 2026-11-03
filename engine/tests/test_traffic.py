@@ -114,3 +114,13 @@ def test_countries_without_counts_use_france():
     assert ctx.bands_for("GR") == ({"secondary": {"band": 2}}, "FR")
     assert ctx.bands_for("FR")[1] == "FR"
     assert TrafficContext().bands_for("GR") == (None, None)
+
+
+def test_a_counted_section_anchors_along_its_length():
+    from dpg_audit.traffic.counts import _along
+
+    line = shapely.LineString([(2.0, 43.0), (2.0, 43.014)])  # about 1.55 km north
+    pts = _along(shapely.to_wkb(line))
+    assert len(pts) == 5  # every 500 m and the end
+    assert pts[0] == pytest.approx((2.0, 43.0)) and pts[-1] == pytest.approx((2.0, 43.014))
+    assert _along(shapely.to_wkb(shapely.Point(2.0, 43.0))) == ()

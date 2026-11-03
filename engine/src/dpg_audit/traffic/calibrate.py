@@ -127,36 +127,40 @@ def match(counts: list[Count], ways: list[RefWay]) -> list[tuple[Count, RefWay]]
     return [(counts[ci], ways[wi]) for ci, (_, wi) in sorted(best.items())]
 
 
-def country_extract(data_dir: Path, country: str) -> Path:
-    files = {"FR": "france-latest.osm.pbf", "SI": "slovenia-latest.osm.pbf", "IT": "italy-latest.osm.pbf"}
-    path = osm_dir(data_dir) / files.get(country, "")
-    if country not in files or not path.exists():
-        raise FileNotFoundError(f"no OSM extract on disk for {country}")
+def extract_path(data_dir: Path, name: str) -> Path:
+    path = osm_dir(data_dir) / name
+    if not path.exists():
+        raise FileNotFoundError(f"no OSM extract {name} on disk")
     return path
 
 
 def calibrate(data_dir: Path, log=print) -> dict:
     """Read every source, match its counts to OSM roads, and summarise volume by country and class."""
-    by_country: dict[str, list[Count]] = {}
-    sources = load_sources()
-    for sid, cfg in sources.items():
+    groups: dict[tuple[str, str], list[Count]] = {}
+    for sid, cfg in load_sources().items():
         counts = latest_per_station(read(data_dir, sid, cfg))
         log(f"{sid}: {len(counts):,} counting places with a road reference")
-        by_country.setdefault(cfg["country"], []).extend(counts)
-    table: dict = {}
-    for country, counts in sorted(by_country.items()):
+        groups.setdefault((cfg["country"], cfg["osm"]), []).extend(counts)
+    by_country: dict[str, list[Count]] = {}
+    found: dict[str, list[tuple[float, float, str]]] = {}
+    for (country, osm_file), counts in sorted(groups.items()):
         lons, lats = [c.lon for c in counts], [c.lat for c in counts]
         bbox = (min(lons) - 0.02, min(lats) - 0.02, max(lons) + 0.02, max(lats) + 0.02)
-        extract = country_extract(data_dir, country)
+        extract = extract_path(data_dir, osm_file)
         pbf = _extract(extract, bbox, data_dir / "work" / "traffic")
-        ways = read_ref_ways(pbf)
-        matched = match(counts, ways)
-        log(f"{country}: {len(matched):,} of {len(counts):,} counts matched to an OSM road of the same reference")
+        matched = match(counts, read_ref_ways(pbf))
+        log(f"{country} ({osm_file}): {len(matched):,} of {len(counts):,} counts matched to a road of the same ref")
         towns = read_towns(extract, bbox, data_dir / "work" / "traffic")
         dists = town_distances([(c.lon, c.lat) for c, _ in matched], towns)
+        by_country.setdefault(country, []).extend(counts)
+        found.setdefault(country, []).extend(
+            (c.aadt, float(d), w.cls) for (c, w), d in zip(matched, dists, strict=True)
+        )
+    table: dict = {}
+    for country, counts in sorted(by_country.items()):
         classes: dict[str, list[tuple[float, float]]] = {}
-        for (c, w), d in zip(matched, dists, strict=True):
-            classes.setdefault(w.cls, []).append((c.aadt, float(d)))
+        for aadt, d, cls in found.get(country, []):
+            classes.setdefault(cls, []).append((aadt, d))
         rows = {}
         for cls, items in sorted(classes.items(), key=lambda kv: -len(kv[1])):
             rows[cls] = _row([v for v, _ in items])

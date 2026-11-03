@@ -1,7 +1,8 @@
 # Open traffic counts (D108, question 152). Each source: where it comes from, its licence, and how to read it.
 # Files are downloaded to <data dir>/raw/traffic/<id>/ by `dpg traffic-fetch` (`download`, or the latest file of a
 # data.gouv.fr dataset in a given format). `fields` name the columns holding the
-# annual average daily traffic (all vehicles, both directions), the year and the road's reference.
+# annual average daily traffic (all vehicles, both directions), the year (or `year` for the whole file) and the road's
+# reference; `osm` is the Geofabrik extract the counts are matched in.
 sources:
   fr-rrn:
     country: FR
@@ -12,6 +13,7 @@ sources:
     download: https://static.data.gouv.fr/resources/trafic-moyen-journalier-annuel-sur-le-reseau-routier-national/20250818-100425/tmja-rrnc-2024-shp.zip
     file: shp/TMJA_RRNc_2024.shp
     crs: EPSG:2154
+    osm: france-latest.osm.pbf
     fields: {aadt: tmja, year: anneeMesur, ref: route}
   fr-gard:
     country: FR
@@ -22,6 +24,7 @@ sources:
     datagouv: {dataset: les-trafics-moyens-journaliers-annuels-mesures-sur-le-reseau-routier-departemental-du-gard, format: geojson}
     file: gard.geojson
     crs: EPSG:4326
+    osm: france-latest.osm.pbf
     fields: {aadt: tmja_tous_vehicules, year: annee, ref: numero_route}
   fr-aude:
     country: FR
@@ -32,4 +35,17 @@ sources:
     download: https://opendata.aude.fr/api/v2/catalog/datasets/cd11_comptages_routiers_ponctuels/exports/geojson
     file: aude.geojson
     crs: EPSG:4326
+    osm: france-latest.osm.pbf
     fields: {aadt: mja, year: annee_comptage, ref: route}
+  es-valencia:
+    country: ES
+    osm: valencia-latest.osm.pbf
+    title: Intensidad Media Diaria anual (IMD) de tráfico por tramos, red autonómica de carreteras, 2025
+    publisher: Institut Cartogràfic Valencià, Generalitat Valenciana
+    licence: CC BY 4.0
+    page: https://dadesobertes.gva.es/es/dataset?q=IMD+trafico
+    download: https://terramapas.icv.gva.es/0902_Aforos?request=GetFeature&service=WFS&version=2.0.0&typename=Aforos2025&outputformat=gpkg
+    file: aforos2025.gpkg
+    crs: EPSG:25830
+    year: 2025
+    fields: {aadt: imd, ref: carretera}
