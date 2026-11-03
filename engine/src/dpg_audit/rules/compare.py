@@ -45,6 +45,22 @@ class Judged:
     def by_number(self) -> dict[int, DailySection]:
         return {d.number: d for d in self.daily}
 
+    def route_tiers(self) -> dict[str, list[ecs.Run]]:
+        """The tiers from the criteria judged along the route only, leaving out those judged per daily section."""
+        minor = self.result.minor
+        out: dict[str, list[ecs.Run]] = {}
+        below: list[ecs.Run] | None = None
+        for tier in ecs.TIERS:
+            own = [
+                [(r.from_m, r.to_m, r.result) for r in minor.tracks[c.id]]
+                for c in minor.criteria
+                if c.tier == tier and c.checked and c.basis == "route"
+            ]
+            parts = ([below] if below is not None else []) + own
+            below = ecs.worst(parts) if parts else [(0.0, self.daily[-1].to_m, "pass")]
+            out[tier] = below
+        return out
+
 
 def _read(bundle: Path, name: str, model):
     return model.model_validate(json.loads((bundle / name).read_text(encoding="utf-8")))
@@ -78,6 +94,7 @@ def judge(bundle: Path, profile: RulesProfile) -> Judged:
         charging=[p.at_m for p in points if p.kind == "charging"],
         highlights=highlights,
         themes={s.number: {k: v.score for k, v in s.themes.items()} for s in dream.sections},
+        missing_links=not json.loads((bundle / "manifest.json").read_text())["route"]["id"].endswith("-ways"),
     )
     result = ecs.evaluate(profile, inputs)
     stats = [s.model_copy(deep=True) for s in scores.sections]
@@ -109,6 +126,8 @@ class RowResult:
     row: dict
     ours: dict[str, dict[str, float]]
     """tier -> {pass, fail, unknown} share"""
+    along: dict[str, dict[str, float]]
+    """the same from the criteria judged along the route only"""
     why: dict[str, list[tuple[str, float]]]
     notes: dict[str, str]
 
@@ -123,17 +142,20 @@ def compare_rows(calibration: dict, judged: list[Judged]) -> list[RowResult]:
         days = [found.by_number()[n] for n in numbers]
         m0, m1 = days[0].from_m, days[-1].to_m
         total = max(m1 - m0, 1e-9)
-        ours = {}
+        ours, along = {}, {}
         for tier, track in found.result.tier_tracks.items():
             lens = _over(track, m0, m1)
             ours[tier] = {k: lens[k] / total for k in ("pass", "fail", "unknown")}
+        for tier, track in found.route_tiers().items():
+            lens = _over(track, m0, m1)
+            along[tier] = {k: lens[k] / total for k in ("pass", "fail", "unknown")}
         why = {t: failing(found, m0, m1, t) for t in ecs.TIERS}
         notes: dict[str, str] = {}
         for s in found.sections:
             if s.number in numbers:
                 for cid, note in s.notes.items():
                     notes.setdefault(cid, note if len(numbers) == 1 else f"{s.number}: {note}")
-        out.append(RowResult(row=row, ours=ours, why=why, notes=notes))
+        out.append(RowResult(row=row, ours=ours, along=along, why=why, notes=notes))
     return out
 
 
@@ -153,27 +175,32 @@ def report(calibration: dict, results: dict[str, list[RowResult]]) -> str:
     ]
     for pid, rows in results.items():
         lines += [f"## {pid}", ""]
-        for tier in ecs.TIERS:
-            diffs = [abs(r.ours[tier]["pass"] - r.row[tier]) for r in rows]
-            theirs_full = [r.row[tier] >= 0.995 for r in rows]
-            ours_full = [r.ours[tier]["pass"] >= 0.995 for r in rows]
-            same = sum(a == b for a, b in zip(theirs_full, ours_full, strict=True))
-            within = sum(d <= 0.10 for d in diffs)
-            lines.append(
-                f"- **{tier.capitalize()}:** average difference {sum(diffs) / len(diffs) * 100:.0f} points; "
-                f"within 10 points on {within} of {len(rows)} rows; the same verdict on meeting it in full on "
-                f"{same} of {len(rows)} (ECF {sum(theirs_full)}, ours {sum(ours_full)})."
-            )
+        for view, label in (("ours", "all criteria"), ("along", "criteria along the route only")):
+            lines.append(f"Ours from {label}:")
+            lines.append("")
+            for tier in ecs.TIERS:
+                mine = [getattr(r, view)[tier]["pass"] for r in rows]
+                diffs = [abs(m - r.row[tier]) for m, r in zip(mine, rows, strict=True)]
+                theirs_full = [r.row[tier] >= 0.995 for r in rows]
+                ours_full = [m >= 0.995 for m in mine]
+                same = sum(a == b for a, b in zip(theirs_full, ours_full, strict=True))
+                within = sum(d <= 0.10 for d in diffs)
+                lines.append(
+                    f"- **{tier.capitalize()}:** average difference {sum(diffs) / len(diffs) * 100:.0f} points; "
+                    f"within 10 points on {within} of {len(rows)} rows; the same verdict on meeting it in full on "
+                    f"{same} of {len(rows)} (ECF {sum(theirs_full)}, ours {sum(ours_full)})."
+                )
+            lines.append("")
         lines += [
-            "",
-            "| GPX | Daily section | ECF status | ECF E / I / A | Ours E / I / A | Unknown E / I / A "
-            "| Why ours fails |",
-            "|---|---|---|---|---|---|---|",
+            "| GPX | Daily section | ECF status | ECF E / I / A | Ours E / I / A | Along the route E / I / A "
+            "| Unknown E / I / A | Why ours fails |",
+            "|---|---|---|---|---|---|---|---|",
         ]
         for r in rows:
             row = r.row
             theirs = " / ".join(_pct(row[t]) for t in ecs.TIERS)
             ours = " / ".join(_pct(r.ours[t]["pass"]) for t in ecs.TIERS)
+            along = " / ".join(_pct(r.along[t]["pass"]) for t in ecs.TIERS)
             unknown = " / ".join(_pct(r.ours[t]["unknown"]) for t in ecs.TIERS)
             reasons = []
             for t in ecs.TIERS:
@@ -183,7 +210,7 @@ def report(calibration: dict, results: dict[str, list[RowResult]]) -> str:
             nums = "+".join(str(n) for n in row["sections"])
             lines.append(
                 f"| {nums} | {row['start']} – {row['stop']} ({row['km']} km) | {row['status']} | {theirs} | {ours} | "
-                f"{unknown} | {'; '.join(reasons) or '–'} |"
+                f"{along} | {unknown} | {'; '.join(reasons) or '–'} |"
             )
         lines.append("")
     return "\n".join(lines)
@@ -193,20 +220,21 @@ def load_calibration(name: str) -> dict:
     return yaml.safe_load((CALIBRATION_DIR / f"{name}.yaml").read_text(encoding="utf-8"))
 
 
-INFRASTRUCTURE_ESSENTIAL = ("continuity", "traffic", "surface", "climbing", "signing")
+# EuroVelo's map gives development and signing apart, so signing is left out of the development check.
+INFRASTRUCTURE_ESSENTIAL = ("continuity", "traffic", "surface", "climbing")
 
 
 def status_check(judged: Judged) -> dict[str, dict[str, int]]:
-    """EuroVelo's development status per daily section against our verdict on the essential infrastructure criteria:
-    'meets' (all of the section), 'fails' (any of it), 'unknown' (no failure, some unknown)."""
+    """EuroVelo's development status per daily section against the share of it meeting our essential
+    infrastructure criteria: 'full' (all of it), '95+' (at least 95%), 'below' (less; unknown counts as not met)."""
     crit = {c.id: c for c in judged.result.minor.criteria}
     ids = [c for c in INFRASTRUCTURE_ESSENTIAL if c in crit and crit[c].checked and crit[c].tier == "essential"]
     track = ecs.worst([[(r.from_m, r.to_m, r.result) for r in judged.result.minor.tracks[cid]] for cid in ids])
     table: dict[str, dict[str, int]] = {}
     for d in judged.daily:
-        lens = _over(track, d.from_m, d.to_m)
-        verdict = "fails" if lens["fail"] > 1.0 else "unknown" if lens["unknown"] > 1.0 else "meets"
+        share = _over(track, d.from_m, d.to_m)["pass"] / max(d.to_m - d.from_m, 1e-9)
+        verdict = "full" if share >= 0.995 else "95+" if share >= 0.95 else "below"
         status = d.status.development.value if d.status.development != DevelopmentLevel.UNRECOGNISED else "other"
-        row = table.setdefault(status, {"meets": 0, "fails": 0, "unknown": 0})
+        row = table.setdefault(status, {"full": 0, "95+": 0, "below": 0})
         row[verdict] += 1
     return table

@@ -273,3 +273,20 @@ def test_tiers_are_cumulative():
     daily = [day(1, 0, 5000, Signage.NOT_SIGNED)]
     _, route, _ = judge(layers(5000, **GOOD), daily)
     assert route.tiers["essential"].failed == 1.0 and route.tiers["important"].failed == 1.0
+
+
+def test_other_ways_line_counts_no_missing_links():
+    gap = Component(
+        id="g",
+        seq=1,
+        kind=ComponentKind.GAP,
+        from_m=5000,
+        to_m=5000,
+        length_m=0,
+        start=(0, 0),
+        end=(1, 0),
+        gap_type=GapType.MISSING,
+    )
+    daily = [day(18, 0, 5000), day(19, 5000, 10_000)]
+    result, _, _ = judge(layers(10_000, **GOOD), daily, components=[gap], missing_links=False)
+    assert results(result, "continuity") == [(0, 10_000, "pass")]

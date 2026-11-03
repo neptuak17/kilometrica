@@ -214,3 +214,36 @@ The main line has 8.9 km of short gaps, all river crossings or a change of bank.
 - **Climate:** the CDS turned away 4 of 15 ERA5 requests ("maximum number of queued requests"). Turned-away cells are now asked again one at a time, and a re-run (3 minutes, the rest cached) completed all 15.
 - **Plan data:** 665 candidate stops, 36 of them without a town name (5%; EV8 has 14%). Mannheim is one of them, with 21 places to stay: its places are across the river from the stop. 680 highlights.
 - **Certified sections count as signed** (D105, bundle 2026-11-03): 836 km of the main line is "Certified", a label with no word on signs, so Signposting had been unknown there. Now it passes on 81% of the length and fails on the 19% published as "Developed + Not Signed"; all the important criteria pass on 57% (14% before), and the essential ones on 93% as before.
+
+## ECS 2026 against ECF's own results (D106, bundles 2026-11-03)
+
+The audit now judges the 2026 ECS (`engine/profiles/ecs-2026.yaml`). EV15 was audited twice: the main line, and the 990 km the main line sets aside (D65) as a private `ev15-ways` bundle, so all 46 rows of ECF's 2025 certification report can be compared. `dpg ecs-compare eurovelo ev15 --calibration eurovelo-ev15-2025` writes the full table to [ecs-ev15-comparison.md](ecs-ev15-comparison.md), under the 2026 rules and a 2021 variant (ECF surveyed EV15 in 2024–25 under the 2021 criteria).
+
+**Route totals (2026 rules, every checked criterion):** EV15 main line meets essential on 76% of its length, important 43%, additional 34%; its other bank 67%, 32%, 18%; EV8 20%, 1%, 1% (the earlier rules gave EV8 56% essential).
+
+**How close we are to ECF, per daily section (46 rows):**
+
+| | Essential | Important | Additional |
+|---|---|---|---|
+| 2026 rules, all criteria | 4 points apart on average; within 10 points on 44 of 46 | 55 points; 19 of 46 | 54 points; 2 of 46 |
+| 2026 rules, criteria along the route only | the same | 7 points; 38 of 46 | 21 points; 10 of 46 |
+| 2021 rules, criteria along the route only | 5 points; 40 of 46 | 7 points; 37 of 46 | 12 points; 29 of 46 |
+
+What the differences say:
+- **ECF's shares count the criteria judged along the route.** Criteria judged per daily section (climbing, services, rest areas, attractions) don't zero a section in ECF's figures: Disentis – Breil descends 548 m, over the 500 m limit, yet ECF has it 77% important. Leaving them out of the shares takes the important tier from 55 points apart to 7. Question 150.
+- **Surface:** the 2026 rideability classes fit ECF's survey better than the strict 2021 rule, even though the survey used the 2021 criteria: Breil – Castrisch is 100% essential for ECF, 99% under 2026, 27% under 2021, which fails OSM's gravel. For the additional tier the 2021 rule (as rideable as high-quality asphalt) fits better, as expected from a 2021 survey.
+- **Certified sections we don't pass in full** (ECF 37, us 22): mostly 1–8% unknown (untagged surfaces, unmatched km), not failures. Two are rule differences between editions: Koblenz – Rheinbreitbach has a legal dismount over 504 m (OSM), within 2021's 1% of the section and 4 m over 2026's 500 m; Gernsheim – Mainz has 15+ km without toilets, a 2026 criterion only.
+- **Where ECF finds failures we don't** (Disentis – Breil 77% against our 99%; Mainz – Oestrich-Winkel 93% against 100%; Basel – Breisach 93% against 99%; Neuhausen – Bad Zurzach 95% against 99%): what a field survey sees and open data doesn't, such as crossings, signs on the ground and measured traffic.
+- **Our error, fixed:** the other bank, audited as one line, counted the joins between its pieces as missing links (Radolfzell – Stein am Rhein failed in full); joins no longer count.
+
+**Development status** (`dpg ecs-status`; essential infrastructure criteria without signing, which EuroVelo's map shows apart; share of each daily section meeting them):
+
+| | All of it | 95% or more | Less |
+|---|---:|---:|---:|
+| EV15 certified (24) | 13 | 10 | 1 |
+| EV15 developed (15) | 2 | 7 | 6 |
+| EV8 developed (95) | 1 | 12 | 82 |
+| EV8 partially developed (35) | 0 | 5 | 30 |
+| EV8 undeveloped or unknown (21) | 1 | 3 | 17 |
+
+On EV8's 95 developed sections, 13 reach 95% as judged. Untagged surfaces (1,074 km unknown) hold back 32 of the others: counted as passing, 45 would reach it. Traffic holds back most of the rest: without it, 81 would. EV8's traffic categories come from road class (volume) and default speeds, the same weakness as the parked busy-road rule. Question 151.

@@ -86,16 +86,15 @@ criteria:
   surface:
     tier: essential
     group: infrastructure
-    basis: daily_section
-    rule: surface_share
+    basis: route
+    rule: surface_everywhere
     title: Surface
     description: >-
-      Asphalt or other resistant paving, or consolidated loose material; at most 1% of each daily section on cobbles
-      or unimproved surfaces (here: OSM gravel and dirt).
+      Asphalt or other resistant paving, or consolidated loose material, everywhere: OSM gravel and dirt fail
+      (the 1% tolerance for cobbles or unimproved surfaces is not applied).
     layer: surface
-    classes: [gravel, dirt]
-    max_share: 0.01
-    maybe: [paved_assumed, unknown, unmatched]
+    pass: [paved_smooth, paved_rough, compacted]
+    fail: [gravel, dirt]
   surface_important:
     tier: important
     group: infrastructure

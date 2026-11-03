@@ -3,7 +3,7 @@ Dream data (M3) and Plan data (M4), apply rules."""
 
 import json
 import time
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -85,7 +85,9 @@ def run(
         if not chains:
             raise ValueError(f"{network} {ref} sets no ways aside")
         tracks = [t for chain in chains for t in chain]
-        route = replace(route, id=f"{route.id}-ways", ref=f"{route.ref}-ways", name=f"{route.name} (other ways)")
+        route = route.model_copy(
+            update={"id": f"{route.id}-ways", "ref": f"{route.ref}-ways", "name": f"{route.name} (other ways)"}
+        )
         route_sha = f"{snap.sha256}-ways"
         # Its own working area, sharing the main line's OSM cut, so that caches built from the line stay apart.
         main_osm, wd = wd / "osm", work_dir(root, network, f"{ref}-ways")
@@ -281,6 +283,7 @@ def _ecs(rules, build, events, scores, cov, osm, highlights, dream_file):
             charging=charging,
             highlights=highlights,
             themes=themes,
+            missing_links=not build.route.id.endswith("-ways"),
         ),
     )
     ecs.apply_shares(result, scores.route, scores.sections)

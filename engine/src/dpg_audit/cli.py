@@ -285,7 +285,7 @@ def ecs_status(
         table = compare.status_check(compare.judge(compare.current_bundle(data_dir(), network, ref), profile))
         typer.echo(f"{network} {ref} ({profile.id}): daily sections by published status, then our verdict")
         for status, counts in sorted(table.items()):
-            line = "  ".join(f"{k} {counts[k]:3d}" for k in ("meets", "fails", "unknown"))
+            line = "  ".join(f"{k} {counts[k]:3d}" for k in ("full", "95+", "below"))
             typer.echo(f"  {status:22s} {line}")
 
 

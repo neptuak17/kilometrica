@@ -185,6 +185,8 @@ class EcsInputs:
     charging: list[float] = field(default_factory=list)
     highlights: list[Highlight] = field(default_factory=list)
     themes: dict[int, dict[str, float | None]] = field(default_factory=dict)
+    missing_links: bool = True
+    """False for the other ways audited as one line (D106): every break in it is a join of ours."""
 
 
 def barrier_effect(barrier: str, tags: dict[str, str], min_clearance_m: float = 1.3) -> str | None:
@@ -364,7 +366,7 @@ def _continuity(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
     route = worst([base, spans_track(blocks, "fail", ctx.length)])
     missing: dict[int, list[float]] = {}
     for c in ctx.inp.components:
-        if c.kind == ComponentKind.GAP and c.gap_type == GapType.MISSING:
+        if ctx.inp.missing_links and c.kind == ComponentKind.GAP and c.gap_type == GapType.MISSING:
             before, after = ctx.section_of(max(c.from_m - 1.0, 0.0)), ctx.section_of(c.from_m + 1.0)
             # Between sections that don't follow on (the main line skipping the ways it sets aside, D65, or other
             # ways audited as one line), the break is ours, not a missing link of the route.
