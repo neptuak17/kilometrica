@@ -93,8 +93,37 @@ def _motor_allowed(tags: dict[str, str]) -> bool:
     return all(tags.get(key) not in NO_MOTOR for key in ("motor_vehicle", "motorcar", "vehicle", "access"))
 
 
-def traffic_stress(tags: dict[str, str], edge: dict[str, Any]) -> Result:
-    """Level of Traffic Stress, 1 (anyone) .. 4 (strong and fearless only); 'na' for ferries; 'unknown'."""
+def speed_limit(tags: dict[str, str], edge: dict[str, Any], legal: dict[str, int] | None = None):
+    """(km/h, source): the tagged limit, else the country's legal limit for the type of road (D108), else the
+    earlier estimates. Untagged roads in built-up areas (Valhalla road density) take the urban limit."""
+    tagged = parse_maxspeed(tags.get("maxspeed"))
+    if tagged:
+        return tagged, "tagged"
+    cls = _base_class(_highway(tags))
+    urban = (edge.get("density") or 0) >= URBAN_DENSITY
+    if legal:
+        kind = None
+        if cls == "living_street":
+            kind = "living_street"
+        elif cls == "motorway":
+            kind = "motorway"
+        elif cls == "trunk" and tags.get("oneway") in ("yes", "-1"):
+            kind = "dual"
+        elif cls == "residential" or (urban and cls in URBAN_DEFAULT_CLASSES):
+            kind = "urban"
+        elif cls in ("trunk", "primary", "secondary", "tertiary", "unclassified", "road"):
+            kind = "rural"
+        if kind == "dual" and "dual" not in legal:
+            kind = "rural"
+        if kind and legal.get(kind) is not None:
+            return legal[kind], f"legal {kind}"
+    default = URBAN_SPEED if urban and cls in URBAN_DEFAULT_CLASSES else DEFAULT_SPEED.get(cls)
+    return default, ("urban default" if urban and default == URBAN_SPEED else "default")
+
+
+def traffic_stress(tags: dict[str, str], edge: dict[str, Any], legal: dict[str, int] | None = None) -> Result:
+    """Level of Traffic Stress, 1 (anyone) .. 4 (strong and fearless only); 'na' for ferries; 'unknown'.
+    Kept for the audit viewer; riders' "busy" follows the ECS categories (D108)."""
     hw = _highway(tags)
     if edge.get("use") == "ferry" or tags.get("route") == "ferry":
         return "na", "high", {"reason": "ferry"}
@@ -110,11 +139,7 @@ def traffic_stress(tags: dict[str, str], edge: dict[str, Any]) -> Result:
         return "1", "medium", {"reason": "separated cycle track"}
     if cls == "living_street" or tags.get("bicycle_road") == "yes" or tags.get("cyclestreet") == "yes":
         return "1", "high", {"reason": "living street / cycle street"}
-    tagged = parse_maxspeed(tags.get("maxspeed"))
-    # Untagged roads in built-up areas (Valhalla road density) get the urban default instead of the rural one.
-    urban = (edge.get("density") or 0) >= URBAN_DENSITY
-    default = URBAN_SPEED if urban and cls in URBAN_DEFAULT_CLASSES else DEFAULT_SPEED.get(cls)
-    speed = tagged or default
+    speed, source = speed_limit(tags, edge, legal)
     if speed is None:
         return "unknown", "low", {}
     try:
@@ -124,9 +149,8 @@ def traffic_stress(tags: dict[str, str], edge: dict[str, Any]) -> Result:
     painted = bool(cyc & {"lane", "opposite_lane"}) or edge.get("cycle_lane") == "dedicated"
     # A paved shoulder gives riders space on fast rural roads (Valhalla flag, or the OSM shoulder tag).
     shoulder = bool(edge.get("shoulder")) or tags.get("shoulder") in ("yes", "both", "left", "right")
-    source = "tagged" if tagged else ("urban default" if urban and default == URBAN_SPEED else "default")
     detail = {"speed": speed, "speed_source": source, "lanes": lanes, "lane": painted, "shoulder": shoulder}
-    conf = "medium" if tagged else "low"
+    conf = "medium" if source == "tagged" else "low"
 
     if cls in ("motorway", "trunk") or ((lanes or 0) >= 4 and speed >= 50):
         lts = 4
@@ -160,7 +184,13 @@ def traffic_stress(tags: dict[str, str], edge: dict[str, Any]) -> Result:
     return str(lts), conf, detail
 
 
-def infrastructure(tags: dict[str, str], edge: dict[str, Any], lts: str) -> Result:
+QUIET, BUSY = {"traffic_free", "very_low", "low"}, {"high", "very_high"}
+"""ECS traffic categories that make a road quiet, or busy, for riders and ECF alike (D108)."""
+
+
+def infrastructure(tags: dict[str, str], edge: dict[str, Any], lts: str, ecs: str | None = None) -> Result:
+    """What the rider rides on. A road is quiet, a road with traffic, or busy by its ECS traffic category (D108),
+    by traffic stress where that is unknown."""
     hw = _highway(tags)
     if edge.get("use") == "ferry" or tags.get("route") == "ferry":
         return "ferry", "high", {}
@@ -175,7 +205,10 @@ def infrastructure(tags: dict[str, str], edge: dict[str, Any], lts: str) -> Resu
     if _cycleway_values(tags) & {"lane", "opposite_lane"} or edge.get("cycle_lane") == "dedicated":
         return "cycle_lane", "medium", {"highway": hw}
     if hw in ROAD_CLASSES:
-        value = {"1": "quiet_road", "2": "quiet_road", "3": "road", "4": "busy_road"}.get(lts, "road")
+        if ecs in ECS_TRAFFIC:
+            value = "quiet_road" if ecs in QUIET else "busy_road" if ecs in BUSY else "road"
+        else:
+            value = {"1": "quiet_road", "2": "quiet_road", "3": "road", "4": "busy_road"}.get(lts, "road")
         return value, "medium", {"highway": hw}
     return "unknown", "low", {"highway": hw}
 
@@ -283,8 +316,24 @@ def _lane_width(tags: dict[str, str]) -> float | None:
     return max(widths) if widths else None
 
 
-def ecs_traffic(tags: dict[str, str], edge: dict[str, Any]) -> Result:
-    """The ECS traffic category: traffic-free, or very low .. very high from speed and an estimated volume band."""
+BAND_EDGES = (500, 2000, 4000, 10000)
+"""Upper edges of the ECS volume bands (vehicles a day)."""
+
+
+def band_of(aadt: float) -> int:
+    return sum(aadt > edge for edge in BAND_EDGES)
+
+
+def ecs_traffic(
+    tags: dict[str, str],
+    edge: dict[str, Any],
+    legal: dict[str, int] | None = None,
+    bands: dict[str, dict] | None = None,
+    measured: Any = None,
+) -> Result:
+    """The ECS traffic category: traffic-free, or very low .. very high from the speed limit and the volume band.
+    The volume is measured where a count lies on the road (`measured`: aadt, year, source), else the road class's
+    band calibrated on the country's counts (`bands`), else the earlier estimate (D108)."""
     hw = _highway(tags)
     if edge.get("use") == "ferry" or tags.get("route") == "ferry":
         return "na", "high", {"reason": "ferry"}
@@ -299,20 +348,26 @@ def ecs_traffic(tags: dict[str, str], edge: dict[str, Any]) -> Result:
     band = VOLUME_BAND_OF_CLASS.get(cls)
     if band is None:
         return "unknown", "low", {"highway": hw}
-    tagged = parse_maxspeed(tags.get("maxspeed"))
-    urban = (edge.get("density") or 0) >= URBAN_DENSITY
-    default = URBAN_SPEED if urban and cls in URBAN_DEFAULT_CLASSES else DEFAULT_SPEED.get(cls)
-    if tags.get("bicycle_road") == "yes" or tags.get("cyclestreet") == "yes":
-        default = 30
-    speed = tagged or default
+    speed, speed_source = speed_limit(tags, edge, legal)
+    if (tags.get("bicycle_road") == "yes" or tags.get("cyclestreet") == "yes") and speed_source != "tagged":
+        speed, speed_source = 30, "cycle street"
     if speed is None:
         return "unknown", "low", {"highway": hw}
     try:
         lanes = int(tags.get("lanes", "0").split(";")[0]) or None
     except ValueError:
         lanes = None
-    if (lanes or 0) >= 4:
-        band = 4
+    conf, volume_source = "low", "estimated from road class"
+    if measured is not None:
+        band, conf = band_of(measured.aadt), "high"
+        volume_source = f"measured, {measured.aadt:,.0f} a day ({measured.source}, {measured.year or 'year unknown'})"
+    else:
+        row = (bands or {}).get(cls)
+        if row:
+            band, conf = int(row["band"]), "medium"
+            volume_source = f"estimated from road class, calibrated on {row['counts']} counts"
+        if (lanes or 0) >= 4:
+            band = 4
     col = _speed_column(speed)
     painted = bool(cyc & {"lane", "opposite_lane"}) or edge.get("cycle_lane") == "dedicated"
     shoulder = bool(edge.get("shoulder")) or tags.get("shoulder") in ("yes", "both", "left", "right")
@@ -322,12 +377,12 @@ def ecs_traffic(tags: dict[str, str], edge: dict[str, Any]) -> Result:
     value = (_LANES if in_lane else _MIXED)[band][col]
     detail = {
         "speed": speed,
-        "speed_source": "tagged" if tagged else "default",
+        "speed_source": speed_source,
         "volume": VOLUME_BANDS[band],
-        "volume_source": "estimated from road class",
+        "volume_source": volume_source,
         "table": "cycle lane" if in_lane else "mixed traffic",
     }
-    return value, "low", detail
+    return value, conf, detail
 
 
 ECS_SURFACE = ("well", "moderate_plus", "moderate", "bad", "not_rideable")
@@ -501,8 +556,9 @@ LAYERS = [
         id="ecs_traffic",
         title="ECS traffic category",
         description="The European Certification Standard's traffic categories (2026 tables 1 and 2), from the speed "
-        "limit and a traffic volume estimated from road class: open data has no counts for most roads (D106).",
-        source="OpenStreetMap tags; volume estimated from road class",
+        "limit (tagged, else the country's legal limit) and the traffic volume: measured where an open count lies on "
+        "the road, else the road class's typical volume calibrated on the country's counts, else estimated (D108).",
+        source="OpenStreetMap tags; open traffic counts (engine/profiles/traffic); legal speed limits",
         values=[
             LayerValue(id="traffic_free", label="Traffic-free"),
             LayerValue(id="very_low", label="Very low traffic"),

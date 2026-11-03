@@ -34,6 +34,7 @@ from dpg_audit.services import coverage
 from dpg_audit.services.pipeline import build_places, services_file
 from dpg_audit.services.profile import load_services
 from dpg_audit.sources import dem
+from dpg_audit.traffic import route as traffic_route
 
 PIPELINE = "dpg-audit/ecs-2026"
 
@@ -108,7 +109,8 @@ def run(
     _log(f"reading OSM tags for {len(way_ids):,} matched ways …")
     osm = load_osm(pbf, way_ids, wd / "osm")
     ev_number = classify.eurovelo_number(build.route.ref) if src.eurovelo else None
-    matched = build_matched_layers(build.path, matches, osm, ev_number)
+    traffic = traffic_route.build(root, build.path, matches, osm, log=_log)
+    matched = build_matched_layers(build.path, matches, osm, ev_number, traffic)
     notes = classify_gaps(build.components, osm.ferries, route_cfg.gaps)
     t["layers"] = time.perf_counter() - t0 - sum(t.values())
 

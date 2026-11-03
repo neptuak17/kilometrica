@@ -180,7 +180,7 @@ function KpiBand({
   sectionServices: SectionServices | null;
   month: number | null;
 }) {
-  const lts = stats?.shares.traffic_stress ?? {};
+  const ecsTraffic = stats?.shares.ecs_traffic ?? {};
   const surf = stats?.shares.surface ?? {};
   const infra = stats?.shares.infrastructure ?? {};
   const carFree = (infra.cycleway ?? 0) + (infra.shared_path ?? 0) + (infra.separated_track ?? 0);
@@ -196,7 +196,7 @@ function KpiBand({
           <Kpi value={pct(stats.important_pass)} label="important" title="Share of length meeting every checked essential and important criterion" />
           <Kpi value={pct(stats.additional_pass)} label="additional" title="Share of length meeting every checked criterion, additional included" />
           <Kpi value={pct(carFree)} label="car-free" title="Cycle paths, shared paths and separated tracks" />
-          <Kpi value={pct(lts["4"])} label="busy roads" title="Busy roads: traffic stress (LTS) 4" />
+          <Kpi value={pct((ecsTraffic.high ?? 0) + (ecsTraffic.very_high ?? 0))} label="busy roads" title="Busy roads: high or very high traffic in ECS terms (D108)" />
           <Kpi value={pct((surf.gravel ?? 0) + (surf.dirt ?? 0))} label="unpaved" title="Loose gravel, dirt or sand" />
           <Kpi
             value={climbText(stats.ascent_m, stats.climb_unknown_m)}
@@ -728,7 +728,7 @@ export function App() {
                         {sc && (
                           <span>
                             ↑ {climbText(sc.ascent_m, sc.climb_unknown_m)}
-                            {unknownNote(sc.ascent_m, sc.climb_unknown_m)} · busy {pct(sc.shares.traffic_stress?.["4"])} · unpaved{" "}
+                            {unknownNote(sc.ascent_m, sc.climb_unknown_m)} · busy {pct((sc.shares.ecs_traffic?.high ?? 0) + (sc.shares.ecs_traffic?.very_high ?? 0))} · unpaved{" "}
                             {pct((sc.shares.surface?.gravel ?? 0) + (sc.shares.surface?.dirt ?? 0))} · important ✓{" "}
                             {pct(sc.important_pass)} · ECS stars {sc.stars ?? 0}
                           </span>

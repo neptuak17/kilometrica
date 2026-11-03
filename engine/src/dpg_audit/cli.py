@@ -240,6 +240,33 @@ def audit(
     typer.echo(f"bundle {result.run_id} -> {result.out}")
 
 
+@app.command("traffic-fetch")
+def traffic_fetch() -> None:
+    """Download every open traffic-count source in engine/profiles/traffic/sources.yaml (D108)."""
+    from dpg_audit.traffic import counts
+
+    for sid, cfg in counts.load_sources().items():
+        path = counts.fetch(data_dir(), sid, cfg)
+        typer.echo(f"{sid}: {path} ({path.stat().st_size / 1e6:.1f} MB, {cfg['licence']})")
+
+
+@app.command("traffic-calibrate")
+def traffic_calibrate() -> None:
+    """Match the open counts to OSM roads and write the volume band of each road class per country (D108)."""
+    from dpg_audit.traffic import calibrate
+
+    table = calibrate.calibrate(data_dir(), log=typer.echo)
+    for country, v in table.items():
+        typer.echo(f"{country} ({', '.join(v['sources'])}, {v['years'][0]}-{v['years'][1]}):")
+        for cls, row in v["classes"].items():
+            flag = "" if row["used"] else " (too few, not used)"
+            typer.echo(
+                f"  {cls:13s} {row['counts']:5d} counts  quartiles {row['p25']:>6,} {row['median']:>6,} "
+                f"{row['p75']:>6,}  band {row['band_label']}{flag}"
+            )
+    typer.echo(f"wrote {calibrate.write(table)}")
+
+
 @app.command("ecs-compare")
 def ecs_compare(
     network: str,

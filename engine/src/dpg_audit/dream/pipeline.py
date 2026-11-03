@@ -323,7 +323,7 @@ def build_dream(
                 grade_fwd=grade(profile.levels, km, up if up is not None else known_up),
                 grade_rev=grade(profile.levels, km, down if down is not None else known_down),
                 surfaces=surface_shares(infra, surface, d.from_m, d.to_m),
-                busy_share=round(sc.shares.get("traffic_stress", {}).get("4", 0.0), 3),
+                busy_share=round(sum(sc.shares.get("ecs_traffic", {}).get(v, 0.0) for v in ("high", "very_high")), 3),
                 themes=scenery[i].themes,
                 remote_share=scenery[i].remote_share,
                 longest_remote_m=scenery[i].longest_remote_m,

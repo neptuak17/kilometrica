@@ -1,0 +1,23 @@
+# Legal default speed limits for cars, by country and type of road (D108, question 154). Used where OSM tags no
+# maxspeed, in place of the rural guesses. A sourced table, as bike carriage is (D20, D37).
+# Source: OpenStreetMap wiki, "Default speed limits", revision 2951812 (2026-02-04), read through the JSON of
+# osm-legal-default-speeds; each row of the wiki cites the country's law. CC BY-SA 2.0.
+# Types: urban (built-up areas), rural (other roads outside them), dual (rural dual carriageways and expressways),
+# motorway, living_street (the wiki's "walk" read as 10 km/h). A country missing here keeps the earlier estimates (classify.DEFAULT_SPEED).
+source: https://wiki.openstreetmap.org/wiki/Default_speed_limits
+retrieved: 2026-11-03
+countries:
+  AL: {urban: 40, rural: 80, motorway: 110}
+  AT: {urban: 50, rural: 100, dual: 100, motorway: 130, living_street: 10}
+  CH: {urban: 50, rural: 80, dual: 100, motorway: 120, living_street: 20}
+  CY: {urban: 50, rural: 80, motorway: 100}
+  DE: {urban: 50, rural: 100, living_street: 10}
+  ES: {urban: 30, rural: 90, motorway: 120, living_street: 20}
+  FR: {urban: 50, rural: 80, dual: 110, motorway: 130, living_street: 20}
+  GR: {urban: 50, rural: 90, dual: 110, motorway: 130, living_street: 20}
+  HR: {urban: 50, rural: 90, dual: 110, motorway: 130, living_street: 10}
+  IT: {urban: 50, rural: 90, dual: 110, motorway: 130}
+  LI: {urban: 50, rural: 80}
+  NL: {urban: 50, rural: 80, dual: 100, motorway: 130, living_street: 15}
+  SI: {urban: 50, rural: 90, dual: 110, motorway: 130, living_street: 10}
+  TR: {urban: 50, rural: 90, dual: 110, motorway: 120}

@@ -1,0 +1,35 @@
+# Open traffic counts (D108, question 152). Each source: where it comes from, its licence, and how to read it.
+# Files are downloaded to <data dir>/raw/traffic/<id>/ by `dpg traffic-fetch` (`download`, or the latest file of a
+# data.gouv.fr dataset in a given format). `fields` name the columns holding the
+# annual average daily traffic (all vehicles, both directions), the year and the road's reference.
+sources:
+  fr-rrn:
+    country: FR
+    title: Trafic moyen journalier annuel sur le réseau routier national, 2024
+    publisher: Ministère de la Transition écologique
+    licence: Licence Ouverte (Etalab)
+    page: https://www.data.gouv.fr/datasets/trafic-moyen-journalier-annuel-sur-le-reseau-routier-national
+    download: https://static.data.gouv.fr/resources/trafic-moyen-journalier-annuel-sur-le-reseau-routier-national/20250818-100425/tmja-rrnc-2024-shp.zip
+    file: shp/TMJA_RRNc_2024.shp
+    crs: EPSG:2154
+    fields: {aadt: tmja, year: anneeMesur, ref: route}
+  fr-gard:
+    country: FR
+    title: Trafics moyens journaliers annuels mesurés sur le réseau routier départemental du Gard
+    publisher: Département du Gard
+    licence: Licence Ouverte 2.0 (Etalab)
+    page: https://www.data.gouv.fr/datasets/les-trafics-moyens-journaliers-annuels-mesures-sur-le-reseau-routier-departemental-du-gard
+    datagouv: {dataset: les-trafics-moyens-journaliers-annuels-mesures-sur-le-reseau-routier-departemental-du-gard, format: geojson}
+    file: gard.geojson
+    crs: EPSG:4326
+    fields: {aadt: tmja_tous_vehicules, year: annee, ref: numero_route}
+  fr-aude:
+    country: FR
+    title: Comptages routiers ponctuels sur la voirie départementale de l'Aude
+    publisher: Département de l'Aude
+    licence: Licence Ouverte 2.0 (Etalab)
+    page: https://opendata.aude.fr/explore/dataset/cd11_comptages_routiers_ponctuels/
+    download: https://opendata.aude.fr/api/v2/catalog/datasets/cd11_comptages_routiers_ponctuels/exports/geojson
+    file: aude.geojson
+    crs: EPSG:4326
+    fields: {aadt: mja, year: annee_comptage, ref: route}

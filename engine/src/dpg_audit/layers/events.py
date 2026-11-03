@@ -8,6 +8,7 @@ from dpg_audit.lrs import RoutePath
 from dpg_audit.match.matcher import LineMatch
 from dpg_audit.models import Event
 from dpg_audit.osmdata import OsmData
+from dpg_audit.traffic.counts import osm_refs
 
 MATCHED_LAYERS = (
     "infrastructure",
@@ -46,8 +47,9 @@ class MatchedLayers:
 
 
 def build_matched_layers(
-    path: RoutePath, matches: list[LineMatch], osm: OsmData, ev_number: int | None
+    path: RoutePath, matches: list[LineMatch], osm: OsmData, ev_number: int | None, traffic=None
 ) -> MatchedLayers:
+    """`traffic`: a traffic.route.TrafficContext (countries, counts on the route, bands, legal speeds; D108)."""
     runs: dict[str, list[_Run]] = {layer: [] for layer in MATCHED_LAYERS}
     structures: list[tuple[float, float]] = []
     unmatched = approx = 0.0
@@ -80,13 +82,21 @@ def build_matched_layers(
             tags = osm.way_tags.get(way, {})
             if piece.approx:
                 approx += m1 - m0
-            lts, lts_conf, lts_detail = classify.traffic_stress(tags, piece.edge)
+            legal = bands = measured = None
+            if traffic is not None:
+                mid = (m0 + m1) / 2
+                country = traffic.country_at(mid)
+                legal, bands = traffic.legal.get(country), traffic.bands.get(country)
+                refs = osm_refs(tags.get("ref"))
+                measured = traffic.measured(refs, mid) if refs else None
+            lts, lts_conf, lts_detail = classify.traffic_stress(tags, piece.edge, legal)
+            ecs_t = classify.ecs_traffic(tags, piece.edge, legal, bands, measured)
             values = {
                 "traffic_stress": (lts, lts_conf, {}),
-                "infrastructure": classify.infrastructure(tags, piece.edge, lts),
+                "infrastructure": classify.infrastructure(tags, piece.edge, lts, ecs_t[0]),
                 "surface": classify.surface(tags, piece.edge),
                 "cycle_network": classify.cycle_network(osm.way_networks.get(way, set()), ev_number),
-                "ecs_traffic": classify.ecs_traffic(tags, piece.edge),
+                "ecs_traffic": ecs_t,
                 "ecs_surface": classify.ecs_surface(tags, piece.edge),
                 "ecs_continuity": classify.ecs_continuity(tags, piece.edge),
             }

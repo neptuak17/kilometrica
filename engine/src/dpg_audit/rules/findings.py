@@ -66,7 +66,8 @@ def rule_findings(
         kw["position"] = path.locate((kw["from_m"] + kw["to_m"]) / 2)
         out.append(kw)
 
-    for m0, m1, evs in runs(by_layer.get("traffic_stress", []), {"4"}, cfg.get("busy_road_merge_m", gap)):
+    # Busy: high or very high ECS traffic (D108), the same "busy" riders and ECF see.
+    for m0, m1, evs in runs(by_layer.get("ecs_traffic", []), {"high", "very_high"}, cfg.get("busy_road_merge_m", gap)):
         if _covered(evs) >= cfg["busy_road_min_m"]:
             add(
                 rule_id="audit.busy_road",
@@ -74,9 +75,10 @@ def rule_findings(
                 severity=Severity.WARNING,
                 from_m=m0,
                 to_m=m1,
-                title=f"{_km(_covered(evs))} on busy roads (LTS 4){_names(evs)}",
-                detail="Fast or heavy motor traffic without cycle facilities, estimated from road class and speed "
-                "limit (often a default). Consider an alternative or public transport.",
+                title=f"{_km(_covered(evs))} on busy roads{_names(evs)}",
+                detail="High or very high traffic in the European Certification Standard's terms: the speed limit and "
+                "the traffic, measured where an open count lies on the road, else typical of its class. Consider an "
+                "alternative or public transport.",
                 evidence={"ways": _ways(evs)},
                 confidence="medium",
             )

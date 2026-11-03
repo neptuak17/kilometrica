@@ -249,3 +249,25 @@ What the differences say:
 On EV8's 95 developed sections, 13 reach 95% as judged. Untagged surfaces (1,074 km unknown) hold back 32 of the others: counted as passing, 45 would reach it. Traffic holds back most of the rest: without it, 81 would. EV8's traffic categories come from road class (volume) and default speeds, the same weakness as the parked busy-road rule. Question 151.
 
 **Since D107 (bundles 2026-11-03, re-audited the same evening):** the tier shares count only the criteria along the route, as ECF's do, and the per-section criteria are each section's conditions. Route totals: EV15's main line meets essential on 93% of its length, important 91%, additional 81%; its other bank 91%, 89%, 79%; EV8 49%, 29%, 22%. Against ECF's 46 rows (2026 rules): essential 4 points apart on average, important 7, additional 21 (12 under the 2021 rules); the essential conditions hold on all 46 rows, the important ones on 20 (climbing over 500 m, rest areas OSM doesn't map) and the additional ones on 14.
+
+## Traffic from open counts (D108, bundles 2026-11-03)
+
+**Sources:** France's national road network (2024), and the Gard and Aude départements (Licence Ouverte); 2,265 counting places, 2,234 matched to an OSM road of the same reference. Nothing found yet for the other départements on our routes; Spain, Slovenia and Italy are still to add.
+
+**Calibration** (`dpg traffic-calibrate`, `engine/profiles/traffic/volume-bands.yaml`): the counts confirm the guessed bands for France rather than change them. Typical volumes (quartiles, vehicles a day): motorway 18,100 / 28,100 / 49,000; primary 4,800 / 7,400 / 11,400; secondary 950 / 2,100 / 4,100; tertiary 315 / 800 / 1,700. A secondary road's median sits on ECS's line between 501–2,000 and 2,001–4,000, so its class alone can't say whether it is moderate or high.
+
+**Distance from a town says much more** (Gard and Aude counts; nearest city or town in OSM):
+
+| | 0–2 km | 2–5 km | 5–10 km | over 10 km |
+|---|---|---|---|---|
+| Secondary: median (share over 2,000 a day) | 7,431 (100%) | 3,230 (78%) | 3,692 (80%) | 1,103 (26%) |
+| Tertiary | 2,300 (70%) | 2,194 (52%) | 934 (17%) | 572 (12%) |
+
+**Busy before and after** (busy = what riders are told; before: traffic stress 4; after: ECS high or very high, with legal speed limits and the calibrated bands):
+
+| | Before | After | Measured on the route |
+|---|---:|---:|---:|
+| EV8 (7,213 km) | 1,537 km | 2,037 km | 5 counts on 4 roads, none busy |
+| EV15 main line (1,463 km) | 37 km | 45 km | none |
+
+EV8's rise is mostly in countries with no counts, where roads keep the earlier estimate and the legal 90 km/h: Greece 317 → 470 km, Albania 133 → 270, Croatia 344 → 439, Montenegro 78 → 104.
