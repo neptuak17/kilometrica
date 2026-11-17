@@ -194,8 +194,10 @@ def run(
         f"additional {scores.route.additional_pass:.0%} of the length"
     )
 
-    ms = np.concatenate([np.append(np.arange(p.from_m, p.to_m, PROFILE_STEP_M), p.to_m) for p in build.path.parts])
-    dem_ele = elevation.at(profs, ms)
+    part_ms = [np.append(np.arange(p.from_m, p.to_m, PROFILE_STEP_M), p.to_m) for p in build.path.parts]
+    ms = np.concatenate(part_ms)
+    # Each part from its own profile, so a part's end never takes the height of the next one's start (D110).
+    dem_ele = np.concatenate([elevation.at([prof], m) for prof, m in zip(profs, part_ms, strict=True)])
     gpx = []
     for m in ms:
         part = build.path.part_at(float(m))

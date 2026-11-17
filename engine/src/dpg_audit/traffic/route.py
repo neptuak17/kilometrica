@@ -121,10 +121,11 @@ def build(
     kept = [(c, p) for (c, p), ok in zip(probes, near, strict=True) if ok]
     if not kept:
         return ctx
-    projections = index.project(np.array([p[0] for _, p in kept]), np.array([p[1] for _, p in kept]))
+    # Every pass of the route along the counted road (D110): an out-and-back rides it twice.
+    passes = index.passes(np.array([p[0] for _, p in kept]), np.array([p[1] for _, p in kept]), COUNT_REACH_M)
     found: dict[str, list[tuple[float, Measured]]] = {}
     measured_of: dict[int, Measured] = {}
-    for (c, _), pr in zip(kept, projections, strict=True):
+    for (c, _), pr in ((k, pr) for k, ps in zip(kept, passes, strict=True) for pr in ps):
         if pr.offset_m > COUNT_REACH_M:
             continue
         i = max(bisect_right(starts, pr.m - 200.0) - 1, 0)

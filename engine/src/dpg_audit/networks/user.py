@@ -17,7 +17,7 @@ import numpy as np
 from dpg_audit.build import TrackInput
 from dpg_audit.ingest.gpx import GpxTrack, GpxWaypoint, read_gpx
 from dpg_audit.lrs import MeasuredLine
-from dpg_audit.lrs.geodesy import local_scale
+from dpg_audit.lrs.geodesy import distance, local_scale
 from dpg_audit.models import DevelopmentLevel, EuroVeloStatus, Licence, Route, Signage, SourceSnapshot
 
 NETWORK = "user"
@@ -27,6 +27,8 @@ STAGE_M = 60_000.0
 MIN_STEP_M = 5.0
 """Points closer than this to the last one kept are repeats or GPS jitter at a stop."""
 NAME_RADIUS_M = 5_000.0
+NEXT_DAY_M = 5_000.0
+"""One of the file's own tracks is the next day when it starts this close to where the last one ended (D65's reach)."""
 UNKNOWN_LICENCE = Licence(id="unknown", name="Unknown: the rider's own file, never redistributed (D25)")
 ATTRIBUTION = "Route from the rider's own file (private)."
 NOT_RATED = EuroVeloStatus(
@@ -158,7 +160,9 @@ def load_tracks(gpx_path: Path, settlements: Sequence[Named] = ()) -> list[Track
             a = place_name(*line.locate(0.0), settlements)
             b = place_name(*line.locate(line.length), settlements)
             title = track.name or _title(f"Track {k}", a, b, offset, offset + line.length)
-            out.append(TrackInput(k, title, a, b, NOT_RATED, line, track.index))
+            # A track that starts where the last one ended is the rider's next day, never another way (D110).
+            follows = k > 1 and distance(*lines[k - 2].locate(lines[k - 2].length), *line.locate(0.0)) <= NEXT_DAY_M
+            out.append(TrackInput(k, title, a, b, NOT_RATED, line, track.index, follows))
             offset += line.length
         return out
     line = lines[0]
@@ -168,7 +172,10 @@ def load_tracks(gpx_path: Path, settlements: Sequence[Named] = ()) -> list[Track
     for k in range(n):
         m0, m1 = float(edges[k]), float(edges[k + 1])
         title = _title(f"Stage {k + 1}", names[k], names[k + 1], m0, m1)
-        out.append(TrackInput(k + 1, title, names[k], names[k + 1], NOT_RATED, line.slice(m0, m1), tracks[0].index))
+        # Stages cut from one line follow on by construction, also where the line comes back on itself (D110).
+        out.append(
+            TrackInput(k + 1, title, names[k], names[k + 1], NOT_RATED, line.slice(m0, m1), tracks[0].index, k > 0)
+        )
     return out
 
 

@@ -12,7 +12,7 @@ from dpg_audit import networks, overlap
 from dpg_audit.build import assemble
 from dpg_audit.bundle import bundle_dir, write_bundle
 from dpg_audit.ingest.gpx import read_gpx
-from dpg_audit.models import Component, ComponentKind, DevelopmentLevel, GapType, Signage, WaysFile
+from dpg_audit.models import Component, ComponentKind, DevelopmentLevel, GapType, Route, Signage, WaysFile
 from dpg_audit.networks import user
 from dpg_audit.rules.findings import gap_findings
 
@@ -105,6 +105,55 @@ def test_several_tracks_are_kept_as_sections(tmp_path):
     f.write_text(gpx(days))
     tracks = user.load_tracks(f)
     assert [t.title for t in tracks] == ["Day 1", "Track 2: km 40–80"]
+
+
+def _ring(km: float, n: int = 3001, lon0: float = 0.5, lat0: float = 43.0) -> str:
+    """A loop of `km` around a point, ending where it starts."""
+    r = km / (2 * np.pi)
+    t = np.linspace(0, 2 * np.pi, n)
+    lons, lats = lon0 + r / KM_PER_DEG_LON_43 * np.cos(t), lat0 + r / 111.2 * np.sin(t)
+    return "".join(f'<trkpt lat="{y:.6f}" lon="{x:.6f}"/>' for x, y in zip(lons, lats, strict=True))
+
+
+def _reverse(points: str) -> str:
+    """line_xml's points in the opposite order: the same road ridden back."""
+    return "".join(reversed([p + "</trkpt>" for p in points.split("</trkpt>") if p]))
+
+
+_ROUTE = Route(id="user:u0000000000", network="user", ref="u0000000000", name="Test", official_url=None)
+
+
+def test_a_loop_is_audited_whole(tmp_path):
+    # The last stage comes back to the start: it is the way home, not another way along a stretch (D110).
+    f = tmp_path / "loop.gpx"
+    f.write_text(gpx(f"<trk><trkseg>{_ring(300)}</trkseg></trk>"))
+    build = assemble(_ROUTE, user.load_tracks(f))
+    assert build.path.length / 1000 == pytest.approx(300, abs=1)
+    assert len(build.daily) == 5
+    assert not [x for x in build.findings if x.rule_id == "source.variant_set_aside"]
+
+
+def test_an_out_and_back_keeps_its_way_home(tmp_path):
+    out = line_xml(0.0, 120)
+    f = tmp_path / "out-and-back.gpx"
+    f.write_text(gpx(f"<trk><trkseg>{out}{_reverse(out)}</trkseg></trk>"))
+    build = assemble(_ROUTE, user.load_tracks(f))
+    assert build.path.length / 1000 == pytest.approx(240, abs=1)
+    assert not [x for x in build.findings if x.rule_id == "source.variant_set_aside"]
+
+
+def test_a_files_next_day_track_follows_even_back_over_the_same_road(tmp_path):
+    # Day 2 starts where day 1 ended and rides back the same road: the rider's next day (D110).
+    f = tmp_path / "days.gpx"
+    f.write_text(gpx(f"<trk><trkseg>{line_xml(0.0, 60)}</trkseg></trk><trk><trkseg>{line_xml(0.0, 60)}</trkseg></trk>"))
+    tracks = user.load_tracks(f)
+    assert [t.follows for t in tracks] == [False, False]  # day 2 starts 60 km from where day 1 ended
+    g = tmp_path / "days2.gpx"
+    there = line_xml(0.0, 60)
+    g.write_text(gpx(f"<trk><trkseg>{there}</trkseg></trk><trk><trkseg>{_reverse(there)}</trkseg></trk>"))
+    tracks = user.load_tracks(g)
+    assert [t.follows for t in tracks] == [False, True]
+    assert assemble(_ROUTE, tracks).path.length / 1000 == pytest.approx(120, abs=1)
 
 
 def test_place_name_prefers_a_town_to_a_closer_village():

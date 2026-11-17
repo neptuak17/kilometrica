@@ -107,6 +107,9 @@ def test_far_from_towns_a_secondary_road_takes_its_quieter_band():
     assert far[2]["volume_source"] == source
     assert classify.ecs_traffic(tags, {}, FR, bands, None, 1_000, "FR")[0] == "very_high"
     assert classify.ecs_traffic(tags, {}, FR, bands, None, 3_000, "FR")[0] == "high"  # too few: the class's band
+    # No city or town in the corridor at all: as far from one as can be, not a crash (D110).
+    assert classify.town_band(float("inf")) == "over 10 km"
+    assert classify.ecs_traffic(tags, {}, FR, bands, None, float("inf"), "FR")[0] == "moderate"
 
 
 def test_countries_without_counts_use_france():

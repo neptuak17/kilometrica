@@ -228,8 +228,15 @@ def locate_points(path: RoutePath, points: list[dict], reach_m: float) -> list[t
     kept = [p for p, ok in zip(points, near, strict=True) if ok]
     if not kept:
         return []
-    projs = index.project(np.array([p["lon"] for p in kept]), np.array([p["lat"] for p in kept]))
-    return sorted(((pr.m, p) for pr, p in zip(projs, kept, strict=True) if pr.offset_m <= reach_m), key=lambda t: t[0])
+    lon, lat = np.array([p["lon"] for p in kept]), np.array([p["lat"] for p in kept])
+    # Every pass of the route counts it, as where an out-and-back rides the same gate twice (D110).
+    found = [
+        (pr.m, p)
+        for ps, p in zip(index.passes(lon, lat, reach_m), kept, strict=True)
+        for pr in ps
+        if pr.offset_m <= reach_m
+    ]
+    return sorted(found, key=lambda t: t[0])
 
 
 # --- the rules ------------------------------------------------------------------------------------------------

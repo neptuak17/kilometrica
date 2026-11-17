@@ -12,12 +12,16 @@ import shapely
 from pyproj import Transformer
 from scipy.spatial import cKDTree
 
+from dpg_audit.lrs.geodesy import distance
 from dpg_audit.lrs.line import Projection
 from dpg_audit.lrs.path import RoutePath
 
 EUROPE = "EPSG:3035"
 LAEA_SLACK = 1.12
 """LAEA distances can be a few per cent off far from its centre (e.g. Cyprus); pre-filters widen by this factor."""
+PASS_APART_M = 30_000.0
+"""A route passes a place again when it comes back near it at least this far along (a loop's start town, the way
+home on an out-and-back; D110). Closer than that, it is the same pass winding."""
 
 _projection: dict = {}
 
@@ -78,18 +82,33 @@ class RouteSamples:
             idx = np.atleast_1d(idx)
         return idx.astype(int)
 
+    def near_pass(self, lon: float, lat: float, radius_m: float, limit: int, m: float, window_m: float) -> np.ndarray:
+        """Like `near`, but only samples within `window_m` along the route of measure `m`: one pass of a route that
+        passes the point more than once (D110). At least the sample nearest to `m`."""
+        x, y = to_laea(lon, lat)
+        here = np.array([float(x), float(y)])
+        idx = np.asarray(self.tree.query_ball_point(here, radius_m * LAEA_SLACK), dtype=int)
+        idx = idx[np.abs(self.m[idx] - m) <= window_m] if idx.size else idx
+        if idx.size == 0:
+            return np.array([int(np.argmin(np.abs(self.m - m)))])
+        d = np.hypot(*(self.tree.data[idx] - here).T)
+        return idx[np.argsort(d, kind="stable")][:limit].astype(int)
+
 
 class RouteIndex:
     def __init__(self, path: RoutePath):
         self.path = path
-        geoms, owners = [], []
+        geoms, owners, locals_ = [], [], []
         for pi, part in enumerate(path.parts):
             x, y = to_laea(part.line.lon, part.line.lat)
             coords = np.stack([np.stack([x[:-1], y[:-1]], 1), np.stack([x[1:], y[1:]], 1)], 1)
             geoms.append(shapely.linestrings(coords))
             owners.append(np.full(len(coords), pi))
+            locals_.append(np.arange(len(coords)))
         self.segments = np.concatenate(geoms)
         self.owner = np.concatenate(owners)
+        self.local = np.concatenate(locals_)
+        """Each segment's index within its part's line."""
         self.tree = shapely.STRtree(self.segments)
 
     def within(self, lon: np.ndarray, lat: np.ndarray, radius_m: np.ndarray | float) -> np.ndarray:
@@ -114,6 +133,42 @@ class RouteIndex:
             part = self.path.parts[int(self.owner[s])]
             p = part.line.project(float(lon[i]), float(lat[i]))
             out.append(Projection(p.m + part.from_m, p.offset_m, p.side, p.lon, p.lat, p.segment))
+        return out
+
+    def passes(
+        self, lon: np.ndarray, lat: np.ndarray, radius_m: np.ndarray | float, apart_m: float = PASS_APART_M
+    ) -> list[list[Projection]]:
+        """Each point's projections onto every pass of the route within `radius_m`, nearest first (D110). The first is
+        `project`'s; a further pass is one at least `apart_m` along the route from every pass already kept, as where a
+        loop comes back to its start town or an out-and-back rides home. Most points have one."""
+        lon, lat = np.asarray(lon, dtype=float), np.asarray(lat, dtype=float)
+        out = [[p] for p in self.project(lon, lat)]
+        if not out:
+            return out
+        radius = np.broadcast_to(np.asarray(radius_m, dtype=float), lon.shape)
+        x, y = to_laea(lon, lat)
+        pts = shapely.points(x, y)
+        pi, si = self.tree.query(pts, predicate="dwithin", distance=radius * LAEA_SLACK)
+        if pi.size == 0:
+            return out
+        dist = shapely.distance(pts[pi], self.segments[si])
+        frac = shapely.line_locate_point(self.segments[si], pts[pi], normalized=True)
+        order = np.lexsort((dist, pi))
+        for k in order:
+            i, s = int(pi[k]), int(si[k])
+            part = self.path.parts[int(self.owner[s])]
+            j = int(self.local[s])
+            m = part.from_m + float(part.line.cum[j] + frac[k] * part.line.seg_len[j])
+            if any(abs(m - p.m) < apart_m for p in out[i]):
+                continue
+            foot_lon, foot_lat = part.line.locate(m - part.from_m)
+            offset = distance(float(lon[i]), float(lat[i]), foot_lon, foot_lat)
+            if offset > radius[i]:
+                continue
+            (ax, bx), (ay, by) = to_laea(part.line.lon[j : j + 2], part.line.lat[j : j + 2])
+            cross = (bx - ax) * (y[i] - ay) - (by - ay) * (x[i] - ax)
+            side = 0 if offset < 1e-6 else (1 if cross > 0 else -1)
+            out[i].append(Projection(m, offset, side, foot_lon, foot_lat, j))
         return out
 
     def samples(self, step_m: float) -> RouteSamples:

@@ -37,6 +37,10 @@ class TrackInput:
     status: EuroVeloStatus
     line: MeasuredLine
     source_index: int
+    follows: bool = False
+    """The section is known to carry on from the one before it, as stored: a stage cut from one line, or a rider's
+    next day. It is never another way along a stretch already covered, even where it comes back to one (a loop's last
+    stage, the way home on an out-and-back; D110)."""
 
 
 @dataclass(frozen=True)
@@ -147,6 +151,11 @@ def split_variants(tracks: list[TrackInput], params: BuildParams) -> tuple[list[
 
     for t in tracks[1:]:
         ends = _ends(t.line)
+        if t.follows:
+            main.append(t)
+            exits = [ends[1]]
+            placed.append(t)
+            continue
         last = main[-1]
         to_main = [min(_dist(e, x) for x in exits) for e in ends]
         # Somewhere new: away from the route placed so far, leaving out the section it follows on from.

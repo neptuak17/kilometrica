@@ -12,7 +12,7 @@ from rapidfuzz import fuzz
 
 from dpg_audit.build import RouteBuild
 from dpg_audit.layers import elevation
-from dpg_audit.lrs.index import RouteIndex
+from dpg_audit.lrs.index import PASS_APART_M, RouteIndex
 from dpg_audit.match.valhalla import Valhalla
 from dpg_audit.models import Place, PlacesFile, ServicesFile, SourceSnapshot
 from dpg_audit.services import conflate as cf
@@ -188,27 +188,35 @@ def build_places(
 
     lon = np.array([m.primary.lon for m in merged])
     lat = np.array([m.primary.lat for m in merged])
-    projs = index.project(lon, lat)
-    keep = [
-        i
-        for i, (m, p) in enumerate(zip(merged, projs, strict=True))
-        if p.offset_m <= profile.types[m.primary.service].show_m
-    ]
-    merged, projs = [merged[i] for i in keep], [projs[i] for i in keep]
+    show_r = np.array([profile.types[m.primary.service].show_m for m in merged])
+    # Every pass of the route near the place (D110): a loop's start town, the way home on an out-and-back.
+    passes = index.passes(lon, lat, show_r)
+    keep = [i for i, ps in enumerate(passes) if ps[0].offset_m <= show_r[i]]
+    merged, passes = [merged[i] for i in keep], [passes[i] for i in keep]
     lon, lat = lon[keep], lat[keep]
     countries = CountryLookup(osm.geofabrik_index(root)).lookup(lon, lat)
     policy = BikePolicy.load()
     enrich = _match_anchored(anchored, merged, lon, lat)
+    # One entry per place and pass: (place, pass, how many passes, projection).
+    entries = [(i, k, len(ps), p) for i, ps in enumerate(passes) for k, p in enumerate(ps)]
+
+    def key_of(i: int, k: int, n: int) -> str:
+        prim = merged[i].primary
+        key = job_key(profile.types[prim.service].costing, prim.lon, prim.lat)
+        return key if n == 1 else f"{key}|{k + 1}/{n}"
 
     samples = index.samples(profile.route_sample_m)
     jobs: list[tuple[float, AccessJob]] = []
-    for m, p in zip(merged, projs, strict=True):
-        cfg = profile.types[m.primary.service]
+    for i, k, n, p in entries:
+        prim = merged[i].primary
+        cfg = profile.types[prim.service]
         if p.offset_m <= profile.skip_routing_m:
             continue
-        src = samples.near(m.primary.lon, m.primary.lat, cfg.show_m, profile.max_sources)
-        key = job_key(cfg.costing, m.primary.lon, m.primary.lat)
-        jobs.append((p.m, AccessJob(key, m.primary.lon, m.primary.lat, cfg.costing, [int(s) for s in src])))
+        if n == 1:
+            src = samples.near(prim.lon, prim.lat, cfg.show_m, profile.max_sources)
+        else:  # routed from this pass only, so each pass has its own access point
+            src = samples.near_pass(prim.lon, prim.lat, cfg.show_m, profile.max_sources, p.m, PASS_APART_M / 2)
+        jobs.append((p.m, AccessJob(key_of(i, k, n), prim.lon, prim.lat, cfg.costing, [int(s) for s in src])))
     jobs.sort(key=lambda j: j[0])
     access_cache = places_dir / (
         f"access-{_hash(tileset, route_sha, ACCESS_VERSION, profile.route_sample_m, profile.max_sources)}.json"
@@ -217,10 +225,8 @@ def build_places(
 
     access_at = np.array(
         [
-            p.m
-            if p.offset_m <= profile.skip_routing_m
-            else (access[job_key(profile.types[m.primary.service].costing, m.primary.lon, m.primary.lat)].at_m or p.m)
-            for m, p in zip(merged, projs, strict=True)
+            p.m if p.offset_m <= profile.skip_routing_m else (access[key_of(i, k, n)].at_m or p.m)
+            for i, k, n, p in entries
         ]
     )
     log("terrain at places …")
@@ -228,18 +234,21 @@ def build_places(
     route_ele = elevation.at(profs, access_at)
 
     places: list[Place] = []
-    for i, (m, p) in enumerate(zip(merged, projs, strict=True)):
+    for e, (i, k, n, p) in enumerate(entries):
+        m = merged[i]
         prim = m.primary
         cfg = profile.types[prim.service]
         if p.offset_m <= profile.skip_routing_m:
             dist: float | None = p.offset_m
         else:
-            dist = access[job_key(cfg.costing, prim.lon, prim.lat)].distance_m
+            dist = access[key_of(i, k, n)].distance_m
         if dist is not None and dist > cfg.show_m:
             continue
+        if k > 0 and dist is None:
+            continue  # another pass that can't reach it adds nothing
         climb = None
-        if not (np.isnan(place_ele[i]) or np.isnan(route_ele[i])):
-            climb = round(max(0.0, float(place_ele[i] - route_ele[i])), 0)
+        if not (np.isnan(place_ele[i]) or np.isnan(route_ele[e])):
+            climb = round(max(0.0, float(place_ele[i] - route_ele[e])), 0)
         minutes = None
         if dist is not None and cfg.costing == "bicycle":
             minutes = round(profile.minutes(dist, climb), 1)
@@ -258,9 +267,9 @@ def build_places(
             {"label": off.tags.get("official:label"), "sites": off.tags.get("official:sites")} if off else {},
             {"label": extra.label, "sites": extra.sites, "park": extra.detail.get("park")} if extra else {},
         ):
-            for k, v in info.items():
+            for key, v in info.items():
                 if v not in (None, ""):
-                    detail["official" if k == "label" else k] = int(v) if k == "sites" else v
+                    detail["official" if key == "label" else key] = int(v) if key == "sites" else v
         if off and off.tags.get("website") and "website" not in detail:
             detail["website"] = off.tags["website"]
         if dist is None:
@@ -281,7 +290,8 @@ def build_places(
         name = prim.name or next((r.name for r in m.members if r.name), None)
         places.append(
             Place(
-                id=m.sources[0],
+                # The same place on a later pass of the route has an id of its own (D110).
+                id=m.sources[0] if k == 0 else f"{m.sources[0]}~{k + 1}",
                 service=prim.service,
                 kind=prim.kind,
                 name=name,
@@ -293,7 +303,7 @@ def build_places(
                 access_m=None if dist is None else round(dist),
                 access_min=minutes,
                 climb_m=climb,
-                access_at_m=round(float(access_at[i]), 1),
+                access_at_m=round(float(access_at[e]), 1),
                 counts=counts,
                 on_route=dist is not None and dist <= profile.on_route_m,
                 months=months,

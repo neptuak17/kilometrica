@@ -27,6 +27,8 @@ TOWN_REACH_M = {"city": 10_000.0, "town": 5_000.0, "village": 3_000.0}
 NEAR_M = 10_000.0
 """A stop with no town is "near X" for a named place this close; else so many km from the nearest named stop."""
 KM_GROUP_M = 2_000.0
+TOWN_PASS_M = 20_000.0
+"""A town's beds this far apart along the route belong to different passes of it: a stop each (D110)."""
 SERVICE_REACH_M = 2_500.0
 """Other services count towards a stop when their access point lies this close to the stop along the route."""
 STATION_REACH_M = 5_000.0
@@ -76,7 +78,17 @@ def _groups(beds: list[Place], towns: list[Settlement]) -> list[tuple[Settlement
             loose.append(bed)
         else:
             by_town.setdefault(t, []).append(bed)
-    out: list[tuple[Settlement | None, list[Place]]] = [(towns[t], group) for t, group in by_town.items()]
+    out: list[tuple[Settlement | None, list[Place]]] = []
+    for t, group in by_town.items():
+        # A town the route passes twice (a loop's start, an out-and-back) is a stop on each pass (D110).
+        group.sort(key=lambda p: p.access_at_m)
+        current = [group[0]]
+        for bed in group[1:]:
+            if bed.access_at_m - current[-1].access_at_m > TOWN_PASS_M:
+                out.append((towns[t], current))
+                current = []
+            current.append(bed)
+        out.append((towns[t], current))
     loose.sort(key=lambda p: p.access_at_m)
     current: list[Place] = []
     for bed in loose:

@@ -117,16 +117,21 @@ def select(path: RoutePath, raw: list[dict]) -> list[Highlight]:
     lat = np.array([r["lat"] for r in raw])
     radius = np.array([RADIUS_M.get(r["kind"], DEFAULT_RADIUS_M) for r in raw])
     near = np.flatnonzero(index.within(lon, lat, radius))
-    projs = index.project(lon[near], lat[near])
+    # On every pass of the route that comes near it (D110), each with an id of its own after the first.
+    found = [
+        (i, k, p)
+        for i, ps in zip(near, index.passes(lon[near], lat[near], radius[near]), strict=True)
+        for k, p in enumerate(ps)
+    ]
     kept: list[Highlight] = []
-    for i, p in zip(near, projs, strict=True):
+    for i, k, p in found:
         r = raw[int(i)]
         if p.offset_m > radius[i]:
             continue
         linked = bool(r["wikidata"] or r["wikipedia"])
         kept.append(
             Highlight(
-                id=r["id"],
+                id=r["id"] if k == 0 else f"{r['id']}~{k + 1}",
                 kind=r["kind"],
                 name=r["name"],
                 lon=round(r["lon"], 6),

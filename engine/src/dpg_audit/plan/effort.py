@@ -57,9 +57,11 @@ def build_effort(
     infra = _Values([e for e in events if e.layer == "infrastructure"])
     surface = _Values([e for e in events if e.layer == "surface"])
     parts = []
-    for part in build.path.parts:
+    for part, prof in zip(build.path.parts, profs, strict=True):
         ms = np.append(np.arange(part.from_m, part.to_m, step_m), part.to_m)
-        ele = elevation.at(profs, ms)
+        # From this part's own profile: where one part ends another begins at the same measure, and across a gap the
+        # next part's height there is somewhere else's (D110).
+        ele = elevation.at([prof], ms)
         heights: list[int | None] = [
             None if np.isnan(e) or _inside(unknown, float(m)) else round(float(e)) for m, e in zip(ms, ele, strict=True)
         ]

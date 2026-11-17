@@ -7,10 +7,14 @@ import numpy as np
 import pytest
 from test_services import place
 
+from dpg_audit.build import TrackInput, assemble
 from dpg_audit.dream.crowding import CrowdingSource
 from dpg_audit.dream.themes import Settlement
+from dpg_audit.layers import elevation
 from dpg_audit.lrs import MeasuredLine, RoutePath
-from dpg_audit.plan.effort import surface_letter
+from dpg_audit.models import Route
+from dpg_audit.networks.user import NOT_RATED
+from dpg_audit.plan.effort import build_effort, surface_letter
 from dpg_audit.plan.highlights import kind_of, rank, select
 from dpg_audit.plan.stops import build_stops
 from dpg_audit.services.coverage import Coverage
@@ -86,6 +90,32 @@ def test_beds_group_by_town_else_along_the_route(path):
     # Each place to stay knows its own town, for map searches; beds near no town have none.
     assert {p.detail.get("town") for p in places if p.service == "accommodation" and p.lon < 1} == {"Ville"}
     assert all("town" not in p.detail for p in places if p.service == "accommodation" and p.lon > 1)
+
+
+def test_a_town_passed_twice_is_a_stop_on_each_pass(path):
+    # A loop starts and ends in Ville: its beds come on both passes, 190 km apart along the route (D110).
+    town = Settlement(lon=0.5, lat=LAT + 0.01, name="Ville", kind="town", name_en=None)
+    beds = [place("accommodation", m, kind="hotel") for m in (10_000.0, 11_000.0, 200_000.0, 201_000.0)]
+    beds = [b.model_copy(update={"lon": 0.5, "lat": LAT, "id": f"bed-{i}"}) for i, b in enumerate(beds)]
+    coverage = Coverage(beds, load_services("services-v0"), path.length)
+    stops = build_stops(path, beds, [town], coverage, 2027).stops
+    assert [(s.name, round(s.at_m / 1000)) for s in stops] == [("Ville", 10), ("Ville", 200)]
+
+
+# --- effort across a gap ---------------------------------------------------------------------------------------
+
+
+def test_a_sections_last_height_is_its_own_across_a_gap():
+    # Two sections 20 km apart, the first at 10 m, the next at 1,000 m: EV8's Menton – Ventimiglia before Limone.
+    # The first section's profile ends at 10 m, not at the next one's start (D110).
+    a = MeasuredLine(np.linspace(0.0, 0.1, 50), np.full(50, LAT))
+    b = MeasuredLine(np.linspace(0.35, 0.45, 50), np.full(50, LAT))
+    tracks = [TrackInput(1, "A", None, None, NOT_RATED, a, 0), TrackInput(2, "B", None, None, NOT_RATED, b, 1)]
+    build = assemble(Route(id="user:x", network="user", ref="x", name="x", official_url=None), tracks)
+    profs = elevation.profiles(build.path, lambda lon, lat: np.where(lon < 0.2, 10.0, 1000.0), [])
+    first, second = build_effort(build, profs, [], []).parts
+    assert first.ele[-1] == 10 and set(first.ele) == {10}
+    assert second.ele[0] == 1000
 
 
 # --- effort ----------------------------------------------------------------------------------------------------

@@ -201,6 +201,28 @@ def test_route_index_projection_matches_path_projection():
     near = index.within(qlon, qlat, 1000.0)
     offsets = np.array([p.offset_m for p in index.project(qlon, qlat)])
     assert near[offsets < 1000].all()
+    # A route that comes by once: one pass each, the same as project's.
+    passes = index.passes(qlon, qlat, 5000.0)
+    assert all(len(ps) == 1 for ps in passes)
+
+
+def test_a_place_on_an_out_and_back_sits_on_both_passes():
+    # 80 km east and the same road home: a café 300 m off the road at km 50 is passed at km 50 and km 110 (D110).
+    lon = np.linspace(0.0, 80 / 81.4, 801)
+    lat = np.full(lon.size, 43.0)
+    path = RoutePath([MeasuredLine(lon, lat), MeasuredLine(lon[::-1], lat)])
+    index = RouteIndex(path)
+    (here,) = index.passes(np.array([50 / 81.4]), np.array([43.0 + 300 / 111_200]), 1000.0)
+    assert [round(p.m / 1000) for p in here] == [50, 110]
+    assert [round(p.offset_m) for p in here] == [300, 300]
+    assert here[0].side == -here[1].side  # on the left one way, the right the other
+    # Near the turn, the two passes are one: within PASS_APART_M along the route.
+    (turn,) = index.passes(np.array([79 / 81.4]), np.array([43.0]), 1000.0)
+    assert len(turn) == 1
+    # Access is routed from each pass's own samples.
+    samples = index.samples(250.0)
+    src = samples.near_pass(50 / 81.4, 43.0, 1000.0, 8, here[1].m, 15_000.0)
+    assert np.all(np.abs(samples.m[src] - here[1].m) <= 1000)
 
 
 def test_access_batches_respect_matrix_limit():

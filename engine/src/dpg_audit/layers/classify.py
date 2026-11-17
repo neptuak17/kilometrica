@@ -329,7 +329,8 @@ TOWN_DISTANCE = ((2000.0, "0-2 km"), (5000.0, "2-5 km"), (10000.0, "5-10 km"), (
 
 
 def town_band(metres: float) -> str:
-    return next(label for edge, label in TOWN_DISTANCE if metres < edge)
+    """The band a distance falls in. No town in the corridor at all (an infinite distance) is the farthest band."""
+    return next((label for edge, label in TOWN_DISTANCE if metres < edge), TOWN_DISTANCE[-1][1])
 
 
 def ecs_traffic(
