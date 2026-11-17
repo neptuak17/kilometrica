@@ -12,7 +12,7 @@ from rapidfuzz import fuzz
 
 from dpg_audit.build import RouteBuild
 from dpg_audit.layers import elevation
-from dpg_audit.lrs.index import PASS_APART_M, RouteIndex
+from dpg_audit.lrs.index import RouteIndex
 from dpg_audit.match.valhalla import Valhalla
 from dpg_audit.models import Place, PlacesFile, ServicesFile, SourceSnapshot
 from dpg_audit.services import conflate as cf
@@ -214,8 +214,9 @@ def build_places(
             continue
         if n == 1:
             src = samples.near(prim.lon, prim.lat, cfg.show_m, profile.max_sources)
-        else:  # routed from this pass only, so each pass has its own access point
-            src = samples.near_pass(prim.lon, prim.lat, cfg.show_m, profile.max_sources, p.m, PASS_APART_M / 2)
+        else:  # routed from this pass only (nearer it than any other pass), so each has its own access point
+            window = min(abs(p.m - q.m) for q in passes[i] if q is not p) / 2
+            src = samples.near_pass(prim.lon, prim.lat, cfg.show_m, profile.max_sources, p.m, window)
         jobs.append((p.m, AccessJob(key_of(i, k, n), prim.lon, prim.lat, cfg.costing, [int(s) for s in src])))
     jobs.sort(key=lambda j: j[0])
     access_cache = places_dir / (

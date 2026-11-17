@@ -216,9 +216,12 @@ def test_a_place_on_an_out_and_back_sits_on_both_passes():
     assert [round(p.m / 1000) for p in here] == [50, 110]
     assert [round(p.offset_m) for p in here] == [300, 300]
     assert here[0].side == -here[1].side  # on the left one way, the right the other
-    # Near the turn, the two passes are one: within PASS_APART_M along the route.
+    # Near the turn, the two passes are one: the route never leaves its reach in between.
     (turn,) = index.passes(np.array([79 / 81.4]), np.array([43.0]), 1000.0)
     assert len(turn) == 1
+    # A place with a wide reach, 15 km off a long stretch, is one pass however long the stretch within reach.
+    (wide,) = index.passes(np.array([40 / 81.4]), np.array([43.0 + 15_000 / 111_200]), 20_000.0)
+    assert sorted(round(p.m / 1000) for p in wide) == [40, 120]  # once each way (equally near), the turn 80 km on
     # Access is routed from each pass's own samples.
     samples = index.samples(250.0)
     src = samples.near_pass(50 / 81.4, 43.0, 1000.0, 8, here[1].m, 15_000.0)

@@ -19,9 +19,9 @@ from dpg_audit.lrs.path import RoutePath
 EUROPE = "EPSG:3035"
 LAEA_SLACK = 1.12
 """LAEA distances can be a few per cent off far from its centre (e.g. Cyprus); pre-filters widen by this factor."""
-PASS_APART_M = 30_000.0
-"""A route passes a place again when it comes back near it at least this far along (a loop's start town, the way
-home on an out-and-back; D110). Closer than that, it is the same pass winding."""
+PASS_GAP_M = 5_000.0
+"""A route passes a place again when it has left the place's reach for at least this far along it, then come back (a
+loop's start town, the way home on an out-and-back; D110). A shorter excursion is the same pass winding."""
 
 _projection: dict = {}
 
@@ -136,11 +136,12 @@ class RouteIndex:
         return out
 
     def passes(
-        self, lon: np.ndarray, lat: np.ndarray, radius_m: np.ndarray | float, apart_m: float = PASS_APART_M
+        self, lon: np.ndarray, lat: np.ndarray, radius_m: np.ndarray | float, gap_m: float = PASS_GAP_M
     ) -> list[list[Projection]]:
         """Each point's projections onto every pass of the route within `radius_m`, nearest first (D110). The first is
-        `project`'s; a further pass is one at least `apart_m` along the route from every pass already kept, as where a
-        loop comes back to its start town or an out-and-back rides home. Most points have one."""
+        `project`'s. A pass is a run of the route within reach of the point; the route passes it again only after
+        leaving its reach for at least `gap_m`, as where a loop comes back to its start town or an out-and-back rides
+        home. A place merely within reach of a long stretch (a hospital 15 km off a coast) is one pass."""
         lon, lat = np.asarray(lon, dtype=float), np.asarray(lat, dtype=float)
         out = [[p] for p in self.project(lon, lat)]
         if not out:
@@ -153,23 +154,48 @@ class RouteIndex:
             return out
         dist = shapely.distance(pts[pi], self.segments[si])
         frac = shapely.line_locate_point(self.segments[si], pts[pi], normalized=True)
-        order = np.lexsort((dist, pi))
-        for k in order:
-            i, s = int(pi[k]), int(si[k])
-            part = self.path.parts[int(self.owner[s])]
-            j = int(self.local[s])
-            m = part.from_m + float(part.line.cum[j] + frac[k] * part.line.seg_len[j])
-            if any(abs(m - p.m) < apart_m for p in out[i]):
-                continue
-            foot_lon, foot_lat = part.line.locate(m - part.from_m)
-            offset = distance(float(lon[i]), float(lat[i]), foot_lon, foot_lat)
-            if offset > radius[i]:
-                continue
-            (ax, bx), (ay, by) = to_laea(part.line.lon[j : j + 2], part.line.lat[j : j + 2])
-            cross = (bx - ax) * (y[i] - ay) - (by - ay) * (x[i] - ax)
-            side = 0 if offset < 1e-6 else (1 if cross > 0 else -1)
-            out[i].append(Projection(m, offset, side, foot_lon, foot_lat, j))
+        parts = self.owner[si]
+        local = self.local[si]
+        starts = np.array([self.path.parts[int(p)].from_m for p in parts]) + np.array(
+            [self.path.parts[int(p)].line.cum[int(j)] for p, j in zip(parts, local, strict=True)]
+        )
+        lengths = np.array([self.path.parts[int(p)].line.seg_len[int(j)] for p, j in zip(parts, local, strict=True)])
+        for i in np.unique(pi):
+            ks = np.flatnonzero(pi == i)
+            ks = ks[np.argsort(starts[ks], kind="stable")]
+            # Runs of segments within reach, joined across stretches out of reach shorter than gap_m.
+            runs: list[list[int]] = []
+            end = -np.inf
+            for k in ks:
+                if starts[k] - end > gap_m:
+                    runs.append([])
+                runs[-1].append(int(k))
+                end = max(end, starts[k] + lengths[k])
+            first = out[i][0].m
+            for run in runs:
+                lo, hi = starts[run[0]], max(starts[k] + lengths[k] for k in run)
+                if lo - 1.0 <= first <= hi + 1.0:
+                    continue  # the pass `project` found
+                best = min(run, key=lambda k: dist[k])
+                self._add_pass(out[int(i)], best, si, frac, lon, lat, x, y, int(i), radius)
+            found = out[int(i)]
+            found[1:] = sorted(found[1:], key=lambda p: p.offset_m)  # project's stays first
         return out
+
+    def _add_pass(self, found, k, si, frac, lon, lat, x, y, i, radius) -> None:
+        """The exact projection of point i onto the segment of candidate k, added to `found` when within reach."""
+        s = int(si[k])
+        part = self.path.parts[int(self.owner[s])]
+        j = int(self.local[s])
+        m = part.from_m + float(part.line.cum[j] + frac[k] * part.line.seg_len[j])
+        foot_lon, foot_lat = part.line.locate(m - part.from_m)
+        offset = distance(float(lon[i]), float(lat[i]), foot_lon, foot_lat)
+        if offset > radius[i]:
+            return
+        (ax, bx), (ay, by) = to_laea(part.line.lon[j : j + 2], part.line.lat[j : j + 2])
+        cross = (bx - ax) * (y[i] - ay) - (by - ay) * (x[i] - ax)
+        side = 0 if offset < 1e-6 else (1 if cross > 0 else -1)
+        found.append(Projection(m, offset, side, foot_lon, foot_lat, j))
 
     def samples(self, step_m: float) -> RouteSamples:
         ms, lons, lats = [], [], []
