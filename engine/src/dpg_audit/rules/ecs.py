@@ -311,6 +311,7 @@ def volume_note(layer: Layer, m0: float, m1: float) -> str:
     """How the traffic volumes over [m0, m1] are known, by km (D110): measured where an open count lies on the road,
     calibrated on a country's counts, or estimated from the road's class. Audits before D110 don't record it."""
     lens: dict[str, float] = {}
+    origins: dict[str, float] = {}
     i = max(bisect_right(layer.starts, m0) - 1, 0)
     while i < len(layer.events) and layer.events[i].from_m < m1:
         e = layer.events[i]
@@ -318,12 +319,22 @@ def volume_note(layer: Layer, m0: float, m1: float) -> str:
         if overlap > 0 and e.value not in _ROAD_FREE:
             key = e.detail.get("volume", "unrecorded")
             lens[key] = lens.get(key, 0.0) + overlap
+            if key == "calibrated" and e.detail.get("volume_ref"):
+                origins[e.detail["volume_ref"]] = origins.get(e.detail["volume_ref"], 0.0) + overlap
         i += 1
     if not lens:
         return ""
     if set(lens) == {"unrecorded"}:
         return " (how the volumes are known isn't recorded in this audit)"
-    return " (volumes " + ", ".join(f"{w} on {_km(lens[k])}" for k, w in _VOLUME_WORDS if lens.get(k)) + ")"
+    words = []
+    for k, w in _VOLUME_WORDS:
+        if not lens.get(k):
+            continue
+        if k == "calibrated" and origins:
+            # Whose counts: a country with none of its own uses France's (D109), and ECF should see that.
+            w = f"calibrated on counts in {' and '.join(sorted(origins, key=lambda c: -origins[c]))}"
+        words.append(f"{w} on {_km(lens[k])}")
+    return " (volumes " + ", ".join(words) + ")"
 
 
 def _traffic(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:

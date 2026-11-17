@@ -173,7 +173,8 @@ def test_traffic_notes_say_how_the_volumes_are_known():
     ]
     events = road + [e for e in layers(5000, **GOOD) if e.layer != "ecs_traffic"]
     _, _, (sec,) = judge(events, [day(1, 0, 5000)])
-    assert sec.notes["traffic"] == "very high on 0.0 km (volumes measured on 2.0 km, calibrated on counts on 2.5 km)"
+    volumes = "volumes measured on 2.0 km, calibrated on counts in FR on 2.5 km"
+    assert sec.notes["traffic"] == f"very high on 0.0 km ({volumes})"
     # An audit from before D110 doesn't record it, and says so.
     old = [ev("ecs_traffic", 0, 5000, "low")] + [e for e in layers(5000, **GOOD) if e.layer != "ecs_traffic"]
     _, _, (sec,) = judge(old, [day(1, 0, 5000)])
