@@ -163,3 +163,21 @@ export function monthOf(iso: string): number {
 export function dayIndex(iso: string): number {
   return dayOfYear(iso).doy - 1;
 }
+
+/**
+ * The day of `year` that stands for a date in another year, for opening hours worked out for the audit's year
+ * (D110): the same weekday nearest the same date, so "closed on Sundays" still falls on a Sunday. In `year` itself,
+ * the date's own day.
+ */
+export function seasonDayIndex(iso: string, year: number): number {
+  const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
+  if (y === year) return dayIndex(iso);
+  const last = new Date(Date.UTC(year, m, 0)).getUTCDate(); // 29 February in a year without one: the 28th
+  let t = Date.UTC(year, m - 1, Math.min(d, last));
+  const have = (new Date(t).getUTCDay() + 6) % 7;
+  t += ((((weekday(iso) - have + 10) % 7) - 3) * 86_400_000);
+  // Near the year's ends the nearest one can fall outside it: a week the other way.
+  if (new Date(t).getUTCFullYear() < year) t += 7 * 86_400_000;
+  if (new Date(t).getUTCFullYear() > year) t -= 7 * 86_400_000;
+  return dayIndex(new Date(t).toISOString().slice(0, 10));
+}

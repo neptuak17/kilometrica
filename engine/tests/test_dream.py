@@ -9,7 +9,7 @@ import pytest
 from dpg_audit.dream import climate, scores
 from dpg_audit.dream.crowding import CrowdingSource
 from dpg_audit.dream.daylight import day_length_h, monthly_day_length
-from dpg_audit.dream.pipeline import _Layer, mean_heading, surface_shares
+from dpg_audit.dream.pipeline import _Layer, mean_heading, open_share, surface_shares
 from dpg_audit.dream.profile import grade, load_dream
 from dpg_audit.lrs import MeasuredLine
 from dpg_audit.models import Event
@@ -146,6 +146,24 @@ def test_surface_shares_partition_each_km():
     )
     shares = surface_shares(infra, surf, 0, 1000)
     assert shares == {"road": 0.5, "cycle_path": 0.2, "gravel": 0.3, "unknown": 0.0}
+    # A track or path with no surface tag could be gravel: unknown, not road (D110).
+    untagged = _Layer([ev("surface", 0, 1000, "unknown")])
+    assert surface_shares(infra, untagged, 0, 1000) == {"road": 0.0, "cycle_path": 0.0, "gravel": 0.0, "unknown": 1.0}
+
+
+def test_best_time_uses_opening_seasons_only_when_nearly_all_are_known():
+    # One campsite in ten publishes a season: too few to say how much is open, so best-time leaves it out (D57, D110).
+    from test_services import place
+
+    one_known = [place("accommodation", 0, months="ccccccooccccc"[:12])] + [
+        place("accommodation", 0, months="?" * 12) for _ in range(9)
+    ]
+    assert open_share(one_known, 0) is None
+    known = [place("accommodation", 0, months="oooooopccccc") for _ in range(9)] + [
+        place("accommodation", 0, months="?" * 12)
+    ]
+    assert open_share(known, 0) == 1.0 and open_share(known, 6) == 0.5 and open_share(known, 8) == 0.0
+    assert open_share([], 0) is None
 
 
 def test_mean_heading_east_and_winding():

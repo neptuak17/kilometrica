@@ -3,7 +3,7 @@
  * country one piece of advice for the trip instead of a warning a day (D69, D70). Riders judge what to carry.
  */
 import type { PlanCore } from "../plan";
-import { dayIndex, weekday } from "../sun";
+import { seasonDayIndex, weekday } from "../sun";
 import { KNOWN_ENOUGH, plural, WEEKDAYS_LONG } from "../text";
 import { type DayPlan, type FullData, type PlanData, type PlanItem, placesMissing } from "../types";
 import { holidayOn } from "./calendar";
@@ -20,7 +20,8 @@ export function foodOnDay(data: PlanData, d: DayPlan): { all: number; known: num
   if (!full || placesMissing(full, lo, hi).length) return null;
   const food = full.places.filter((p) => p.service === "food" && p.counts && p.access_at_m >= lo && p.access_at_m <= hi);
   const known = food.filter((p) => typeof p.detail.days === "string");
-  const di = dayIndex(d.date);
+  // Opening by day is worked out for the audit's year: another year's date reads the same weekday nearest it (D110).
+  const di = seasonDayIndex(d.date, data.dream.season_year);
   const hol = holidayOn(data, d.stop?.country ?? null, d.date);
   const open = known.filter((p) => !(hol && /\bPH\b/.test(p.opening_hours ?? "")) && (p.detail.days as string)[di] === "o").length;
   return { all: food.length, known: known.length, open, holiday: hol?.name ?? null, ids: known.map((p) => p.id) };

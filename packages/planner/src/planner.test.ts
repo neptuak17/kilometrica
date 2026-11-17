@@ -30,7 +30,7 @@ import { endOf, planTowns, startOf, withEnds } from "./ends";
 import { secondThoughts } from "./thoughts";
 import { fromUtf8, itineraryOf, readFragment, shareFragment, utf8 } from "./share";
 import { bedsFor } from "./stages";
-import { addDays, clock, sunTimes, weekday } from "./sun";
+import { addDays, clock, dayIndex, seasonDayIndex, sunTimes, weekday } from "./sun";
 import { usualWeather } from "./weather";
 import { bedKinds, bedsKnown, listable, placeKind, placeTitle, stayDates, stopName } from "./text";
 import { NO_CHOICES, type NightPlan, type PlanData, type PlanInputs } from "./types";
@@ -202,6 +202,21 @@ describe("sun", () => {
     expect(hope.sunset! - guess.sunset!).toBe(60);
     expect(clock(19 * 60 + 5)).toBe("19:05");
     expect(weekday("2027-10-17")).toBe(6); // a Sunday
+  });
+
+  it("reads another year's date as the same weekday nearest it in the audit's year (D110)", () => {
+    const iso = (i: number) => new Date(Date.UTC(2027, 0, 1 + i)).toISOString().slice(0, 10);
+    expect(seasonDayIndex("2027-10-17", 2027)).toBe(dayIndex("2027-10-17"));
+    // Sunday 18 October 2026 reads Sunday 17 October 2027; Tuesday 17 October 2028 reads Tuesday 19 October 2027.
+    expect(iso(seasonDayIndex("2026-10-18", 2027))).toBe("2027-10-17");
+    expect(iso(seasonDayIndex("2028-10-17", 2027))).toBe("2027-10-19");
+    // 29 February, and dates near the year's ends, stay inside the year on the right weekday.
+    for (const date of ["2028-02-29", "2026-01-01", "2028-12-31", "2026-12-30"]) {
+      const i = seasonDayIndex(date, 2027);
+      expect(i).toBeGreaterThanOrEqual(0);
+      expect(i).toBeLessThan(365);
+      expect(weekday(iso(i))).toBe(weekday(date));
+    }
   });
 });
 

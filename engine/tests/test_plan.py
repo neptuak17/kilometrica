@@ -146,6 +146,10 @@ def test_surface_letters_use_dreams_three_classes():
     assert surface_letter("unmatched", None) == "u"
     assert surface_letter(None, None) == "u"
     assert surface_letter("busy_road", "asphalt") == "r"
+    # An untagged track or path could be gravel: unknown, not road or cycle path (D110).
+    assert surface_letter("quiet_road", "unknown") == "u"
+    assert surface_letter("shared_path", "unknown") == "u"
+    assert surface_letter("quiet_road", "paved_assumed") == "r"
 
 
 # --- highlights ------------------------------------------------------------------------------------------------

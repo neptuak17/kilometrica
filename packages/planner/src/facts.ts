@@ -9,7 +9,7 @@ import type { Highlight, Place, Stop } from "@dpg/contracts";
 import { type NightOptions, nightOptions } from "./items";
 import type { PlanResult } from "./plan";
 import { restPlace } from "./rest";
-import { dayIndex, monthOf } from "./sun";
+import { monthOf, seasonDayIndex } from "./sun";
 import { hours, km, listable, MONTHS_LONG, placeKind, placeTitle, stopName } from "./text";
 import { type DayPlan, type NightPlan, type PlanData, placesMissing } from "./types";
 import { usualWeather, weatherSentence } from "./weather";
@@ -100,7 +100,7 @@ export function restFacts(plan: PlanResult, data: PlanData, d: DayPlan): RestFac
   const afterRide = before.ride;
   const month = monthOf(d.date);
   const near = (m: number, r: number) => Math.abs(m - stop.at_m) <= r;
-  const di = dayIndex(d.date);
+  const di = seasonDayIndex(d.date, data.dream.season_year);
   const food = (data.full?.places ?? [])
     .filter((p) => p.service === "food" && p.counts && listable(p) && near(p.access_at_m, 3000))
     .map((p) => ({ p, open: typeof p.detail.days === "string" ? (p.detail.days as string)[di] === "o" : null }))

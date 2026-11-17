@@ -35,10 +35,12 @@ def surface_letter(infra: str | None, surface: str | None) -> str:
         return "f"
     if surface in GRAVEL:
         return "g"
+    # A way with no surface tag that isn't of a class almost always paved (a track, a path, a service road) could
+    # be gravel: unknown, never road or cycle path (D37, D110).
+    if infra is None or infra in NOT_KNOWN or surface == "unknown":
+        return "u"
     if infra in PATHS:
         return "c"
-    if infra is None or infra in NOT_KNOWN:
-        return "u"
     return "r"
 
 

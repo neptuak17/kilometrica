@@ -45,6 +45,8 @@ GAP_SERVICES = ("water", "food", "accommodation", "bike_shop")
 RIDER_FINDINGS = {"audit.busy_road": 5000.0, "audit.steps": 0.0, "eurovelo.undeveloped": 5000.0}
 """Findings a rider is told about whatever their answers (D75), with the length they need inside a section: the
 `rider` count Dream and the free plan give in place of the audit's own warnings."""
+KNOWN_ENOUGH = 0.9
+"""We know enough to draw a conclusion when we know for at least 9 in 10 places (D57)."""
 STEEP_KM = (2, 5)
 """Lengths of a long steep stretch (D75): 2 km at levels 1-3, 5 km at 4-5, as the planner's STEEP."""
 
@@ -100,10 +102,10 @@ def surface_shares(infra: _Layer, surface: _Layer, m0: float, m1: float) -> dict
             continue
         if sur in GRAVEL:
             kind = "gravel"
+        elif inf is None or inf in NOT_KNOWN or sur == "unknown":
+            kind = "unknown"  # no surface tag on a way not almost always paved: could be gravel (D37, D110)
         elif inf in PATHS:
             kind = "cycle_path"
-        elif inf is None or inf in NOT_KNOWN:
-            kind = "unknown"
         else:
             kind = "road"
         lengths[kind] += b - a
@@ -130,6 +132,16 @@ def _month_codes(places: list[Place]) -> tuple[int, list[int], list[int]]:
     open_ = [sum(p.months[m] in "oa" for p in published) for m in range(12)]
     partly = [sum(p.months[m] == "p" for p in published) for m in range(12)]
     return len(published), open_, partly
+
+
+def open_share(places: list[Place], month: int) -> float | None:
+    """How much of a section's accommodation is open in a month, for best-time: open counts whole, partly half. Only
+    when we know the season of nearly every place (D57's 9 in 10): from a few, one campsite's season would move the
+    score. Otherwise None, so best-time leaves the part out and names it (D37, D110)."""
+    published, open_, partly = _month_codes(places)
+    if not places or published < KNOWN_ENOUGH * len(places):
+        return None
+    return (open_[month] + 0.5 * partly[month]) / published
 
 
 def build_dream(
@@ -292,7 +304,7 @@ def build_dream(
                     clim.heat_days[mo],
                     profile.comfort,
                 )
-            services_open = (a_open[mo] + 0.5 * a_partly[mo]) / a_pub if a_pub else None
+            services_open = open_share(here, mo)
             t_idx = cr.tourism_index[mo]
             tourism_rel = t_idx / peak if t_idx is not None and peak else None
             b, missing = scores.best_time(c, services_open, tourism_rel, cr.school_days[mo], profile.best_time)
