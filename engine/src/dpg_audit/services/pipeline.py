@@ -203,7 +203,7 @@ def build_places(
     def key_of(i: int, k: int, n: int) -> str:
         prim = merged[i].primary
         key = job_key(profile.types[prim.service].costing, prim.lon, prim.lat)
-        return key if n == 1 else f"{key}|{k + 1}/{n}"
+        return key if n == 1 else f"{key}|pass {k + 1} of {n}"
 
     samples = index.samples(profile.route_sample_m)
     jobs: list[tuple[float, AccessJob]] = []
@@ -217,7 +217,7 @@ def build_places(
         else:  # routed from this pass only (nearer it than any other pass), so each has its own access point
             window = min(abs(p.m - q.m) for q in passes[i] if q is not p) / 2
             src = samples.near_pass(prim.lon, prim.lat, cfg.show_m, profile.max_sources, p.m, window)
-        jobs.append((p.m, AccessJob(key_of(i, k, n), prim.lon, prim.lat, cfg.costing, [int(s) for s in src])))
+        jobs.append((p.m, AccessJob(key_of(i, k, n), prim.lon, prim.lat, cfg.costing, [int(s) for s in src], p.m)))
     jobs.sort(key=lambda j: j[0])
     access_cache = places_dir / (
         f"access-{_hash(tileset, route_sha, ACCESS_VERSION, profile.route_sample_m, profile.max_sources)}.json"

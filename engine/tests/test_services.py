@@ -234,6 +234,28 @@ def test_access_batches_respect_matrix_limit():
     assert sum(len(b) for b in batches) == len(jobs)
     for b in batches:
         assert len({s for j in b for s in j.sources}) * len(b) <= 2500
+    # A few places far apart (a resumed run's last ones) never share a request: every source would be routed to
+    # every target, hundreds of km apart (D110).
+    sparse = [AccessJob(str(m), 0, 0, "bicycle", [m], at_m=m * 1000.0) for m in (0, 10, 60, 300, 310)]
+    assert [[j.key for j in b] for b in _batches(sparse, 2500)] == [["0", "10"], ["60"], ["300", "310"]]
+
+
+def test_access_comes_from_the_jobs_own_route_points():
+    # Two jobs share a request; the second's nearest route point is the first's. Each keeps its own (D110): another
+    # job's point may lie on another pass of the route.
+    from dpg_audit.lrs.index import RouteSamples
+    from dpg_audit.services.access import _solve
+
+    samples = RouteSamples(m=np.array([0.0, 50_000.0]), lon=np.zeros(2), lat=np.zeros(2), tree=None)
+
+    class Matrix:
+        def matrix(self, sources, targets, costing):
+            return [[100.0, 100.0], [900.0, 900.0]]  # route point 0 is 100 m from both places
+
+    jobs = [AccessJob("a", 0, 0, "bicycle", [0]), AccessJob("b", 0, 0, "bicycle", [1])]
+    out = _solve(Matrix(), samples, jobs)
+    assert (out["a"].distance_m, out["a"].at_m) == (100.0, 0.0)
+    assert (out["b"].distance_m, out["b"].at_m) == (900.0, 50_000.0)
 
 
 # --- policy ----------------------------------------------------------------------------------------------------
