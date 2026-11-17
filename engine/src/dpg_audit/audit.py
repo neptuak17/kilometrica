@@ -224,7 +224,15 @@ def run(
         licence=Licence(id="MIT", name="MIT License", url="https://github.com/valhalla/valhalla/blob/master/COPYING"),
         attribution="Map matching and routing by Valhalla (MIT)",
     )
-    sources = [snap, *osm_sources, *services.sources, dem.snapshot(root, len(tiles)), *dream.sources, valhalla_source]
+    sources = [
+        snap,
+        *osm_sources,
+        *traffic.snapshots(root),  # the counts and speed table the traffic figures rest on (D110)
+        *services.sources,
+        dem.snapshot(root, len(tiles)),
+        *dream.sources,
+        valhalla_source,
+    ]
     if wiki_source:
         sources.append(wiki_source)
     ways = overlap_mod.ways_file(build, matches)

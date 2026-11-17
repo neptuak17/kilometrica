@@ -20,6 +20,8 @@ export interface Seg {
   gap: null | { type: string; km: number; atM: number };
   surface: string;
   rise: number | null;
+  /** Climbing in the direction of travel as the audit counts it (D110); null in audits before it, or unknown. */
+  climb: number | null;
   fast: number;
   slow: number;
   section: number | null;
@@ -52,7 +54,17 @@ function sectionAt(sections: DreamSection[], m: number): DreamSection | null {
 }
 
 type Piece =
-  | { kind: "step"; m0: number; m1: number; e0: number | null; e1: number | null; surface: string }
+  | {
+      kind: "step";
+      m0: number;
+      m1: number;
+      e0: number | null;
+      e1: number | null;
+      surface: string;
+      /** Climbing in the piece riding forward and in reverse, as the audit counts it (D110); null in older audits. */
+      up: number | null;
+      down: number | null;
+    }
   | { kind: "gap"; at: number; type: string; dist: number };
 
 function pieces(effort: EffortFile, lo: number, hi: number): Piece[] {
@@ -70,7 +82,24 @@ function pieces(effort: EffortFile, lo: number, hi: number): Piece[] {
       const at = (x: number) => (ea === null || eb === null || b === a ? null : ea + ((eb - ea) * (x - a)) / (b - a));
       const m0 = Math.max(a, lo);
       const m1 = Math.min(b, hi);
-      out.push({ key: m0, order: 1, piece: { kind: "step", m0, m1, e0: at(m0), e1: at(m1), surface: part.surface[i] ?? "u" } });
+      // A step cut by the stretch's end keeps its share of the step's climbing.
+      const share = b > a ? (m1 - m0) / (b - a) : 0;
+      const up = part.up?.[i];
+      const down = part.down?.[i];
+      out.push({
+        key: m0,
+        order: 1,
+        piece: {
+          kind: "step",
+          m0,
+          m1,
+          e0: at(m0),
+          e1: at(m1),
+          surface: part.surface[i] ?? "u",
+          up: typeof up === "number" ? up * share : null,
+          down: typeof down === "number" ? down * share : null,
+        },
+      });
     }
   }
   for (const g of effort.gaps) {
@@ -121,6 +150,7 @@ export class TripAxis {
           gap: { type: p.type, km: p.dist / 1000, atM: p.at },
           surface: "u",
           rise: null,
+          climb: null,
           fast: time.fast,
           slow: time.slow,
           section: s?.number ?? null,
@@ -140,11 +170,12 @@ export class TripAxis {
       const tailwind = along === null ? null : this.sign * along;
       if (p.surface === "f") {
         // A ferry mapped along the track: not ridden.
-        this.segs.push({ m0, m1, len: 0, gap: { type: "ferry", km: len / 1000, atM: m0 }, surface: "f", rise: null, fast: 0, slow: 0, section: s?.number ?? null, tailwind: null });
+        this.segs.push({ m0, m1, len: 0, gap: { type: "ferry", km: len / 1000, atM: m0 }, surface: "f", rise: null, climb: null, fast: 0, slow: 0, section: s?.number ?? null, tailwind: null });
         continue;
       }
       const time = stepSeconds(rider, len, rise, p.surface, tailwind ?? 0);
-      this.segs.push({ m0, m1, len, gap: null, surface: p.surface, rise, fast: time.fast, slow: time.slow, section: s?.number ?? null, tailwind });
+      const climb = rise === null ? null : fwd ? p.up : p.down;
+      this.segs.push({ m0, m1, len, gap: null, surface: p.surface, rise, climb, fast: time.fast, slow: time.slow, section: s?.number ?? null, tailwind });
     }
     const keys = ["fast", "slow", "up", "unknown", "r", "c", "g", "u", "wind", "windLen"] as const;
     this.cum = Object.fromEntries(keys.map((k) => [k, [0]])) as unknown as TripAxis["cum"];
@@ -153,7 +184,8 @@ export class TripAxis {
       this.t.push(this.t[this.t.length - 1]! + s.len);
       this.cum.fast.push(last("fast") + s.fast);
       this.cum.slow.push(last("slow") + s.slow);
-      this.cum.up.push(last("up") + (s.rise !== null && s.rise > 0 ? s.rise : 0));
+      // Climbing as the audit counts it, so a day's figure and Dream's agree (D110); every rise in older audits.
+      this.cum.up.push(last("up") + (s.climb ?? (s.rise !== null && s.rise > 0 ? s.rise : 0)));
       this.cum.unknown.push(last("unknown") + (s.rise === null ? s.len : 0));
       for (const c of ["r", "c", "g", "u"] as const) this.cum[c].push(last(c) + (s.surface === c ? s.len : 0));
       this.cum.wind.push(last("wind") + (s.tailwind === null ? 0 : s.tailwind * s.len));

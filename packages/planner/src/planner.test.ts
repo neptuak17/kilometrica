@@ -110,7 +110,7 @@ function data({ lengthKm = 300, hill = 0, gapAtKm, gapType = "missing", stopsEve
   const mk = (from: number, to: number) => {
     const n = Math.ceil((to - from) / 100);
     const ele = Array.from({ length: n + 1 }, (_, i) => Math.round(100 + hill * Math.sin((from + i * 100) / 4000)));
-    return { from_m: from, to_m: to, ele, surface: "c".repeat(n) };
+    return { from_m: from, to_m: to, ele, surface: "c".repeat(n), up: null, down: null };
   };
   const gap = gapAtKm !== undefined ? gapAtKm * 1000 : null;
   const effort: EffortFile = {
@@ -225,6 +225,28 @@ describe("trip axis", () => {
     const d = data({ gapAtKm: 155, gapType: "ferry" });
     const axis = new TripAxis(d.effort, 0, 300_000, "forward", r, secs, () => 0);
     expect(axis.length).toBeCloseTo(300_000, 0);
+  });
+
+  it("counts climbing as the audit does, each way, when the audit gives it (D110)", () => {
+    // Small wiggles every step: 1 m up and down. The audit ignores them, so its steps say 0 up forward; in reverse,
+    // one 50 m rise at km 100.
+    const n = 3000;
+    const ele = Array.from({ length: n + 1 }, (_, i) => 100 + (i % 2));
+    const up = Array.from({ length: n }, () => 0);
+    const down = Array.from({ length: n }, (_, i) => (i === 1000 ? 50 : 0));
+    const base = data();
+    const audited = { ...base.effort, parts: [{ from_m: 0, to_m: 300_000, ele, surface: "c".repeat(n), up, down }] };
+    const older = { ...base.effort, parts: [{ from_m: 0, to_m: 300_000, ele, surface: "c".repeat(n), up: null, down: null }] };
+    const fwd = new TripAxis(audited, 0, 300_000, "forward", r, secs, () => 0);
+    const rev = new TripAxis(audited, 0, 300_000, "reverse", r, secs, () => 0);
+    expect(fwd.quick(0, fwd.length).climbM).toBe(0);
+    expect(rev.quick(0, rev.length).climbM).toBeCloseTo(50, 6);
+    // A stretch that ends halfway through a step keeps half of that step's climbing.
+    const half = new TripAxis(audited, 100_050, 200_000, "reverse", r, secs, () => 0);
+    expect(half.quick(0, half.length).climbM).toBeCloseTo(25, 6);
+    // An audit from before D110 has no steps' climbing: every rise counts, as before.
+    const old = new TripAxis(older, 0, 300_000, "forward", r, secs, () => 0);
+    expect(old.quick(0, old.length).climbM).toBe(1500);
   });
 });
 
@@ -1067,7 +1089,7 @@ describe("the day's big climb, a day's own part of it (D75, D82)", () => {
     const climb: Climb = { from_m: 30_000, to_m: 90_000, length_m: 60_000, gain_m: 1200, avg_grade: 2, max_grade_500m: 2.4, top_m: 1300, fiets: 2.7, direction };
     return {
       ...base,
-      effort: { ...base.effort, parts: [{ from_m: 0, to_m: 300_000, ele, surface: "c".repeat(n) }] },
+      effort: { ...base.effort, parts: [{ from_m: 0, to_m: 300_000, ele, surface: "c".repeat(n), up: null, down: null }] },
       full: { findings: [], places: [], placesMissing: [], highlights: [], climbs: [climb], serviceTypes: [] },
     };
   };

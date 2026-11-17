@@ -203,7 +203,7 @@ def load_calibration(name: str) -> dict:
 
 
 # EuroVelo's map gives development and signing apart, so signing is left out of the development check.
-INFRASTRUCTURE_ESSENTIAL = ("continuity", "traffic", "surface", "climbing")
+INFRASTRUCTURE_ESSENTIAL = ("continuity", "continuity_section", "traffic", "traffic_share", "surface", "climbing")
 
 
 def status_check(judged: Judged) -> dict[str, dict[str, int]]:

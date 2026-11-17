@@ -151,13 +151,33 @@ def test_everything_good_meets_every_tier_on_what_is_checked():
     assert sec.stars == 3
 
 
-def test_high_traffic_over_half_a_section_fails_all_of_it():
+def test_high_traffic_over_half_a_section_fails_its_condition_not_its_share():
+    # As ECF counts it (D107, D110): the 50% limit is a condition of the section; the essential share stays whole.
     events = [ev("ecs_traffic", 0, 3000, "high"), ev("ecs_traffic", 3000, 5000, "low")]
     events += [e for e in layers(5000, **GOOD) if e.layer != "ecs_traffic"]
-    result, route, _ = judge(events, [day(1, 0, 5000)])
-    assert results(result, "traffic") == [(0, 5000, "fail")]
+    result, route, (sec,) = judge(events, [day(1, 0, 5000)])
+    assert results(result, "traffic") == [(0, 5000, "pass")]
+    assert results(result, "traffic_share") == [(0, 5000, "fail")]
+    assert sec.notes["traffic_share"] == "high traffic on 60%"
+    assert sec.tiers["essential"].passed == 1.0 and sec.conditions["essential"].failed == 1.0
+    assert sec.stars == 0
     # The important tier forbids high traffic outright, so it fails only where the traffic is high.
     assert results(result, "traffic_important") == [(0, 3000, "fail"), (3000, 5000, "pass")]
+
+
+def test_traffic_notes_say_how_the_volumes_are_known():
+    road = [
+        ev("ecs_traffic", 0, 2000, "low", volume="measured", volume_ref="fr-gard 2024"),
+        ev("ecs_traffic", 2000, 4500, "low", volume="calibrated", volume_ref="FR"),
+        ev("ecs_traffic", 4500, 5000, "traffic_free"),
+    ]
+    events = road + [e for e in layers(5000, **GOOD) if e.layer != "ecs_traffic"]
+    _, _, (sec,) = judge(events, [day(1, 0, 5000)])
+    assert sec.notes["traffic"] == "very high on 0.0 km (volumes measured on 2.0 km, calibrated on counts on 2.5 km)"
+    # An audit from before D110 doesn't record it, and says so.
+    old = [ev("ecs_traffic", 0, 5000, "low")] + [e for e in layers(5000, **GOOD) if e.layer != "ecs_traffic"]
+    _, _, (sec,) = judge(old, [day(1, 0, 5000)])
+    assert sec.notes["traffic"].endswith("(how the volumes are known isn't recorded in this audit)")
 
 
 def test_very_high_traffic_fails_only_where_it_is():
@@ -217,8 +237,11 @@ def test_missing_link_fails_continuity_but_a_join_between_ways_does_not():
 
     daily = [day(1, 0, 5000), day(2, 5000, 10_000), day(9, 10_000, 15_000)]
     result, _, per = judge(layers(15_000, **GOOD), daily, components=[gap(5000), gap(10_000)])
-    assert results(result, "continuity") == [(0, 5000, "fail"), (5000, 15_000, "pass")]
-    assert per[0].notes["continuity"] == "missing link at km 5.0"
+    # Along the route the missing link fails where it is, over ECS's shortest segment; the section it ends fails
+    # its condition (D110). The join between ways that don't follow on (sections 2 and 9) is ours: nothing fails.
+    assert results(result, "continuity") == [(0, 4900, "pass"), (4900, 5100, "fail"), (5100, 15_000, "pass")]
+    assert results(result, "continuity_section") == [(0, 5000, "fail"), (5000, 15_000, "pass")]
+    assert per[0].notes["continuity"] == per[0].notes["continuity_section"] == "missing link at km 5.0"
 
 
 def test_dismounts_and_steps():
@@ -231,8 +254,11 @@ def test_dismounts_and_steps():
     ]
     events += [e for e in layers(5000, **GOOD) if e.layer != "ecs_continuity"]
     result, _, per = judge(events, [day(1, 0, 5000)])
-    assert results(result, "continuity") == [(0, 5000, "fail")]  # 630 m of pushing is over 500 m
-    assert per[0].notes["continuity"] == "2 dismounts, 630 m pushing"
+    # 630 m of pushing is over 500 m: the section's condition fails, the share along the route doesn't (D110).
+    assert results(result, "continuity") == [(0, 5000, "pass")]
+    assert results(result, "continuity_section") == [(0, 5000, "fail")]
+    assert per[0].notes["continuity_section"] == "2 dismounts, 630 m pushing"
+    assert per[0].essential_pass == 1.0 and per[0].stars == 0
     # Steps without a ramp fail the important tier over at least 200 m (ECS's shortest segment).
     assert results(result, "stairs") == [(0, 915, "pass"), (915, 1115, "fail"), (1115, 5000, "pass")]
 
@@ -296,3 +322,4 @@ def test_other_ways_line_counts_no_missing_links():
     daily = [day(18, 0, 5000), day(19, 5000, 10_000)]
     result, _, _ = judge(layers(10_000, **GOOD), daily, components=[gap], missing_links=False)
     assert results(result, "continuity") == [(0, 10_000, "pass")]
+    assert results(result, "continuity_section") == [(0, 10_000, "pass")]

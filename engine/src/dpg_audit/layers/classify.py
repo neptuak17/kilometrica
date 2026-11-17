@@ -370,9 +370,13 @@ def ecs_traffic(
     except ValueError:
         lanes = None
     conf, volume_source = "low", "estimated from road class"
+    # How the volume is known, in a form that groups along the route (D110): measured by one source and year,
+    # calibrated on one country's counts, or the class's estimate.
+    basis, basis_ref = "estimated", ""
     if measured is not None:
         band, conf = band_of(measured.aadt), "high"
         volume_source = f"measured, {measured.aadt:,.0f} a day ({measured.source}, {measured.year or 'year unknown'})"
+        basis, basis_ref = "measured", f"{measured.source} {measured.year or ''}".strip()
     else:
         row = (bands or {}).get(cls)
         if row:
@@ -382,6 +386,7 @@ def ecs_traffic(
             what = "road class and distance from a town" if use is near else "road class"
             where = f" in {origin}" if origin else ""
             volume_source = f"estimated from {what}, calibrated on {use['counts']} counts{where}"
+            basis, basis_ref = "calibrated", origin or ""
         if (lanes or 0) >= 4:
             band = 4
     col = _speed_column(speed)
@@ -396,6 +401,8 @@ def ecs_traffic(
         "speed_source": speed_source,
         "volume": VOLUME_BANDS[band],
         "volume_source": volume_source,
+        "volume_basis": basis,
+        "volume_ref": basis_ref,
         "table": "cycle lane" if in_lane else "mixed traffic",
     }
     return value, conf, detail

@@ -116,6 +116,24 @@ def test_a_sections_last_height_is_its_own_across_a_gap():
     first, second = build_effort(build, profs, [], []).parts
     assert first.ele[-1] == 10 and set(first.ele) == {10}
     assert second.ele[0] == 1000
+    assert sum(first.up) == 0 and sum(first.down) == 0
+
+
+def test_steps_add_up_to_the_sections_climbing():
+    # A hilly section with small wiggles: its steps' climbing adds up to the audit's own figure, both ways (D110).
+    lon = np.linspace(0.0, 0.5, 400)  # ~40 km
+    line = MeasuredLine(lon, np.full(lon.size, LAT))
+    build = assemble(
+        Route(id="user:x", network="user", ref="x", name="x", official_url=None),
+        [TrackInput(1, "A", None, None, NOT_RATED, line, 0)],
+    )
+    hills = lambda lon, lat: 200 + 150 * np.sin(lon * 40) + 2 * np.sin(lon * 3000)  # noqa: E731
+    profs = elevation.profiles(build.path, hills, [])
+    (part,) = build_effort(build, profs, [], []).parts
+    # Over the profile's own extent: resampled, its last sample can sit a few cm past the measured end.
+    up, down = elevation.ascent_descent(profs, 0.0, float(profs[0].m[-1]))
+    assert len(part.up) == len(part.surface)
+    assert sum(part.up) == pytest.approx(up, abs=0.1) and sum(part.down) == pytest.approx(down, abs=0.1)
 
 
 # --- effort ----------------------------------------------------------------------------------------------------

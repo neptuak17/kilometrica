@@ -3,8 +3,9 @@
 # Wording and thresholds follow the 2026 short manual, "European Certification Standard: Introduction to the
 # methodology" (section 2). Criteria marked `rule: not_checked` need a field survey or data we don't hold; they are
 # listed so every report says what wasn't judged. ECS tiers are cumulative: a stretch meets "important" only if it
-# also meets "essential". `basis: route` criteria are judged along the route; `basis: daily_section` ones fail the
-# whole daily section. This is an indicative audit from open data, not an ECS survey.
+# also meets "essential". `basis: route` criteria are judged along the route and make up the tier shares, as ECF's
+# certification figures do; `basis: daily_section` ones are each section's conditions, which decide its stars with the
+# shares (D107, D110). This is an indicative audit from open data, not an ECS survey.
 id: ecs-2026
 title: European Certification Standard 2026 (open-data audit)
 source: https://eurovelo.com/download/document/ECS-short-manual-2026-final.pdf
@@ -20,8 +21,16 @@ criteria:
     title: Continuity
     description: >-
       No physical or legal disruption: no missing link, no way closed to bikes and no barrier that stops a bike
-      (OSM); at most 10 dismounts and 500 m of pushing per daily section. Ferries and official public-transport links
-      count as crossings.
+      (OSM), judged where they are. Ferries and official public-transport links count as crossings.
+  continuity_section:
+    tier: essential
+    group: infrastructure
+    basis: daily_section
+    rule: continuity_section
+    title: Continuity (each daily section)
+    description: >-
+      At most 10 dismounts and 500 m of pushing per daily section, and no missing link on it: a condition of the
+      section, as ECF counts it (D107, D110).
     max_dismounts: 10
     max_push_m: 500
   stairs:
@@ -49,9 +58,16 @@ criteria:
     rule: traffic
     title: Traffic
     description: >-
-      No very high traffic, and high traffic on at most 50% of each daily section. Traffic categories from speed
-      limits and a volume estimated from road class (D106).
+      No very high traffic. Traffic categories from speed limits and volumes: measured where an open count lies on
+      the road, else calibrated on counts or estimated from the road's class (D106, D108, D109).
     forbid: [very_high]
+  traffic_share:
+    tier: essential
+    group: infrastructure
+    basis: daily_section
+    rule: traffic_share
+    title: Traffic share
+    description: High traffic on at most 50% of each daily section (a condition of the section, D107, D110).
     max_half: high
   traffic_important:
     tier: important
@@ -59,8 +75,15 @@ criteria:
     basis: route
     rule: traffic
     title: Traffic (important)
-    description: No high or very high traffic, and moderate traffic on at most 50% of each daily section.
+    description: No high or very high traffic.
     forbid: [high, very_high]
+  traffic_important_share:
+    tier: important
+    group: infrastructure
+    basis: daily_section
+    rule: traffic_share
+    title: Traffic share (important)
+    description: Moderate traffic on at most 50% of each daily section.
     max_half: moderate
   traffic_additional:
     tier: additional
@@ -68,8 +91,15 @@ criteria:
     basis: route
     rule: traffic
     title: Traffic (additional)
-    description: No moderate traffic or above, and low traffic on at most 50% of each daily section.
+    description: No moderate traffic or above.
     forbid: [moderate, high, very_high]
+  traffic_additional_share:
+    tier: additional
+    group: infrastructure
+    basis: daily_section
+    rule: traffic_share
+    title: Traffic share (additional)
+    description: Low traffic on at most 50% of each daily section.
     max_half: low
   crossings:
     tier: essential

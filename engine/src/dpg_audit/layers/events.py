@@ -35,6 +35,19 @@ class _Run:
     ways: Counter = field(default_factory=Counter)
     approx_m: float = 0.0
     detail: dict = field(default_factory=dict)
+    key: tuple = ()
+    """What else must match for the next piece to join this run: how the ECS traffic volume is known (D110)."""
+    speeds: set = field(default_factory=set)
+    """Where the speed limits in the run come from (tagged, legal, default)."""
+
+
+def speed_basis(source: str) -> str:
+    """Where a speed limit comes from, in one word: tagged in OSM, the country's legal limit, or our default."""
+    if source.startswith("legal"):
+        return "legal"
+    if "default" in source:
+        return "default"
+    return "tagged" if source == "tagged" else source
 
 
 @dataclass
@@ -57,16 +70,19 @@ def build_matched_layers(
     def push(layer: str, m0: float, m1: float, value: str, conf: str, way: int | None, is_approx: bool, detail):
         seq = runs[layer]
         last = seq[-1] if seq else None
-        if last and last.value == value and abs(last.to_m - m0) < 1e-6:
+        key = (detail.get("volume_basis"), detail.get("volume_ref")) if "volume_basis" in detail else ()
+        if last and last.value == value and last.key == key and abs(last.to_m - m0) < 1e-6:
             last.to_m = m1
             last.confidence = min(last.confidence, conf, key=_CONF_RANK.__getitem__)
         else:
-            last = _Run(m0, m1, value, conf, detail=dict(detail))
+            last = _Run(m0, m1, value, conf, key=key)
             seq.append(last)
         if way is not None:
             last.ways[way] += m1 - m0
         if is_approx:
             last.approx_m += m1 - m0
+        if detail.get("speed_source"):
+            last.speeds.add(speed_basis(str(detail["speed_source"])))
 
     for part, match in zip(path.parts, matches, strict=True):
         for piece in match.pieces:
@@ -93,6 +109,8 @@ def build_matched_layers(
                 measured = traffic.measured(refs, mid) if refs else None
             lts, lts_conf, lts_detail = classify.traffic_stress(tags, piece.edge, legal)
             ecs_t = classify.ecs_traffic(tags, piece.edge, legal, bands, measured, town_m, origin)
+            if traffic is not None:
+                traffic.note_use(ecs_t[2])  # which counts and tables the route's figures rest on, for its credits
             values = {
                 "traffic_stress": (lts, lts_conf, {}),
                 "infrastructure": classify.infrastructure(tags, piece.edge, lts, ecs_t[0]),
@@ -102,10 +120,10 @@ def build_matched_layers(
                 "ecs_surface": classify.ecs_surface(tags, piece.edge),
                 "ecs_continuity": classify.ecs_continuity(tags, piece.edge),
             }
-            for layer, (value, conf, _) in values.items():
+            for layer, (value, conf, detail) in values.items():
                 if piece.approx:
                     conf = "low"
-                push(layer, m0, m1, value, conf, way, piece.approx, {})
+                push(layer, m0, m1, value, conf, way, piece.approx, detail if layer == "ecs_traffic" else {})
             if (
                 tags.get("bridge") in _STRUCTURE["bridge"]
                 or tags.get("tunnel") in _STRUCTURE["tunnel"]
@@ -133,6 +151,14 @@ def build_matched_layers(
                     detail["names"] = names[:3]
             if r.approx_m:
                 detail["approx_share"] = round(r.approx_m / (r.to_m - r.from_m), 2)
+            if r.key:
+                # How the volume is known (D110): measured (by which count and year), calibrated (on which
+                # country's counts) or estimated from the road's class; and where the speed limits come from.
+                detail["volume"] = r.key[0]
+                if r.key[1]:
+                    detail["volume_ref"] = r.key[1]
+            if r.speeds:
+                detail["speed"] = sorted(r.speeds)
             events.append(
                 Event(
                     layer=layer,

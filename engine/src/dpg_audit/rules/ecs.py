@@ -303,11 +303,35 @@ def _km(m: float) -> str:
     return f"{m / 1000:.1f} km"
 
 
+_VOLUME_WORDS = (("measured", "measured"), ("calibrated", "calibrated on counts"), ("estimated", "estimated"))
+_ROAD_FREE = {"traffic_free", "na", *NOT_KNOWN}
+
+
+def volume_note(layer: Layer, m0: float, m1: float) -> str:
+    """How the traffic volumes over [m0, m1] are known, by km (D110): measured where an open count lies on the road,
+    calibrated on a country's counts, or estimated from the road's class. Audits before D110 don't record it."""
+    lens: dict[str, float] = {}
+    i = max(bisect_right(layer.starts, m0) - 1, 0)
+    while i < len(layer.events) and layer.events[i].from_m < m1:
+        e = layer.events[i]
+        overlap = min(e.to_m, m1) - max(e.from_m, m0)
+        if overlap > 0 and e.value not in _ROAD_FREE:
+            key = e.detail.get("volume", "unrecorded")
+            lens[key] = lens.get(key, 0.0) + overlap
+        i += 1
+    if not lens:
+        return ""
+    if set(lens) == {"unrecorded"}:
+        return " (how the volumes are known isn't recorded in this audit)"
+    return " (volumes " + ", ".join(f"{w} on {_km(lens[k])}" for k, w in _VOLUME_WORDS if lens.get(k)) + ")"
+
+
 def _traffic(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
-    forbid, half, tol = set(cfg["forbid"]), cfg["max_half"], float(cfg.get("tolerance", 0.0))
+    """No traffic in the forbidden categories, judged where it is (D107, D110); the 50% limit is its own criterion,
+    a condition of the section (`traffic_share`)."""
+    forbid, tol = set(cfg["forbid"]), float(cfg.get("tolerance", 0.0))
     layer = ctx.layer("ecs_traffic")
     route: list[Run] = []
-    sec: dict[int, str] = {}
     notes: dict[int, str] = {}
     for d in ctx.daily:
         length = max(d.to_m - d.from_m, 1e-9)
@@ -321,16 +345,31 @@ def _traffic(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
             return "fail" if v in forbid and not tolerated else "pass"
 
         route += layer.runs(d.from_m, d.to_m, fn)
-        half_m, unknown_m = lens.get(half, 0.0), sum(lens.get(v, 0.0) for v in NOT_KNOWN)
-        sec[d.number] = "fail" if half_m > 0.5 * length else "unknown" if half_m + unknown_m > 0.5 * length else "pass"
-        parts = [f"{_LABEL[half]} traffic on {half_m / length:.0%}"]
-        if bad_m:
-            worse = " or ".join(_LABEL[c] for c in sorted(forbid, key=list(_LABEL).index))
-            parts.append(f"{worse} on {_km(bad_m)}" + (" (within the 1% tolerance)" if tolerated else ""))
+        worse = " or ".join(_LABEL[c] for c in sorted(forbid, key=list(_LABEL).index))
+        parts = [f"{worse} on {_km(bad_m)}" + (" (within the 1% tolerance)" if bad_m and tolerated else "")]
+        unknown_m = sum(lens.get(v, 0.0) for v in NOT_KNOWN)
         if unknown_m:
             parts.append(f"unknown on {_km(unknown_m)}")
-        notes[d.number] = "; ".join(parts) + " (volumes estimated from road class)"
-    return worst([fill(route, 0.0, ctx.length), ctx.per_section(sec)]), notes
+        notes[d.number] = "; ".join(parts) + volume_note(layer, d.from_m, d.to_m)
+    return fill(route, 0.0, ctx.length), notes
+
+
+def _traffic_share(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
+    """At most half of each daily section in one traffic category (`max_half`): a condition of the section, as ECF
+    counts it (D107, D110)."""
+    half = cfg["max_half"]
+    layer = ctx.layer("ecs_traffic")
+    sec: dict[int, str] = {}
+    notes: dict[int, str] = {}
+    for d in ctx.daily:
+        length = max(d.to_m - d.from_m, 1e-9)
+        lens = layer.lengths(d.from_m, d.to_m)
+        half_m, unknown_m = lens.get(half, 0.0), sum(lens.get(v, 0.0) for v in NOT_KNOWN)
+        sec[d.number] = "fail" if half_m > 0.5 * length else "unknown" if half_m + unknown_m > 0.5 * length else "pass"
+        notes[d.number] = f"{_LABEL[half]} traffic on {half_m / length:.0%}" + (
+            f"; unknown on {_km(unknown_m)}" if unknown_m else ""
+        )
+    return ctx.per_section(sec), notes
 
 
 def _surface_everywhere(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
@@ -369,11 +408,8 @@ def _surface_share(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]
 _PUSH = {"dismount", "steps", "steps_ramp"}
 
 
-def _continuity(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
-    layer = ctx.layer("ecs_continuity")
-    base = layer.runs(0.0, ctx.length, lambda v: "fail" if v == "closed" else "unknown" if v == "unmatched" else "pass")
-    blocks = intervals((m for m, effect in ctx.inp.barriers if effect == "blocks"), ctx.pad, ctx.length)
-    route = worst([base, spans_track(blocks, "fail", ctx.length)])
+def _missing_links(ctx: _Context) -> dict[int, list[float]]:
+    """Missing links of the route by the daily section before them."""
     missing: dict[int, list[float]] = {}
     for c in ctx.inp.components:
         if ctx.inp.missing_links and c.kind == ComponentKind.GAP and c.gap_type == GapType.MISSING:
@@ -382,6 +418,28 @@ def _continuity(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
             # ways audited as one line), the break is ours, not a missing link of the route.
             if after.number == before.number + 1 or after is before:
                 missing.setdefault(before.number, []).append(c.from_m)
+    return missing
+
+
+def _continuity(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
+    """No physical or legal disruption, judged where it is (D107, D110): ways closed to bikes, barriers that stop a
+    bike, and missing links (over ECS's shortest segment). The section's limits on dismounts and pushing are its own
+    criterion, a condition of the section (`continuity_section`)."""
+    layer = ctx.layer("ecs_continuity")
+    base = layer.runs(0.0, ctx.length, lambda v: "fail" if v == "closed" else "unknown" if v == "unmatched" else "pass")
+    blocks = intervals((m for m, effect in ctx.inp.barriers if effect == "blocks"), ctx.pad, ctx.length)
+    missing = _missing_links(ctx)
+    gaps = intervals((m for ms in missing.values() for m in ms), ctx.pad, ctx.length)
+    route = worst([base, spans_track(blocks, "fail", ctx.length), spans_track(gaps, "fail", ctx.length)])
+    notes = {n: "missing link at " + ", ".join(f"km {m / 1000:.1f}" for m in ms) for n, ms in missing.items()}
+    return route, notes
+
+
+def _continuity_section(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
+    """Each daily section's limits on dismounting and pushing, and no missing link on it: a condition of the section,
+    as ECF counts it (D107, D110)."""
+    layer = ctx.layer("ecs_continuity")
+    missing = _missing_links(ctx)
     sec, notes = {}, {}
     for d in ctx.daily:
         length = max(d.to_m - d.from_m, 1e-9)
@@ -398,7 +456,7 @@ def _continuity(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
             ok = stops <= int(cfg["max_dismounts"]) and push_m <= float(cfg["max_push_m"])
         sec[d.number] = "pass" if ok else "fail"
         notes[d.number] = f"{stops} dismounts, {push_m:.0f} m pushing"
-    return worst([route, ctx.per_section(sec)]), notes
+    return ctx.per_section(sec), notes
 
 
 def _stairs(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
@@ -503,9 +561,11 @@ def _not_checked(cfg: dict, ctx: _Context) -> tuple[list[Run], dict[int, str]]:
 
 RULES: dict[str, Rule] = {
     "traffic": _traffic,
+    "traffic_share": _traffic_share,
     "surface_everywhere": _surface_everywhere,
     "surface_share": _surface_share,
     "continuity": _continuity,
+    "continuity_section": _continuity_section,
     "stairs": _stairs,
     "obstacles": _obstacles,
     "climbing": _climbing,

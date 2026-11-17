@@ -3,6 +3,7 @@ calibrated volume bands and the legal speed limits, for the classifier."""
 
 from bisect import bisect_left, bisect_right
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -11,8 +12,10 @@ import yaml
 from dpg_audit.lrs import RoutePath
 from dpg_audit.lrs.index import RouteIndex
 from dpg_audit.match.matcher import LineMatch
+from dpg_audit.models import Licence, SourceSnapshot
 from dpg_audit.osmdata import OsmData
 from dpg_audit.services.policy import CountryLookup
+from dpg_audit.sources.download import file_digest
 from dpg_audit.sources.osm import geofabrik_index
 from dpg_audit.traffic.calibrate import load_bands, town_distances
 from dpg_audit.traffic.counts import TRAFFIC_DIR, latest_per_station, load_sources, osm_refs, raw_dir, read
@@ -44,6 +47,32 @@ class TrafficContext:
     legal: dict[str, dict[str, int]] = field(default_factory=dict)
     town_m: list[float] = field(default_factory=list)
     """Distance to the nearest city or town every TOWN_SAMPLE_M along the path."""
+    used_counts: set[str] = field(default_factory=set)
+    """Count sources whose counts lie on the route's roads and were used."""
+    used_calibrations: set[str] = field(default_factory=set)
+    """Countries whose calibrated volumes were used."""
+    used_legal: bool = False
+
+    def note_use(self, detail: dict) -> None:
+        """Remember what one stretch's traffic figure rests on, for the bundle's sources and credits (D110)."""
+        basis = detail.get("volume_basis")
+        if basis == "measured" and detail.get("volume_ref"):
+            self.used_counts.add(str(detail["volume_ref"]).split(" ")[0])
+        elif basis == "calibrated" and detail.get("volume_ref"):
+            self.used_calibrations.add(str(detail["volume_ref"]))
+        if str(detail.get("speed_source", "")).startswith("legal"):
+            self.used_legal = True
+
+    def snapshots(self, root: Path) -> list[SourceSnapshot]:
+        """The traffic counts and the legal speed table the route's figures rest on, with their licences (D110)."""
+        cfgs = load_sources()
+        ids = set(self.used_counts)
+        for country in self.used_calibrations:
+            ids |= set(band_sources().get(country, []))
+        out = [s for sid in sorted(ids) if sid in cfgs and (s := count_snapshot(root, sid, cfgs[sid]))]
+        if self.used_legal:
+            out.append(legal_snapshot())
+        return out
 
     def town_m_at(self, m: float) -> float | None:
         if not self.town_m:
@@ -75,8 +104,52 @@ class TrafficContext:
         return best[1] if best else None
 
 
-def load_legal(path: Path = TRAFFIC_DIR / "legal-speeds.yaml") -> dict[str, dict[str, int]]:
+LEGAL_PATH = TRAFFIC_DIR / "legal-speeds.yaml"
+
+
+def load_legal(path: Path = LEGAL_PATH) -> dict[str, dict[str, int]]:
     return yaml.safe_load(path.read_text(encoding="utf-8"))["countries"]
+
+
+def band_sources(path: Path = TRAFFIC_DIR / "volume-bands.yaml") -> dict[str, list[str]]:
+    """country -> the count sources its calibrated volumes come from."""
+    if not path.exists():
+        return {}
+    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    return {cc: list(v.get("sources", [])) for cc, v in (raw.get("countries") or {}).items()}
+
+
+def count_snapshot(root: Path, sid: str, cfg: dict) -> SourceSnapshot | None:
+    """One count source as the bundle records it, or None when its file isn't on disk."""
+    path = raw_dir(root, sid) / cfg["file"]
+    if not path.exists():
+        return None
+    return SourceSnapshot(
+        id=f"traffic-counts:{sid}",
+        title=f"{cfg['title']} ({cfg['publisher']})",
+        url=cfg.get("page"),
+        retrieved_at=datetime.fromtimestamp(path.stat().st_mtime, UTC),
+        file=path.relative_to(root).as_posix(),
+        sha256=file_digest(path),
+        bytes=path.stat().st_size,
+        licence=Licence(id=cfg.get("licence_id", "unknown"), name=cfg["licence"], url=cfg.get("page")),
+        attribution=cfg.get("attribution") or f"{cfg['publisher']} ({cfg['licence']})",
+    )
+
+
+def legal_snapshot(path: Path = LEGAL_PATH) -> SourceSnapshot:
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return SourceSnapshot(
+        id="legal-speed-limits",
+        title="Default speed limits by country and type of road (OpenStreetMap wiki)",
+        url=raw.get("source"),
+        retrieved_at=datetime.fromisoformat(str(raw.get("retrieved", "2026-11-03"))).replace(tzinfo=UTC),
+        file="engine/profiles/traffic/legal-speeds.yaml (in the repository)",
+        sha256=file_digest(path),
+        bytes=path.stat().st_size,
+        licence=Licence(id="CC-BY-SA-2.0", name="Creative Commons Attribution-ShareAlike 2.0"),
+        attribution="Default speed limits: OpenStreetMap wiki contributors (CC BY-SA 2.0)",
+    )
 
 
 def build(

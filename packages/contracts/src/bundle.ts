@@ -1114,6 +1114,14 @@ export interface EffortPart {
    * One letter per step: r road, c cycle path, g gravel, u unknown, f ferry (D36 classes)
    */
   surface: string;
+  /**
+   * Climbing (m) in each step riding forward, counted as the audit counts it (rises under 3 m ignored), so a stretch's steps add up to its climbing in Dream (D110). Missing in audits before D110.
+   */
+  up: number[] | null;
+  /**
+   * Climbing (m) in each step riding in reverse, likewise (D110).
+   */
+  down: number[] | null;
 }
 /**
  * A gap between ridden parts. An unfilled (missing) gap is counted as ridden in a plan (D50).

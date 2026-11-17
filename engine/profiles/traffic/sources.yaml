@@ -9,6 +9,8 @@ sources:
     title: Trafic moyen journalier annuel sur le réseau routier national, 2024
     publisher: Ministère de la Transition écologique
     licence: Licence Ouverte (Etalab)
+    licence_id: etalab-2.0
+    attribution: "Comptages routiers : Ministère de la Transition écologique (Licence Ouverte)"
     page: https://www.data.gouv.fr/datasets/trafic-moyen-journalier-annuel-sur-le-reseau-routier-national
     download: https://static.data.gouv.fr/resources/trafic-moyen-journalier-annuel-sur-le-reseau-routier-national/20250818-100425/tmja-rrnc-2024-shp.zip
     file: shp/TMJA_RRNc_2024.shp
@@ -20,6 +22,8 @@ sources:
     title: Trafics moyens journaliers annuels mesurés sur le réseau routier départemental du Gard
     publisher: Département du Gard
     licence: Licence Ouverte 2.0 (Etalab)
+    licence_id: etalab-2.0
+    attribution: "Comptages routiers : Département du Gard (Licence Ouverte)"
     page: https://www.data.gouv.fr/datasets/les-trafics-moyens-journaliers-annuels-mesures-sur-le-reseau-routier-departemental-du-gard
     datagouv: {dataset: les-trafics-moyens-journaliers-annuels-mesures-sur-le-reseau-routier-departemental-du-gard, format: geojson}
     file: gard.geojson
@@ -31,6 +35,8 @@ sources:
     title: Comptages routiers ponctuels sur la voirie départementale de l'Aude
     publisher: Département de l'Aude
     licence: Licence Ouverte 2.0 (Etalab)
+    licence_id: etalab-2.0
+    attribution: "Comptages routiers : Département de l'Aude (Licence Ouverte)"
     page: https://opendata.aude.fr/explore/dataset/cd11_comptages_routiers_ponctuels/
     download: https://opendata.aude.fr/api/v2/catalog/datasets/cd11_comptages_routiers_ponctuels/exports/geojson
     file: aude.geojson
@@ -43,6 +49,8 @@ sources:
     title: Intensidad Media Diaria anual (IMD) de tráfico por tramos, red autonómica de carreteras, 2025
     publisher: Institut Cartogràfic Valencià, Generalitat Valenciana
     licence: CC BY 4.0
+    licence_id: CC-BY-4.0
+    attribution: "Aforos: Institut Cartogràfic Valencià, Generalitat Valenciana (CC BY 4.0)"
     page: https://dadesobertes.gva.es/es/dataset?q=IMD+trafico
     download: https://terramapas.icv.gva.es/0902_Aforos?request=GetFeature&service=WFS&version=2.0.0&typename=Aforos2025&outputformat=gpkg
     file: aforos2025.gpkg

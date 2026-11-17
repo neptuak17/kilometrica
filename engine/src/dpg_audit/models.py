@@ -729,6 +729,14 @@ class EffortPart(Model):
     surface: str = Field(
         description="One letter per step: r road, c cycle path, g gravel, u unknown, f ferry (D36 classes)"
     )
+    up: list[float] | None = Field(
+        default=None,
+        description="Climbing (m) in each step riding forward, counted as the audit counts it (rises under 3 m "
+        "ignored), so a stretch's steps add up to its climbing in Dream (D110). Missing in audits before D110.",
+    )
+    down: list[float] | None = Field(
+        default=None, description="Climbing (m) in each step riding in reverse, likewise (D110)."
+    )
 
 
 class EffortGap(Model):

@@ -18,8 +18,15 @@ criteria:
     rule: continuity
     title: Continuity
     description: >-
-      No physical or legal disruption (missing links, ways closed to bikes, barriers that stop a bike); dismounting
-      on at most 1% of each daily section.
+      No physical or legal disruption (missing links, ways closed to bikes, barriers that stop a bike), judged where
+      they are.
+  continuity_section:
+    tier: essential
+    group: infrastructure
+    basis: daily_section
+    rule: continuity_section
+    title: Continuity (each daily section)
+    description: Dismounting on at most 1% of each daily section, and no missing link on it (a condition, D110).
     max_push_share: 0.01
   stairs:
     tier: important
@@ -45,30 +52,51 @@ criteria:
     basis: route
     rule: traffic
     title: Traffic
-    description: No very high traffic (1% tolerance), and high traffic on at most 50% of each daily section.
+    description: No very high traffic (1% tolerance).
     forbid: [very_high]
-    max_half: high
     tolerance: 0.01
+  traffic_share:
+    tier: essential
+    group: infrastructure
+    basis: daily_section
+    rule: traffic_share
+    title: Traffic share
+    description: High traffic on at most 50% of each daily section (a condition, D110).
+    max_half: high
   traffic_important:
     tier: important
     group: infrastructure
     basis: route
     rule: traffic
     title: Traffic (important)
-    description: No high traffic (1% tolerance), and moderate traffic on at most 50% of each daily section.
+    description: No high traffic (1% tolerance).
     forbid: [high, very_high]
-    max_half: moderate
     tolerance: 0.01
+  traffic_important_share:
+    tier: important
+    group: infrastructure
+    basis: daily_section
+    rule: traffic_share
+    title: Traffic share (important)
+    description: Moderate traffic on at most 50% of each daily section.
+    max_half: moderate
   traffic_additional:
     tier: additional
     group: infrastructure
     basis: route
     rule: traffic
     title: Traffic (additional)
-    description: No moderate traffic (1% tolerance), and low traffic on at most 50% of each daily section.
+    description: No moderate traffic (1% tolerance).
     forbid: [moderate, high, very_high]
-    max_half: low
     tolerance: 0.01
+  traffic_additional_share:
+    tier: additional
+    group: infrastructure
+    basis: daily_section
+    rule: traffic_share
+    title: Traffic share (additional)
+    description: Low traffic on at most 50% of each daily section.
+    max_half: low
   crossings:
     tier: important
     group: infrastructure

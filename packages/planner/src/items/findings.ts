@@ -25,7 +25,8 @@ const FINDING_RULES: Record<string, FindingRule> = {
       return `${km(len)} km on busy roads${roads ? ` (${roads})` : ""}`;
     },
     short: (len) => `Busy road ${km(len)} km`,
-    why: "Fast or heavy traffic and no cycle lane, estimated from the road's class and speed limit.",
+    // Counted on some roads, typical of the road's class on most (D108, D110): said as it is.
+    why: "Fast or heavy traffic: from the speed limit, and the traffic counted on the road where there's a count, else what's usual for a road like it.",
     // From 5 km, or 1 km when the rider asked to avoid busy roads (D75).
     relevant: (core, _f, len) => len >= 5 || (core.inputs.avoidBusy && len >= 1),
   },

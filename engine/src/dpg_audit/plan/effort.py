@@ -42,6 +42,13 @@ def surface_letter(infra: str | None, surface: str | None) -> str:
     return "r"
 
 
+def _rounded_steps(steps: np.ndarray) -> list[float]:
+    """Steps to 0.1 m, rounded along their running total: a climb shares out evenly over its steps, so rounding each
+    step on its own would push them all the same way and the day's total would drift (3 m in 1,000)."""
+    total = np.round(np.concatenate([[0.0], np.cumsum(steps)]), 1)
+    return [round(float(x), 1) for x in np.diff(total)]
+
+
 def _inside(ranges: list[tuple[float, float]], m: float) -> bool:
     return any(a <= m <= b for a, b in ranges)
 
@@ -69,8 +76,17 @@ def build_effort(
         for a, b in zip(ms[:-1], ms[1:], strict=True):
             mid = float((a + b) / 2)
             letters.append(surface_letter(infra.at(mid), surface.at(mid)))
+        # Climbing each step as Dream's figures count it, so Plan's days add up to the same (D110).
+        up, down = elevation.step_climbing(prof, ms, exclude=unknown)
         parts.append(
-            EffortPart(from_m=round(part.from_m, 1), to_m=round(part.to_m, 1), ele=heights, surface="".join(letters))
+            EffortPart(
+                from_m=round(part.from_m, 1),
+                to_m=round(part.to_m, 1),
+                ele=heights,
+                surface="".join(letters),
+                up=_rounded_steps(up),
+                down=_rounded_steps(down),
+            )
         )
     gaps = []
     rides = [c for c in build.components if c.kind == ComponentKind.RIDE]

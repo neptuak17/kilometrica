@@ -107,9 +107,26 @@ def test_far_from_towns_a_secondary_road_takes_its_quieter_band():
     assert far[2]["volume_source"] == source
     assert classify.ecs_traffic(tags, {}, FR, bands, None, 1_000, "FR")[0] == "very_high"
     assert classify.ecs_traffic(tags, {}, FR, bands, None, 3_000, "FR")[0] == "high"  # too few: the class's band
+    # How the volume is known travels with the figure (D110).
+    assert (far[2]["volume_basis"], far[2]["volume_ref"]) == ("calibrated", "FR")
+    counted = classify.ecs_traffic(tags, {}, FR, bands, Measured(1500, 2024, "fr-gard"), 15_000, "FR")[2]
+    assert (counted["volume_basis"], counted["volume_ref"]) == ("measured", "fr-gard 2024")
+    assert classify.ecs_traffic(tags, {}, FR)[2]["volume_basis"] == "estimated"
     # No city or town in the corridor at all: as far from one as can be, not a crash (D110).
     assert classify.town_band(float("inf")) == "over 10 km"
     assert classify.ecs_traffic(tags, {}, FR, bands, None, float("inf"), "FR")[0] == "moderate"
+
+
+def test_the_route_credits_the_counts_and_tables_its_figures_rest_on(tmp_path):
+    ctx = TrafficContext()
+    ctx.note_use({"volume_basis": "measured", "volume_ref": "es-valencia 2025", "speed_source": "tagged"})
+    ctx.note_use({"volume_basis": "calibrated", "volume_ref": "FR", "speed_source": "legal rural"})
+    assert ctx.used_counts == {"es-valencia"} and ctx.used_calibrations == {"FR"} and ctx.used_legal
+    # Nothing downloaded here: only the speed table, which is in the repository, is credited.
+    snaps = ctx.snapshots(tmp_path)
+    assert [s.id for s in snaps] == ["legal-speed-limits"]
+    assert snaps[0].attribution == "Default speed limits: OpenStreetMap wiki contributors (CC BY-SA 2.0)"
+    assert TrafficContext().snapshots(tmp_path) == []
 
 
 def test_countries_without_counts_use_france():

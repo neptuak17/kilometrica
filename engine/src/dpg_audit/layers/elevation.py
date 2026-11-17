@@ -237,6 +237,26 @@ def ascent_descent(
     return up, down
 
 
+def step_climbing(
+    prof: PartProfile, ms: np.ndarray, threshold: float = 3.0, exclude: list[tuple[float, float]] | None = None
+) -> tuple[np.ndarray, np.ndarray]:
+    """Climbing riding forward and in reverse between consecutive measures `ms` of one part, counted as
+    `ascent_descent` counts it: along the turning points that survive the `threshold`, so the steps of a stretch add
+    up to its ascent and descent (D110). A rise between two turning points is shared out along its length."""
+    n = max(ms.size - 1, 0)
+    sel = ~np.isnan(prof.ele)
+    for a, b in exclude or []:
+        sel &= ~((prof.m >= a) & (prof.m <= b))
+    m, e = prof.m[sel], prof.ele[sel]
+    if e.size < 2:
+        return np.zeros(n), np.zeros(n)
+    piv = _extrema(e, threshold)
+    rise = np.diff(e[piv])
+    cum_up = np.concatenate([[0.0], np.cumsum(np.clip(rise, 0, None))])
+    cum_down = np.concatenate([[0.0], np.cumsum(np.clip(-rise, 0, None))])
+    return np.diff(np.interp(ms, m[piv], cum_up)), np.diff(np.interp(ms, m[piv], cum_down))
+
+
 def max_grade_window(profs: list[PartProfile], m0: float, m1: float, window_m: float = 500.0) -> float | None:
     """Steepest average gradient (%) over `window_m` within [m0, m1], in the direction of travel.
 
