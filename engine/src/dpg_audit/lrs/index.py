@@ -109,6 +109,9 @@ class RouteIndex:
         self.owner = np.concatenate(owners)
         self.local = np.concatenate(locals_)
         """Each segment's index within its part's line."""
+        self.seg_start = np.concatenate([part.from_m + part.line.cum[:-1] for part in path.parts])
+        self.seg_len = np.concatenate([part.line.seg_len for part in path.parts])
+        """Each segment's start along the path, and its length (metres)."""
         self.tree = shapely.STRtree(self.segments)
 
     def within(self, lon: np.ndarray, lat: np.ndarray, radius_m: np.ndarray | float) -> np.ndarray:
@@ -154,32 +157,27 @@ class RouteIndex:
             return out
         dist = shapely.distance(pts[pi], self.segments[si])
         frac = shapely.line_locate_point(self.segments[si], pts[pi], normalized=True)
-        parts = self.owner[si]
-        local = self.local[si]
-        starts = np.array([self.path.parts[int(p)].from_m for p in parts]) + np.array(
-            [self.path.parts[int(p)].line.cum[int(j)] for p, j in zip(parts, local, strict=True)]
-        )
-        lengths = np.array([self.path.parts[int(p)].line.seg_len[int(j)] for p, j in zip(parts, local, strict=True)])
-        for i in np.unique(pi):
-            ks = np.flatnonzero(pi == i)
-            ks = ks[np.argsort(starts[ks], kind="stable")]
-            # Runs of segments within reach, joined across stretches out of reach shorter than gap_m.
-            runs: list[list[int]] = []
-            end = -np.inf
-            for k in ks:
-                if starts[k] - end > gap_m:
-                    runs.append([])
-                runs[-1].append(int(k))
-                end = max(end, starts[k] + lengths[k])
+        starts, lengths = self.seg_start[si], self.seg_len[si]
+        # The candidates of each point, together and along the route: one sort, not a scan per point.
+        order = np.lexsort((starts, pi))
+        bounds = np.flatnonzero(np.diff(pi[order])) + 1
+        for ks in np.split(order, bounds):
+            i = int(pi[ks[0]])
+            # Runs of segments within reach, joined across stretches out of reach shorter than gap_m. Most points have
+            # one run: nothing more to do.
+            s = starts[ks]
+            ends = np.maximum.accumulate(s + lengths[ks])
+            cuts = np.flatnonzero(s[1:] - ends[:-1] > gap_m) + 1
+            if cuts.size == 0:
+                continue
             first = out[i][0].m
-            for run in runs:
-                lo, hi = starts[run[0]], max(starts[k] + lengths[k] for k in run)
+            los, his = s[np.r_[0, cuts]], ends[np.r_[cuts - 1, ks.size - 1]]
+            for run, lo, hi in zip(np.split(ks, cuts), los, his, strict=True):
                 if lo - 1.0 <= first <= hi + 1.0:
                     continue  # the pass `project` found
-                best = min(run, key=lambda k: dist[k])
-                self._add_pass(out[int(i)], best, si, frac, lon, lat, x, y, int(i), radius)
-            found = out[int(i)]
-            found[1:] = sorted(found[1:], key=lambda p: p.offset_m)  # project's stays first
+                best = int(run[np.argmin(dist[run])])
+                self._add_pass(out[i], best, si, frac, lon, lat, x, y, i, radius)
+            out[i][1:] = sorted(out[i][1:], key=lambda p: p.offset_m)  # project's stays first
         return out
 
     def _add_pass(self, found, k, si, frac, lon, lat, x, y, i, radius) -> None:

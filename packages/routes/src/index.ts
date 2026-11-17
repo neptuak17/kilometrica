@@ -114,6 +114,19 @@ export async function loadRoute(network: string, ref: string, options: LoadOptio
   };
 }
 
+/** The route's current audit: its run and when it was made, to tell a plan made on an older one (D111). */
+export async function latestRun(
+  network: string,
+  ref: string,
+  options: Omit<LoadOptions, "run"> = {},
+): Promise<{ runId: string; createdAt: string }> {
+  const manifest = await getter(options)<BundleManifest>(`/v1/routes/${network}/${ref.toLowerCase()}`);
+  return { runId: manifest.run_id, createdAt: manifest.created_at };
+}
+
+/** Whether a load failed because the audit asked for isn't kept any more (the API answers 404). */
+export const runGone = (e: unknown) => e instanceof Error && e.message.startsWith("404");
+
 export interface DreamFiles {
   manifest: BundleManifest;
   dream: DreamFile;

@@ -2,6 +2,7 @@ import type { Climb, DailySection, DreamSection, EffortFile, Finding, Highlight,
 import { describe, expect, it } from "vitest";
 import { applyAction, bookedAction, daysAnswer, optionOutcome, type PlanAction, plannerRests, type PlanState, restAfterAction, restInAction, restLengthAction, restMoveAction, withRestDays, withTotalDays } from "./actions";
 import { TripAxis } from "./axis";
+import { carryChoices, carryStop } from "./carry";
 import { dayStory } from "./brief";
 import { planChanges } from "./changes";
 import { choicesOf, parseDocument, toDocument } from "./document";
@@ -1103,6 +1104,39 @@ describe("a longer stay: several rest days in one town (D80)", () => {
     // The count of rest days and trimming them keep the longer stay's days.
     expect(daysAnswer(state.inputs, 0)).toMatchObject({ rest: 2, riding: 10, total: 12 });
     expect(withRestDays(three.inputs, 2, 0)).toMatchObject({ restDays: 2, restAfter: [5], restLength: { 5: 2 } });
+  });
+});
+
+describe("a plan on a newer audit of its route (D111)", () => {
+  // The old audit's stops every 10 km, ids by km as before D111; the new audit's by town, one town gone, two moved.
+  const oldStops = Array.from({ length: 29 }, (_, i) => stop((i + 1) * 10, { id: `stop-${(i + 1) * 100}` }));
+  const newStops = oldStops
+    .filter((s) => s.name !== "Town 140")
+    .map((s) => ({ ...s, id: `stop-town-${s.at_m / 1000}`, at_m: s.name === "Town 70" ? s.at_m + 4000 : s.at_m }));
+  const before = makePlan(data({ stops: oldStops }), inputs());
+  const after = data({ stops: newStops });
+  // As a saved plan holds them: its nights by id.
+  const saved = { ...before.choices, nights: before.nights.map((n) => n.stop.id) };
+
+  it("keeps each night at its town, by name near where it was, and plans the others again", () => {
+    const nights = before.nights.map((n) => n.stop.name);
+    expect(nights).toContain("Town 140"); // the town that's gone holds a night
+    expect(nights).toContain("Town 70"); // and the one that moved
+    const { choices, kept, planned } = carryChoices(saved, before.inputs, after, oldStops);
+    const p = makePlan(after, before.inputs, choices);
+    expect(p.nights.length).toBe(before.nights.length);
+    for (const k of kept) expect(p.nights[k]!.stop.name).toBe(nights[k]);
+    // A town gone from the new audit is the only night planned again.
+    expect(planned.map((k) => nights[k])).toEqual(nights.filter((n) => n === "Town 140"));
+    expect(Object.keys(choices.locked)).toEqual([]); // nothing the rider locked, nothing locked now
+  });
+
+  it("finds the town of an older plan's km id without the old audit", () => {
+    expect(carryStop("stop-700", newStops, null)).toBe(null); // km 70: Town 70 moved 4 km, beyond 3 km
+    expect(carryStop("stop-500", newStops, null)).toBe("stop-town-50");
+    expect(carryStop("stop-town-50", newStops, null)).toBe("stop-town-50");
+    // With the old audit it goes by name: Town 70, 4 km on, is still Town 70.
+    expect(carryStop("stop-700", newStops, oldStops)).toBe("stop-town-70");
   });
 });
 

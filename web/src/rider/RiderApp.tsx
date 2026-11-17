@@ -12,6 +12,7 @@ import {
   beInBy,
   bookedAction,
   calendarFile,
+  carryChoices,
   choicesOf,
   clock,
   dayGpx,
@@ -27,6 +28,7 @@ import {
   optionOutcome,
   type PlanAction,
   planChanges,
+  plural,
   planFigures,
   type PlanChoices,
   type PlanData,
@@ -71,7 +73,10 @@ import { Header } from "../shared/Header";
 import { BeforeYouGo, type ExportKind } from "./BeforeYouGo";
 import { Brief, DayList, EffortChart } from "./Brief";
 import { Calls } from "./Calls";
-import { loadFull, loadRoute, type FullFiles, type RouteFiles } from "@dpg/routes";
+import { latestRun, loadFull, loadRoute, runGone, type FullFiles, type RouteFiles } from "@dpg/routes";
+
+/** "17 November 2026": when an audit was made. */
+const auditDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
 import { DayCard } from "./DayCard";
 import { type Step, usePlanHistory } from "./history";
 import { PlanMap } from "./PlanMap";
@@ -441,19 +446,49 @@ function PlanPage({ start }: { start: Start }) {
   const [printing, setPrinting] = useState(false);
   const [editing, setEditing] = useState(!start.doc);
 
+  // A newer audit of the route than the plan's own (D111), and what the last update did.
+  const [newer, setNewer] = useState<{ runId: string; createdAt: string } | null>(null);
+  const [auditNote, setAuditNote] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
+
+  // A saved or shared plan opens on the audit it was made on, while it's kept (D111); a new one on the latest.
   useEffect(() => {
-    loadRoute(start.network, start.ref)
-      .then((f) => {
-        setFiles(f);
-        const init = initialInputs(f, start.inputs);
-        reset({ inputs: init.inputs, choices: start.doc ? choicesOf(start.doc) : NO_CHOICES });
-        setSuggested(init.suggested);
-        document.title = `${f.manifest.route.name} · Kilometrica Plan`;
-        if (start.doc && start.doc.route.runId !== f.manifest.run_id) {
-          setError(null);
-        }
-      })
-      .catch((e: Error) => setError(e.message));
+    let live = true;
+    const pinned = start.doc?.route.runId;
+    (async () => {
+      let f: RouteFiles;
+      let gone = false;
+      try {
+        f = await loadRoute(start.network, start.ref, pinned ? { run: pinned } : {});
+      } catch (e) {
+        if (!pinned || !runGone(e)) throw e;
+        f = await loadRoute(start.network, start.ref);
+        gone = true;
+      }
+      if (!live) return;
+      const init = initialInputs(f, start.inputs);
+      let choices = start.doc ? choicesOf(start.doc) : NO_CHOICES;
+      if (gone) {
+        // Its audit isn't kept: the plan moves to the latest, each night to its town where it can (D111).
+        const carried = carryChoices(choices, init.inputs, { ...f.free, full: null }, null);
+        choices = carried.choices;
+        setAuditNote(
+          `The audit this plan was made on is no longer kept, so it now uses the audit of ${auditDate(f.manifest.created_at)}. ` +
+            (carried.planned.length ? `${plural(carried.planned.length, "night")} couldn't stay at ${carried.planned.length === 1 ? "its town" : "their towns"} and ${carried.planned.length === 1 ? "was" : "were"} planned again.` : "Every night kept its town."),
+        );
+      }
+      setFiles(f);
+      reset({ inputs: init.inputs, choices });
+      setSuggested(init.suggested);
+      document.title = `${f.manifest.route.name} · Kilometrica Plan`;
+      if (pinned && !gone) {
+        const latest = await latestRun(start.network, start.ref);
+        if (live && latest.runId !== f.manifest.run_id) setNewer(latest);
+      }
+    })().catch((e: Error) => live && setError(e.message));
+    return () => {
+      live = false;
+    };
   }, [start, reset]);
 
   const blockKey = inputs ? `${Math.floor(Math.min(inputs.fromM, inputs.toM) / 50_000)}-${Math.ceil(Math.max(inputs.fromM, inputs.toM) / 50_000)}` : "";
@@ -511,6 +546,35 @@ function PlanPage({ start }: { start: Start }) {
     savePlan(doc);
     if (!new URLSearchParams(window.location.search).has("plan")) window.history.replaceState(null, "", `/plan?plan=${doc.id}`);
   }, [doc, readOnly]);
+
+  // The plan on the newer audit (D111): each night at its town where the new audit has it, the others planned again,
+  // and what changed said once. Compared without the Trip Pass detail on both sides, so only the audit's changes show.
+  const updateAudit = useCallback(async () => {
+    const state = history.present;
+    if (!files || !state || !newer) return;
+    setUpdating(true);
+    try {
+      const f = await loadRoute(start.network, start.ref, { run: newer.runId });
+      const next: PlanData = { ...f.free, full: null };
+      const carried = carryChoices(state.choices, state.inputs, next, files.free.stops.stops);
+      const before = makePlan({ ...files.free, full: null }, state.inputs, state.choices);
+      const after = makePlan(next, state.inputs, carried.choices);
+      const lines = planChanges(before, after).lines.filter((l) => !/decision/.test(l));
+      setPreview(null);
+      setFull(null);
+      setFiles(f);
+      reset({ inputs: state.inputs, choices: carried.choices });
+      setNewer(null);
+      setAuditNote(
+        `Now on the audit of ${auditDate(f.manifest.created_at)}. ` +
+          (lines.length ? `${lines.slice(0, 3).join("; ")}${lines.length > 3 ? `; and ${plural(lines.length - 3, "more change")}` : ""}.` : "Every night is where it was."),
+      );
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setUpdating(false);
+    }
+  }, [files, history.present, newer, reset, start.network, start.ref]);
 
   // A change from the screen applies at once (with Undo) and ends any preview.
   const apply = useCallback(
@@ -584,7 +648,6 @@ function PlanPage({ start }: { start: Start }) {
   const origin = window.location.origin;
   const links = { full: `${origin}/plan#${shareFragment(doc)}`, itinerary: `${origin}/plan#${shareFragment(itineraryOf(plan, doc.name))}` };
   const isPrivate = files.manifest.visibility === "private";
-  const stale = start.doc && start.doc.route.runId !== files.manifest.run_id;
   const lockNight = (k: number, id: string) => apply({ type: "lock-night", night: k, stop: id });
   const toggleDone = (id: string) => apply({ type: "done", item: id, on: !choices.done.includes(id) });
   const unloaded = data.full
@@ -717,10 +780,30 @@ function PlanPage({ start }: { start: Start }) {
             </AlertAction>
           </Alert>
         )}
-        {stale && (
+        {newer && (
           <Alert>
             <Icons.Info />
-            <AlertDescription>This plan was made on an earlier audit of the route; it has been re-timed on the current one.</AlertDescription>
+            <AlertTitle>A newer audit of this route</AlertTitle>
+            <AlertDescription>
+              This plan uses the audit of {auditDate(files.manifest.created_at)}; the route was audited again on {auditDate(newer.createdAt)}. Update to
+              use it: each night stays at its town where it can, and we say what changed.
+            </AlertDescription>
+            <AlertAction>
+              <Button size="sm" isDisabled={updating} onPress={() => void updateAudit()}>
+                {updating ? "Updating…" : "Update"}
+              </Button>
+            </AlertAction>
+          </Alert>
+        )}
+        {auditNote && (
+          <Alert>
+            <Icons.Info />
+            <AlertDescription>{auditNote}</AlertDescription>
+            <AlertAction>
+              <Button variant="ghost" size="sm" onPress={() => setAuditNote(null)}>
+                OK
+              </Button>
+            </AlertAction>
           </Alert>
         )}
         {unloaded.length > 0 && (
