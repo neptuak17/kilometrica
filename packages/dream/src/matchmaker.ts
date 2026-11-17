@@ -92,7 +92,9 @@ export interface StretchResult {
 
 const TOLERANCE = 0.1;
 const PREF_WEIGHT: Record<Pref, number> = { prefer: 1, ok: 0.6, avoid: 0 };
-const WEIGHTS = { fit: 0.3, surfaces: 0.2, themes: 0.2, season: 0.2, wind: 0.05, stay: 0.05 };
+const WEIGHTS = { fit: 0.3, surfaces: 0.2, themes: 0.2, season: 0.2, wind: 0.05, stay: 0.05, quiet: 0.2 };
+/** The share of busy roads at which a stretch earns nothing for quiet roads (D111). */
+const QUIET_ZERO_SHARE = 0.25;
 const SURFACE_LABEL: Record<SurfaceKind, string> = { road: "road", cycle_path: "cycle paths", gravel: "gravel" };
 export const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -276,8 +278,9 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
   const stationStart = way === "forward" ? first.station_start : first.station_end;
   const stationEnd = way === "forward" ? last.station_end : last.station_start;
   if (strict && q.trainBothEnds && (!stationStart || !stationEnd)) return null;
+  // Busy roads rest mostly on estimates (D110), so avoiding them ranks a stretch lower by its busy km, never rules it
+  // out (D111).
   const busyShare = weighted(secs, (s) => s.busy_share) ?? 0;
-  if (strict && q.avoidBusy && busyShare > 0.15) return null;
 
   const surfaces = {
     road: weighted(secs, (s) => s.surfaces.road) ?? 0,
@@ -373,9 +376,13 @@ function evaluate(dream: DreamFile, run: Run, way: Way, q: DreamQuery, strict = 
     if (without) watch.push(`no ${q.stay === "camping" ? "campsites" : "rooms"} found on ${without === 1 ? "one" : without} of its sections`);
   }
 
+  // Quiet roads, for a rider avoiding busy ones (D111): full marks with none, nothing from a quarter of the stretch.
+  if (q.avoidBusy) parts.push([WEIGHTS.quiet, Math.max(0, 1 - busyShare / QUIET_ZERO_SHARE)]);
+
   // Watch-outs from the audit, and the gaps the rider has to check (D37).
   const busyKm = (busyShare * totalM) / 1000;
-  if (busyKm >= 5) watch.push(`${Math.round(busyKm)} km on busy roads`);
+  // From 1 km for a rider avoiding busy roads, as Plan's heads-ups (D75); from 5 km otherwise.
+  if (busyKm >= (q.avoidBusy ? 1 : 5)) watch.push(`${Math.round(busyKm)} km on busy roads`);
   const worstGap = Math.max(...secs.map((s) => s.longest_gap_m.accommodation ?? 0));
   if (worstGap >= 50_000) watch.push(`up to ${km(worstGap)} km between places to stay`);
   // A long steep stretch only, as Plan raises it (D75, D87); short ramps aren't worth raising.

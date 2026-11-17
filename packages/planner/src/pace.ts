@@ -21,6 +21,15 @@ const EBIKE_LIMIT_MS = 25 / 3.6;
 /** Flat cruising speed with luggage on a touring bike, per level (km/h). */
 export const LEVEL_FLAT_KMH: Record<number, number> = { 1: 13, 2: 15, 3: 17, 4: 19, 5: 21 };
 
+/**
+ * The power each level holds on climbs over a loaded day (W, D111): about 1.1–2.5 W/kg for a 75 kg rider, 60–70% of
+ * a typical threshold power at each level. Riders cruise easier on the flat (the power of LEVEL_FLAT_KMH) and work
+ * harder uphill, reaching this by CLIMB_FROM. Placeholders to tune against real rides (D13).
+ */
+export const LEVEL_CLIMB_W: Record<number, number> = { 1: 85, 2: 105, 3: 130, 4: 160, 5: 185 };
+/** The gradient by which a rider is putting out their climbing power. */
+const CLIMB_FROM = 0.04;
+
 export interface BikeSpec {
   kg: number;
   crrPaved: number;
@@ -47,7 +56,10 @@ export interface Rider {
   bike: Bike;
   spec: BikeSpec;
   massKg: number;
+  /** Cruising power, on the flat and downhill. */
   powerW: number;
+  /** Power on climbs (D111). */
+  climbW: number;
 }
 
 function resistance(massKg: number, crr: number, cda: number, grade: number, v: number, tailwind: number): number {
@@ -77,7 +89,8 @@ export function riderFor(level: number, bike: Bike): Rider {
   const massTouring = RIDER_KG + touring.kg + LUGGAGE_KG;
   const powerW = (resistance(massTouring, touring.crrPaved, touring.cda, 0, flat, 0) * flat) / DRIVETRAIN;
   const spec = BIKES[bike];
-  return { level, bike, spec, massKg: RIDER_KG + spec.kg + LUGGAGE_KG, powerW };
+  const climbW = Math.max(powerW, LEVEL_CLIMB_W[level] ?? LEVEL_CLIMB_W[3]!);
+  return { level, bike, spec, massKg: RIDER_KG + spec.kg + LUGGAGE_KG, powerW, climbW };
 }
 
 /** Speed (m/s) on a gradient (rise/run), surface "paved" or "gravel", with the along-route wind (+ tailwind). */
@@ -85,8 +98,8 @@ export function speed(rider: Rider, grade: number, surface: "paved" | "gravel", 
   const { spec, massKg } = rider;
   const crr = surface === "paved" ? spec.crrPaved : spec.crrGravel;
   const vmax = (surface === "paved" ? spec.downPavedKmh : spec.downGravelKmh) / 3.6;
-  // Riders push harder uphill: up to 30% more on steep climbs.
-  const power = rider.powerW * (1 + Math.min(0.3, Math.max(0, grade) * 4));
+  // Cruising power on the flat and downhill, rising to the level's climbing power by CLIMB_FROM (D111).
+  const power = rider.powerW + (rider.climbW - rider.powerW) * Math.min(1, Math.max(0, grade) / CLIMB_FROM);
   let v: number;
   if (spec.assistW > 0) {
     const assisted = solve(power + Math.min(spec.assistW, 1.5 * power), massKg, crr, spec.cda, grade, tailwind, vmax);

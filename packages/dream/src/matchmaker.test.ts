@@ -120,13 +120,20 @@ describe("findStretches", () => {
     expect(top?.why.some((w) => w.includes("Coast"))).toBe(true);
   });
 
-  it("filters on train at both ends and busy roads", () => {
+  it("filters on train at both ends; avoiding busy roads ranks, it doesn't rule out (D111)", () => {
     const noStation = ten.map((s) => (s.number <= 4 ? section(s.number, { station_start: null, station_end: null }) : s));
     expect(findStretches(dream(noStation), { ...base, trainBothEnds: true }).every((r) => r.first > 4)).toBe(true);
     const busy = ten.map((s) => section(s.number, { busy_share: s.number <= 6 ? 0.5 : 0 }));
     const calm = findStretches(dream(busy), { ...base, avoidBusy: true });
-    expect(calm.length).toBeGreaterThan(0);
-    expect(calm.every((r) => r.busyShare <= 0.15)).toBe(true);
+    const any = findStretches(dream(busy), base);
+    // The quieter end comes first (6-10, one busy section; without the wish, 1-5 leads, half busy); busy stretches are
+    // still there, lower down, saying how many km are busy.
+    expect(calm[0]!.busyShare).toBeLessThan(any[0]!.busyShare);
+    expect(calm[0]!.first).toBeGreaterThanOrEqual(6);
+    expect(calm.some((r) => r.busyShare > 0.15)).toBe(true);
+    expect(calm.length).toBe(any.length);
+    const busyOne = calm.find((r) => r.busyShare > 0)!;
+    expect(busyOne.watch.some((w) => /km on busy roads$/.test(w))).toBe(true);
   });
 
   it("picks the best month when none is given", () => {

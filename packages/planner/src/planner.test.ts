@@ -177,6 +177,18 @@ describe("pace", () => {
     expect(speed(e, 0, "paved") * 3.6).toBeLessThanOrEqual(25.01);
   });
 
+  it("climbs at the level's climbing power: no pushing on moderate grades from level 2 (D111)", () => {
+    // km/h at 4% and 6% with luggage on a touring bike; 4 km/h means pushing.
+    const kmh = (level: number, g: number) => speed(riderFor(level, "touring"), g, "paved") * 3.6;
+    expect(kmh(1, 0.04)).toBeCloseTo(6.1, 1);
+    expect(kmh(3, 0.04)).toBeCloseTo(9.2, 1);
+    expect(kmh(5, 0.04)).toBeCloseTo(12.6, 1);
+    expect(kmh(2, 0.06)).toBeGreaterThan(5);
+    expect(kmh(1, 0.08)).toBeCloseTo(4, 1); // a leisurely rider with luggage pushes at 8%
+    // The flat is unchanged: each level's cruising speed.
+    expect(kmh(3, 0)).toBeCloseTo(LEVEL_FLAT_KMH[3]!, 1);
+  });
+
   it("makes a Moderate usual day roughly 4-5 hours of riding", () => {
     const m = LEVELS[2]!;
     const u = usualDay(riderFor(3, "touring"), m.km_min, m.km_max, m.climb_max_m);
@@ -401,7 +413,7 @@ describe("makePlan", () => {
     const gapDays = (p: typeof all) => p.items.filter((i) => i.id.startsWith("water:gap:")).map((i) => i.day);
     // No water on any day: one piece of advice for the trip instead of a warning a day (D70).
     expect(gapDays(all)).toEqual([]);
-    expect(all.items.find((i) => i.id === "supply:sparse")?.title).toBe("Long stretches without water or food on 5 of 5 days, up to 80 km");
+    expect(all.items.find((i) => i.id === "supply:sparse")?.title).toBe("Long stretches without water or food on 5 of 5 days, up to 70 km");
     // Days touching the part that didn't load make no claim; the others still do.
     expect(gapDays(part)).toEqual(part.days.filter((d) => Math.max(d.fromM, d.toM) <= 150_000).map((d) => d.number));
     expect(gapDays(part).length).toBeGreaterThan(0);

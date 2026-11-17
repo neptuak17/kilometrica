@@ -375,7 +375,7 @@ function DreamRoute({ route }: { route: string }) {
             </h2>
             {results.length === 0 && (
               <p className="text-muted-foreground">
-                Every stretch is more than your level can do in these days, or misses something you asked for (a town to start or end in, trains at both ends, avoiding busy roads). Try more days, a higher level or fewer needs, or pick your own stretch below.
+                Every stretch is more than your level can do in these days, or misses something you asked for (a town to start or end in, trains at both ends). Try more days, a higher level or fewer needs, or pick your own stretch below.
               </p>
             )}
             {(ownRoute || twoTowns) && a.days === null && results.length > 0 && (
