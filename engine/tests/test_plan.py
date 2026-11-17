@@ -100,6 +100,17 @@ def test_a_town_passed_twice_is_a_stop_on_each_pass(path):
     coverage = Coverage(beds, load_services("services-v0"), path.length)
     stops = build_stops(path, beds, [town], coverage, 2027).stops
     assert [(s.name, round(s.at_m / 1000)) for s in stops] == [("Ville", 10), ("Ville", 200)]
+    # Ids by town, numbered along the route, so a plan's nights survive new place data (D111).
+    assert [s.id for s in stops] == ["stop-ville", "stop-ville-2"]
+
+
+def test_stop_ids_by_town_else_km():
+    from dpg_audit.plan.stops import stop_key
+
+    assert stop_key("Saint-Raphaël", 1_000.0) == "stop-saint-raphaël"
+    assert stop_key("Κόρινθος", 1_000.0) == "stop-κόρινθος"
+    assert stop_key("L'Hospitalet de l'Infant", 1_000.0) == "stop-l-hospitalet-de-l-infant"
+    assert stop_key(None, 123_456.0) == "stop-1235" and stop_key("—", 123_456.0) == "stop-1235"
 
 
 # --- effort across a gap ---------------------------------------------------------------------------------------

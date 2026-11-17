@@ -8,6 +8,8 @@ Nothing here depends on the rider, and no place is named (only towns), so the fi
 filters stops by how the rider sleeps and by the month.
 """
 
+import re
+import unicodedata
 from bisect import bisect_left, bisect_right
 from collections import Counter
 from functools import cache
@@ -115,6 +117,13 @@ def time_zone_at(lon: float, lat: float) -> str | None:
     return _zones().timezone_at(lng=lon, lat=lat)
 
 
+def stop_key(name: str | None, at_m: float) -> str:
+    """A stop's id before numbering repeats: its town (D111), so a plan's nights keep their towns when new place data
+    moves a stop's km; an unnamed stop, by its km. The same town again along the route gets -2, -3 in route order."""
+    slug = re.sub(r"[\W_]+", "-", unicodedata.normalize("NFKC", name or "").lower()).strip("-")
+    return f"stop-{slug}" if slug else f"stop-{round(at_m / 100)}"
+
+
 def _near(positions: list[float], m: float, reach: float) -> int:
     return bisect_right(positions, m + reach) - bisect_left(positions, m - reach)
 
@@ -159,11 +168,10 @@ def build_stops(
         station = min(near, key=lambda p: abs(p.access_at_m - at_m), default=None)
         detours = [p.access_m for p in group if p.access_m is not None]
         countries = Counter(p.country for p in group if p.country)
-        base = f"stop-{round(at_m / 100)}"
-        seen[base] += 1
         stops.append(
             Stop(
-                id=base if seen[base] == 1 else f"{base}-{seen[base]}",
+                id="",  # given below, in route order
+
                 name=town.name if town else None,
                 name_en=town.name_en if town and town.name_en != town.name else None,
                 place_kind=town.kind if town else None,
@@ -179,7 +187,11 @@ def build_stops(
                 station_at_m=station.access_at_m if station else None,
             )
         )
-    stops.sort(key=lambda s: (s.at_m, s.id))
+    stops.sort(key=lambda s: (s.at_m, s.name or ""))
+    for s in stops:
+        base = stop_key(s.name, s.at_m)
+        seen[base] += 1
+        s.id = base if seen[base] == 1 else f"{base}-{seen[base]}"
     named = [s for s in stops if s.name]
     tree = None
     if towns:
